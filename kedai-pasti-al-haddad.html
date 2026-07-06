@@ -1,0 +1,1547 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Kedai PASTI Sarawak Official — Produk Komuniti Seluruh Malaysia</title>
+<meta name="description" content="Kedai PASTI Sarawak Official — platform jualan produk komuniti (kurma, madu, kudapan tradisional) dengan sistem ejen & komisen, fokus utama Sarawak.">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          forest: '#0B5D3B', forestdark:'#083F28', leaf:'#3F9D64', leaflight:'#E4F3EA',
+          honey:'#D4A017', honeydeep:'#B3810A', cream:'#FBF7EE', sand:'#EFE4CF',
+          ink:'#1C2B24', inksoft:'#5B6B63'
+        },
+        fontFamily: { display:['Sora','sans-serif'], body:['Inter','sans-serif'] },
+        boxShadow: { card:'0 10px 30px -12px rgba(11,93,59,0.28)' }
+      }
+    }
+  }
+</script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+  html{ scroll-behavior:smooth; }
+  body{ font-family:'Inter',sans-serif; background:#FBF7EE; color:#1C2B24; }
+  h1,h2,h3,h4,.font-display{ font-family:'Sora',sans-serif; }
+  .no-scrollbar::-webkit-scrollbar{ display:none; }
+  .no-scrollbar{ -ms-overflow-style:none; scrollbar-width:none; }
+  .card-hover{ transition:transform .25s ease, box-shadow .25s ease; }
+  .card-hover:hover{ transform:translateY(-4px); box-shadow:0 16px 30px -10px rgba(11,93,59,.28); }
+  .line-clamp-2{ display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .tab-active{ background:#0B5D3B !important; color:#fff !important; }
+  .bottom-nav-active{ color:#0B5D3B !important; }
+  .bottom-nav-active .nav-ic{ background:#E4F3EA; }
+  .status-baru{ background:#DBEAFE; color:#1D4ED8; }
+  .status-diproses{ background:#FEF3C7; color:#B45309; }
+  .status-dihantar{ background:#EDE9FE; color:#6D28D9; }
+  .status-selesai{ background:#DCFCE7; color:#15803D; }
+  .status-batal{ background:#FEE2E2; color:#B91C1C; }
+  .modal-mask{ background:rgba(28,43,36,.55); backdrop-filter:blur(2px); }
+  @keyframes toastIn{ from{ transform:translate(-50%,20px); opacity:0;} to{ transform:translate(-50%,0); opacity:1;} }
+  .toast-show{ animation:toastIn .25s ease-out; }
+  input:focus, select:focus, textarea:focus{ outline:none; border-color:#0B5D3B !important; box-shadow:0 0 0 3px rgba(11,93,59,.12); }
+  ::selection{ background:#D4A017; color:#1C2B24; }
+  .geo-mask{ -webkit-mask-image:linear-gradient(180deg,#000,transparent); mask-image:linear-gradient(180deg,#000,transparent); }
+</style>
+</head>
+<body class="antialiased">
+
+<!-- Corak geometri 8-penjuru (unsur tandatangan reka bentuk) -->
+<svg width="0" height="0" class="absolute">
+  <defs>
+    <pattern id="star8" width="46" height="46" patternUnits="userSpaceOnUse">
+      <g fill="none" stroke="currentColor" stroke-width="1.1">
+        <rect x="9" y="9" width="28" height="28"></rect>
+        <rect x="9" y="9" width="28" height="28" transform="rotate(45 23 23)"></rect>
+      </g>
+    </pattern>
+  </defs>
+</svg>
+
+<div class="min-h-screen flex flex-col">
+
+  <!-- HEADER -->
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-sand">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      <button onclick="window.showView('home')" class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-2xl overflow-hidden bg-white shadow-md shrink-0 flex items-center justify-center border border-sand">
+          <img src="LOGO%20PASTI.png" alt="Logo PASTI" class="w-full h-full object-contain p-0.5">
+        </div>
+        <div class="flex flex-col leading-none text-left">
+          <span class="font-display font-extrabold text-ink text-sm sm:text-base tracking-tight">Kedai PASTI</span>
+          <span class="font-display font-bold text-honeydeep text-[10px] sm:text-[11px] tracking-widest uppercase">Sarawak Official</span>
+        </div>
+      </button>
+
+      <nav class="hidden md:flex items-center gap-1 text-sm font-bold text-inksoft">
+        <button onclick="window.showView('home')" class="px-3 py-2 rounded-xl hover:bg-leaflight hover:text-forest transition-colors">Utama</button>
+        <button onclick="window.showView('catalog')" class="px-3 py-2 rounded-xl hover:bg-leaflight hover:text-forest transition-colors">Produk</button>
+        <button onclick="window.showView('agent')" class="px-3 py-2 rounded-xl hover:bg-leaflight hover:text-forest transition-colors">Ejen</button>
+      </nav>
+
+      <div class="flex items-center gap-2">
+        <button onclick="window.showView('cart')" class="relative w-10 h-10 rounded-full flex items-center justify-center bg-leaflight text-forest hover:bg-forest hover:text-white transition-colors">
+          <i data-lucide="shopping-bag" class="w-5 h-5"></i>
+          <span id="cart-badge-header" class="hidden absolute -top-1 -right-1 bg-honey text-ink text-[10px] font-black w-5 h-5 rounded-full items-center justify-center border-2 border-white">0</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 pb-24 md:pb-10">
+
+    <!-- ==================== VIEW: HOME ==================== -->
+    <section id="view-home">
+
+      <!-- HERO -->
+      <div class="relative overflow-hidden" style="background:linear-gradient(160deg,#0B5D3B 0%,#0F4A32 55%,#083F28 100%)">
+        <div class="absolute inset-0 text-honey opacity-[0.10]" style="background-image:url(#star8-fill)"></div>
+        <div class="absolute inset-0" style="background-image:url('data:image/svg+xml;utf8,&lt;svg xmlns=%27http://www.w3.org/2000/svg%27 width=%2246%27 height=%2246%27&gt;&lt;g fill=%27none%27 stroke=%27%23D4A017%27 stroke-width=%271%27 opacity=%270.16%27&gt;&lt;rect x=%279%27 y=%279%27 width=%2228%27 height=%2228%27/&gt;&lt;rect x=%279%27 y=%279%27 width=%2228%27 height=%2228%27 transform=%27rotate(45 23 23)%27/&gt;&lt;/g&gt;&lt;/svg&gt;');"></div>
+        <div class="relative max-w-6xl mx-auto px-4 sm:px-6 pt-10 pb-12 sm:pt-14 sm:pb-16 grid lg:grid-cols-2 gap-10 items-center">
+          <div>
+            <span class="inline-block bg-white/10 text-honey text-[11px] font-bold tracking-widest uppercase px-3 py-1.5 rounded-full border border-white/15">Platform Komuniti • Seluruh Malaysia</span>
+            <h1 class="font-display font-extrabold text-3xl sm:text-5xl text-white leading-tight mt-4 max-w-xl">Kurma, Madu &amp; Barangan Komuniti — Setiap Tempahan Menyokong PASTI Sarawak</h1>
+            <p class="text-leaflight/90 text-sm sm:text-base mt-3 max-w-md">Beli produk pilihan terus daripada ejen komuniti kami. Mudah, telus, dan setiap ringgit memberi impak.</p>
+            <div class="flex flex-wrap gap-3 mt-6">
+              <button onclick="window.showView('catalog')" class="bg-honey hover:bg-honeydeep text-ink font-bold px-6 py-3 rounded-2xl shadow-lg flex items-center gap-2 transition-colors">
+                <i data-lucide="shopping-cart" class="w-4 h-4"></i> Mula Beli-Belah
+              </button>
+              <button onclick="window.showView('agent')" class="bg-white/10 hover:bg-white/20 text-white font-bold px-6 py-3 rounded-2xl border border-white/20 flex items-center gap-2 transition-colors">
+                <i data-lucide="users" class="w-4 h-4"></i> Jadi Ejen Kami
+              </button>
+            </div>
+
+            <div class="grid grid-cols-3 gap-3 mt-8 max-w-md">
+              <div class="bg-white/10 border border-white/15 rounded-2xl px-3 py-3 text-center">
+                <p class="font-display font-extrabold text-honey text-lg sm:text-xl">500+</p>
+                <p class="text-white/70 text-[10px] font-semibold uppercase tracking-wide">Pelanggan</p>
+              </div>
+              <div class="bg-white/10 border border-white/15 rounded-2xl px-3 py-3 text-center">
+                <p class="font-display font-extrabold text-honey text-lg sm:text-xl">50+</p>
+                <p class="text-white/70 text-[10px] font-semibold uppercase tracking-wide">Ejen Aktif</p>
+              </div>
+              <div class="bg-white/10 border border-white/15 rounded-2xl px-3 py-3 text-center">
+                <p class="font-display font-extrabold text-honey text-lg sm:text-xl">15</p>
+                <p class="text-white/70 text-[10px] font-semibold uppercase tracking-wide">Kawasan Sarawak</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="relative">
+            <div class="absolute -inset-6 sm:-inset-10 rounded-[2.5rem] opacity-50 blur-2xl pointer-events-none" style="background:radial-gradient(circle at 25% 25%,#D4A017,transparent 60%),radial-gradient(circle at 75% 70%,#3F9D64,transparent 60%)"></div>
+            <div class="relative rounded-[2rem] overflow-hidden border border-white/15 shadow-2xl">
+              <img src="header.png" alt="Kedai PASTI Sarawak Official" class="w-full h-full object-cover" style="filter:saturate(1.05) contrast(1.02)">
+              <div class="absolute inset-0" style="background:linear-gradient(160deg,rgba(11,93,59,0.35) 0%,rgba(15,74,50,0.05) 40%,rgba(8,63,40,0.55) 100%)"></div>
+              <div class="absolute inset-0" style="background:linear-gradient(0deg,rgba(8,63,40,0.65) 0%,transparent 30%)"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="max-w-6xl mx-auto px-4 sm:px-6">
+
+        <!-- KATEGORI -->
+        <div class="mt-8">
+          <h2 class="font-display font-bold text-lg text-ink mb-3">Kategori Produk</h2>
+          <div id="home-cat-grid" class="grid grid-cols-3 sm:grid-cols-5 gap-3"></div>
+        </div>
+
+        <!-- PRODUK TERKINI -->
+        <div class="mt-10">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="font-display font-bold text-lg text-ink">Produk Terkini</h2>
+            <button onclick="window.showView('catalog')" class="text-forest text-xs font-bold flex items-center gap-1">Lihat Semua <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i></button>
+          </div>
+          <div id="home-latest" class="flex gap-4 overflow-x-auto no-scrollbar pb-2 -mx-1 px-1"></div>
+        </div>
+
+        <!-- PRODUK POPULAR -->
+        <div class="mt-10">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="font-display font-bold text-lg text-ink">Produk Popular</h2>
+            <button onclick="window.showView('catalog')" class="text-forest text-xs font-bold flex items-center gap-1">Lihat Semua <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i></button>
+          </div>
+          <div id="home-popular" class="grid grid-cols-2 sm:grid-cols-4 gap-4"></div>
+        </div>
+
+        <!-- KISAH KAMI -->
+        <div class="mt-12 bg-white border border-sand rounded-[2rem] p-6 sm:p-8 shadow-sm grid sm:grid-cols-5 gap-6 items-center">
+          <div class="sm:col-span-3">
+            <p class="text-honeydeep text-[11px] font-bold tracking-widest uppercase mb-2">Kisah Kami</p>
+            <h3 class="font-display font-bold text-xl text-ink mb-2">Bermula Daripada Komuniti, Untuk Komuniti</h3>
+            <p class="text-inksoft text-sm leading-relaxed">Kedai PASTI Sarawak Official bermula sebagai inisiatif kecil keluarga Al-Haddad bersama ibu bapa dan guru-guru PASTI di Sarawak, bagi menjana dana ekonomi tadika sambil berkongsi produk komuniti pilihan — dari kurma, madu, sehingga kudapan tradisional — kepada seluruh Malaysia.</p>
+          </div>
+          <div class="sm:col-span-2 grid grid-cols-2 gap-3">
+            <div class="bg-leaflight rounded-2xl p-4 text-center">
+              <i data-lucide="heart-handshake" class="w-6 h-6 text-forest mx-auto mb-1"></i>
+              <p class="text-[11px] font-bold text-ink">Komisen Telus</p>
+            </div>
+            <div class="bg-sand rounded-2xl p-4 text-center">
+              <i data-lucide="package-check" class="w-6 h-6 text-honeydeep mx-auto mb-1"></i>
+              <p class="text-[11px] font-bold text-ink">Produk Terpilih</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FOOTER -->
+      <footer class="mt-14 bg-ink text-white/80">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 py-10 grid sm:grid-cols-3 gap-8 text-sm">
+          <div>
+            <div class="flex items-center gap-2 mb-3">
+              <div class="w-8 h-8 rounded-xl overflow-hidden bg-white flex items-center justify-center shrink-0">
+                <img src="LOGO%20PASTI.png" alt="Logo PASTI" class="w-full h-full object-contain p-0.5">
+              </div>
+              <span class="font-display font-bold text-white">Kedai PASTI Sarawak Official</span>
+            </div>
+            <p class="text-white/50 text-xs leading-relaxed">Platform jualan produk komuniti dengan sistem ejen &amp; komisen, fokus utama Sarawak.</p>
+          </div>
+          <div>
+            <p class="font-bold text-white text-xs uppercase tracking-widest mb-3">Hubungi Kami</p>
+            <p class="text-white/60 text-xs flex items-center gap-2 mb-2"><i data-lucide="phone" class="w-3.5 h-3.5"></i> 012-345 6789 (WhatsApp)</p>
+            <p class="text-white/60 text-xs flex items-center gap-2 mb-2"><i data-lucide="mail" class="w-3.5 h-3.5"></i> hello@pastisarawak.my</p>
+            <p class="text-white/60 text-xs flex items-center gap-2"><i data-lucide="map-pin" class="w-3.5 h-3.5"></i> Kuching, Sarawak</p>
+          </div>
+          <div>
+            <p class="font-bold text-white text-xs uppercase tracking-widest mb-3">Pautan Pantas</p>
+            <div class="flex flex-col gap-2 text-white/60 text-xs">
+              <button onclick="window.showView('catalog')" class="text-left hover:text-honey w-fit">Katalog Produk</button>
+              <button onclick="window.showView('agent')" class="text-left hover:text-honey w-fit">Portal Ejen</button>
+            </div>
+          </div>
+        </div>
+        <div class="border-t border-white/10 py-4 text-center text-[11px] text-white/40">© <span onclick="window.showView('admin')">2026</span> Kedai PASTI Sarawak Official. Hak cipta terpelihara.</div>
+      </footer>
+    </section>
+
+    <!-- ==================== VIEW: CATALOG ==================== -->
+    <section id="view-catalog" class="hidden">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 pt-8">
+        <h1 class="font-display font-bold text-2xl text-ink mb-1">Katalog Produk</h1>
+        <p class="text-inksoft text-sm mb-5">Semua produk komuniti tersedia untuk tempahan.</p>
+
+        <div class="relative mb-4">
+          <i data-lucide="search" class="w-4 h-4 text-inksoft absolute left-4 top-3.5"></i>
+          <input id="catalog-search" oninput="window.setSearch(this.value)" type="text" placeholder="Cari produk..." class="w-full bg-white border border-sand rounded-2xl pl-11 pr-4 py-3 text-sm font-medium">
+        </div>
+
+        <div id="catalog-cat-chips" class="flex gap-2 overflow-x-auto no-scrollbar pb-1 mb-4"></div>
+
+        <div class="flex items-center justify-between mb-4">
+          <p id="catalog-count" class="text-xs font-bold text-inksoft">0 produk</p>
+          <select onchange="window.setSort(this.value)" class="bg-white border border-sand rounded-xl px-3 py-2 text-xs font-bold text-ink">
+            <option value="default">Susun: Lalai</option>
+            <option value="price-asc">Harga: Rendah ke Tinggi</option>
+            <option value="price-desc">Harga: Tinggi ke Rendah</option>
+            <option value="newest">Terbaru</option>
+          </select>
+        </div>
+
+        <div id="catalog-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 pb-10"></div>
+        <div id="catalog-empty" class="hidden text-center py-16">
+          <i data-lucide="package-search" class="w-10 h-10 text-inksoft mx-auto mb-2"></i>
+          <p class="text-inksoft text-sm font-semibold">Tiada produk ditemui.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== VIEW: CART ==================== -->
+    <section id="view-cart" class="hidden">
+      <div class="max-w-3xl mx-auto px-4 sm:px-6 pt-8 pb-10">
+        <h1 class="font-display font-bold text-2xl text-ink mb-5">Troli Pembelian</h1>
+        <div id="cart-list" class="space-y-3 mb-6"></div>
+        <div id="cart-empty" class="hidden text-center py-16">
+          <i data-lucide="shopping-bag" class="w-10 h-10 text-inksoft mx-auto mb-2"></i>
+          <p class="text-inksoft text-sm font-semibold mb-4">Troli anda kosong.</p>
+          <button onclick="window.showView('catalog')" class="bg-forest text-white font-bold px-6 py-3 rounded-2xl">Mula Beli-Belah</button>
+        </div>
+        <div id="cart-summary-wrap" class="hidden bg-white border border-sand rounded-3xl p-5 shadow-sm">
+          <div class="flex justify-between text-sm mb-2"><span class="text-inksoft">Subtotal</span><span id="cart-subtotal" class="font-bold text-ink">RM 0.00</span></div>
+          <div class="flex justify-between text-sm mb-2"><span class="text-inksoft">Anggaran Penghantaran</span><span class="font-bold text-ink text-xs">Dikira semasa checkout</span></div>
+          <div class="border-t border-sand my-3"></div>
+          <div class="flex justify-between text-base mb-4"><span class="font-bold text-ink">Jumlah Sementara</span><span id="cart-total" class="font-display font-extrabold text-forest text-xl">RM 0.00</span></div>
+          <button onclick="window.goToCheckout()" class="w-full bg-honey hover:bg-honeydeep text-ink font-bold py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-colors"><i data-lucide="arrow-right" class="w-4 h-4"></i> Teruskan ke Checkout</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== VIEW: CHECKOUT ==================== -->
+    <section id="view-checkout" class="hidden">
+      <div class="max-w-5xl mx-auto px-4 sm:px-6 pt-8 pb-16">
+
+        <div id="checkout-form-wrap">
+          <h1 class="font-display font-bold text-2xl text-ink mb-5">Checkout</h1>
+          <div class="grid lg:grid-cols-5 gap-6">
+            <div class="lg:col-span-3 space-y-5">
+              <div class="bg-white border border-sand rounded-3xl p-5 shadow-sm">
+                <h3 class="font-display font-bold text-ink mb-4 flex items-center gap-2"><i data-lucide="user" class="w-4 h-4 text-forest"></i> Maklumat Pelanggan</h3>
+                <div class="grid sm:grid-cols-2 gap-3">
+                  <input id="co-nama" type="text" placeholder="Nama Penuh *" class="sm:col-span-2 bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                  <input id="co-phone" type="tel" placeholder="No. Telefon *" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                  <input id="co-email" type="email" placeholder="Emel" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                  <textarea id="co-alamat" placeholder="Alamat Penuh *" rows="2" class="sm:col-span-2 bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium"></textarea>
+                  <input id="co-poskod" type="text" placeholder="Poskod *" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                  <input id="co-bandar" type="text" placeholder="Bandar *" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                  <select id="co-negeri" class="sm:col-span-2 bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                    <option value="">-- Pilih Negeri * --</option>
+                  </select>
+                  <div class="sm:col-span-2 relative">
+                    <input id="co-agentcode" type="text" placeholder="Kod Ejen (Pilihan)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium uppercase">
+                    <i data-lucide="tag" class="w-4 h-4 text-inksoft absolute right-4 top-3.5"></i>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bg-white border border-sand rounded-3xl p-5 shadow-sm">
+                <h3 class="font-display font-bold text-ink mb-4 flex items-center gap-2"><i data-lucide="truck" class="w-4 h-4 text-forest"></i> Penghantaran</h3>
+                <button onclick="window.calculateShipping()" class="w-full bg-leaflight hover:bg-forest hover:text-white text-forest font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors mb-3">
+                  <i data-lucide="calculator" class="w-4 h-4"></i> Kira Kos Penghantaran
+                </button>
+                <div id="shipping-options" class="space-y-2"></div>
+                <p class="text-[10px] text-inksoft italic mt-3 leading-relaxed">* Kadar dianggarkan berdasarkan berat troli &amp; zon penghantaran, menggunakan <code class="bg-cream px-1 rounded">easyparcel-rate.js</code> untuk kadar EasyParcel masa nyata.</p>
+              </div>
+            </div>
+
+            <div class="lg:col-span-2">
+              <div class="bg-white border border-sand rounded-3xl p-5 shadow-sm lg:sticky lg:top-20">
+                <h3 class="font-display font-bold text-ink mb-4">Ringkasan Pesanan</h3>
+                <div id="checkout-items" class="space-y-2 mb-4 max-h-64 overflow-y-auto no-scrollbar"></div>
+                <div class="border-t border-sand pt-3 space-y-2 text-sm">
+                  <div class="flex justify-between"><span class="text-inksoft">Subtotal</span><span id="co-subtotal" class="font-bold">RM 0.00</span></div>
+                  <div class="flex justify-between"><span class="text-inksoft">Penghantaran</span><span id="co-shipfee" class="font-bold">Belum dikira</span></div>
+                  <div class="flex justify-between text-base pt-2 border-t border-sand"><span class="font-bold">Jumlah</span><span id="co-total" class="font-display font-extrabold text-forest text-xl">RM 0.00</span></div>
+                </div>
+                <button onclick="window.submitOrder()" class="w-full mt-4 bg-forest hover:bg-forestdark text-white font-bold py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-colors">
+                  <i data-lucide="send" class="w-4 h-4"></i> Hantar Tempahan
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="checkout-success" class="hidden max-w-lg mx-auto text-center py-10">
+          <div class="w-20 h-20 bg-leaflight rounded-full flex items-center justify-center mx-auto mb-4">
+            <i data-lucide="check-circle-2" class="w-10 h-10 text-forest"></i>
+          </div>
+          <h2 class="font-display font-bold text-2xl text-ink mb-2">Tempahan Berjaya!</h2>
+          <p class="text-inksoft text-sm mb-5">Nombor pesanan anda:</p>
+          <p id="success-orderid" class="font-display font-extrabold text-2xl text-forest mb-6">ORD-000000</p>
+          <div class="bg-white border border-sand rounded-3xl p-5 text-left space-y-2 text-sm mb-6">
+            <div class="flex justify-between"><span class="text-inksoft">Jumlah Bayaran</span><span id="success-total" class="font-bold">RM 0.00</span></div>
+            <div class="flex justify-between"><span class="text-inksoft">Kurier</span><span id="success-courier" class="font-bold">-</span></div>
+          </div>
+          <div class="flex flex-col gap-3">
+            <a id="success-whatsapp" href="#" target="_blank" class="bg-[#25D366] hover:bg-[#1DA851] text-white font-bold py-3 rounded-2xl flex items-center justify-center gap-2"><i data-lucide="message-circle" class="w-4 h-4"></i> Sahkan via WhatsApp</a>
+            <button onclick="window.showView('catalog')" class="bg-cream text-ink font-bold py-3 rounded-2xl">Teruskan Membeli-Belah</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== VIEW: AGENT ==================== -->
+    <section id="view-agent" class="hidden">
+      <div class="max-w-4xl mx-auto px-4 sm:px-6 pt-8 pb-16">
+
+        <div id="agent-login-wrap">
+          <div class="max-w-sm mx-auto">
+            <div class="text-center mb-6">
+              <div class="w-14 h-14 bg-leaflight rounded-2xl flex items-center justify-center mx-auto mb-3"><i data-lucide="user-round" class="w-7 h-7 text-forest"></i></div>
+              <h1 class="font-display font-bold text-xl text-ink">Portal Ejen</h1>
+              <p class="text-inksoft text-sm mt-1">Log masuk untuk lihat jualan &amp; komisen anda</p>
+            </div>
+            <div class="bg-white border border-sand rounded-3xl p-6 shadow-sm space-y-3">
+              <input id="agent-login-code" type="text" placeholder="Kod Ejen (Cth: AG001)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-bold uppercase">
+              <input id="agent-login-pass" type="password" placeholder="Kata Laluan" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              <button onclick="window.loginAgent()" class="w-full bg-forest hover:bg-forestdark text-white font-bold py-3 rounded-xl transition-colors">Log Masuk</button>
+            </div>
+            <p class="text-center text-xs text-inksoft mt-4">Belum jadi ejen? <a href="https://wa.me/60123456789?text=Saya%20berminat%20menjadi%20ejen%20Kedai%20PASTI%20Sarawak%20Official" target="_blank" class="text-forest font-bold hover:underline">Hubungi kami via WhatsApp</a></p>
+          </div>
+        </div>
+
+        <div id="agent-dashboard-wrap" class="hidden">
+          <div class="flex items-center justify-between mb-6 gap-3">
+            <div>
+              <p class="text-inksoft text-xs font-bold uppercase tracking-widest">Selamat Datang,</p>
+              <h1 id="agent-dash-name" class="font-display font-bold text-xl sm:text-2xl text-ink">-</h1>
+              <p id="agent-dash-area" class="text-forest text-sm font-bold flex items-center gap-1 mt-0.5"></p>
+            </div>
+            <button onclick="window.logoutAgent()" class="shrink-0 bg-cream hover:bg-sand text-ink text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2"><i data-lucide="log-out" class="w-3.5 h-3.5"></i> Log Keluar</button>
+          </div>
+
+          <div class="grid sm:grid-cols-3 gap-4 mb-6">
+            <div class="bg-gradient-to-br from-forest to-leaf rounded-2xl p-5 text-white shadow-md">
+              <p class="text-[10px] uppercase tracking-widest font-bold text-white/70 mb-1">Jumlah Jualan</p>
+              <p id="agent-stat-sales" class="font-display font-extrabold text-2xl">RM 0.00</p>
+            </div>
+            <div class="bg-white border border-sand rounded-2xl p-5">
+              <p class="text-[10px] uppercase tracking-widest font-bold text-inksoft mb-1">Jumlah Komisen</p>
+              <p id="agent-stat-comm" class="font-display font-extrabold text-2xl text-honeydeep">RM 0.00</p>
+            </div>
+            <div class="bg-white border border-sand rounded-2xl p-5">
+              <p class="text-[10px] uppercase tracking-widest font-bold text-inksoft mb-1">Bilangan Tempahan</p>
+              <p id="agent-stat-orders" class="font-display font-extrabold text-2xl text-ink">0</p>
+            </div>
+          </div>
+
+          <div class="bg-blue-50 border border-blue-100 rounded-2xl p-4 mb-6">
+            <p class="text-[10px] font-bold text-blue-600 uppercase mb-1">Link Rujukan Anda</p>
+            <div class="flex gap-2">
+              <input id="agent-ref-link" readonly class="flex-1 min-w-0 bg-white border border-blue-200 text-xs font-mono text-slate-600 px-3 py-2 rounded-lg">
+              <button onclick="window.copyRefLink()" class="shrink-0 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 rounded-lg">Salin</button>
+            </div>
+            <p class="text-[10px] text-inksoft mt-1.5">Kongsikan link ini — kod ejen anda automatik terisi semasa pelanggan checkout.</p>
+          </div>
+
+          <h3 class="font-display font-bold text-ink mb-3">Sejarah Tempahan Saya</h3>
+          <div class="overflow-x-auto bg-white border border-sand rounded-2xl">
+            <table class="w-full text-left text-xs whitespace-nowrap">
+              <thead><tr class="bg-cream text-inksoft uppercase text-[10px]"><th class="p-3">ID</th><th class="p-3">Tarikh</th><th class="p-3">Pelanggan</th><th class="p-3">Jumlah</th><th class="p-3">Komisen</th><th class="p-3">Status</th></tr></thead>
+              <tbody id="agent-orders-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== VIEW: ADMIN ==================== -->
+    <section id="view-admin" class="hidden">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-16">
+
+        <div id="admin-login-wrap">
+          <div class="max-w-sm mx-auto">
+            <div class="text-center mb-6">
+              <div class="w-14 h-14 bg-ink rounded-2xl flex items-center justify-center mx-auto mb-3"><i data-lucide="shield" class="w-7 h-7 text-honey"></i></div>
+              <h1 class="font-display font-bold text-xl text-ink">Dashboard Admin</h1>
+              <p class="text-inksoft text-sm mt-1">Log masuk untuk urus kedai</p>
+            </div>
+            <div class="bg-white border border-sand rounded-3xl p-6 shadow-sm space-y-3">
+              <input id="admin-login-email" type="email" placeholder="Emel Admin" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              <input id="admin-login-pass" type="password" placeholder="Kata Laluan" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              <button onclick="window.loginAdmin()" class="w-full bg-ink hover:bg-black text-white font-bold py-3 rounded-xl transition-colors">Log Masuk</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="admin-dashboard-wrap" class="hidden">
+          <div class="flex items-center justify-between mb-6">
+            <h1 class="font-display font-bold text-2xl text-ink">Dashboard Admin</h1>
+            <button onclick="window.logoutAdmin()" class="bg-cream hover:bg-sand text-ink text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2"><i data-lucide="log-out" class="w-3.5 h-3.5"></i> Log Keluar</button>
+          </div>
+
+          <div class="flex gap-2 overflow-x-auto no-scrollbar mb-6 border-b border-sand pb-px">
+            <button data-tab="produk" onclick="window.setAdminTab('produk')" class="admin-tab-btn px-4 py-2.5 rounded-t-xl text-sm font-bold shrink-0 bg-forest text-white">Produk</button>
+            <button data-tab="tempahan" onclick="window.setAdminTab('tempahan')" class="admin-tab-btn px-4 py-2.5 rounded-t-xl text-sm font-bold shrink-0 bg-cream text-inksoft">Tempahan</button>
+            <button data-tab="ejen" onclick="window.setAdminTab('ejen')" class="admin-tab-btn px-4 py-2.5 rounded-t-xl text-sm font-bold shrink-0 bg-cream text-inksoft">Ejen</button>
+            <button data-tab="laporan" onclick="window.setAdminTab('laporan')" class="admin-tab-btn px-4 py-2.5 rounded-t-xl text-sm font-bold shrink-0 bg-cream text-inksoft">Laporan</button>
+          </div>
+
+          <!-- TAB PRODUK -->
+          <div id="admin-tab-produk" class="admin-tab-panel">
+            <div class="flex justify-between items-center mb-4">
+              <p class="text-xs font-bold text-inksoft" id="admin-produk-count">0 produk</p>
+              <button onclick="window.openProductModal()" class="bg-forest hover:bg-forestdark text-white text-sm font-bold px-4 py-2.5 rounded-xl flex items-center gap-2"><i data-lucide="plus-circle" class="w-4 h-4"></i> Tambah Produk</button>
+            </div>
+            <div class="overflow-x-auto bg-white border border-sand rounded-2xl">
+              <table class="w-full text-left text-xs whitespace-nowrap">
+                <thead><tr class="bg-cream text-inksoft uppercase text-[10px]"><th class="p-3">Produk</th><th class="p-3">Kategori</th><th class="p-3">Harga/Berat</th><th class="p-3">Komisen</th><th class="p-3">Stok</th><th class="p-3">Tindakan</th></tr></thead>
+                <tbody id="admin-product-body"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- TAB TEMPAHAN -->
+          <div id="admin-tab-tempahan" class="admin-tab-panel hidden">
+            <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+              <p class="text-xs font-bold text-inksoft" id="admin-order-count">0 tempahan</p>
+              <select id="admin-order-filter" onchange="window.renderAdminOrders()" class="bg-white border border-sand rounded-xl px-3 py-2 text-xs font-bold">
+                <option value="all">Semua Status</option>
+                <option value="Baru">Baru</option>
+                <option value="Diproses">Diproses</option>
+                <option value="Dihantar">Dihantar</option>
+                <option value="Selesai">Selesai</option>
+                <option value="Dibatalkan">Dibatalkan</option>
+              </select>
+            </div>
+            <div class="overflow-x-auto bg-white border border-sand rounded-2xl">
+              <table class="w-full text-left text-xs whitespace-nowrap">
+                <thead><tr class="bg-cream text-inksoft uppercase text-[10px]"><th class="p-3">ID / Tarikh</th><th class="p-3">Pelanggan</th><th class="p-3">Ejen</th><th class="p-3">Jumlah</th><th class="p-3">Status</th><th class="p-3">Tindakan</th></tr></thead>
+                <tbody id="admin-order-body"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- TAB EJEN -->
+          <div id="admin-tab-ejen" class="admin-tab-panel hidden">
+            <div class="flex justify-between items-center mb-4">
+              <p class="text-xs font-bold text-inksoft" id="admin-agent-count">0 ejen</p>
+              <button onclick="window.openAgentModal()" class="bg-forest hover:bg-forestdark text-white text-sm font-bold px-4 py-2.5 rounded-xl flex items-center gap-2"><i data-lucide="user-plus" class="w-4 h-4"></i> Tambah Ejen</button>
+            </div>
+            <div class="overflow-x-auto bg-white border border-sand rounded-2xl">
+              <table class="w-full text-left text-xs whitespace-nowrap">
+                <thead><tr class="bg-cream text-inksoft uppercase text-[10px]"><th class="p-3">Kod</th><th class="p-3">Nama</th><th class="p-3">Kawasan</th><th class="p-3">Jualan</th><th class="p-3">Komisen</th><th class="p-3">Tempahan</th><th class="p-3">Tindakan</th></tr></thead>
+                <tbody id="admin-agent-body"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- TAB LAPORAN -->
+          <div id="admin-tab-laporan" class="admin-tab-panel hidden">
+            <div class="grid sm:grid-cols-4 gap-4 mb-6">
+              <div class="bg-white border border-sand rounded-2xl p-4">
+                <p class="text-[10px] font-bold text-inksoft uppercase mb-1">Jumlah Jualan</p>
+                <p id="rep-total-sales" class="font-display font-extrabold text-lg text-forest">RM 0.00</p>
+              </div>
+              <div class="bg-white border border-sand rounded-2xl p-4">
+                <p class="text-[10px] font-bold text-inksoft uppercase mb-1">Jumlah Tempahan</p>
+                <p id="rep-total-orders" class="font-display font-extrabold text-lg text-ink">0</p>
+              </div>
+              <div class="bg-white border border-sand rounded-2xl p-4">
+                <p class="text-[10px] font-bold text-inksoft uppercase mb-1">Purata / Tempahan</p>
+                <p id="rep-avg-order" class="font-display font-extrabold text-lg text-ink">RM 0.00</p>
+              </div>
+              <div class="bg-white border border-sand rounded-2xl p-4">
+                <p class="text-[10px] font-bold text-inksoft uppercase mb-1">Komisen Ejen</p>
+                <p id="rep-total-comm" class="font-display font-extrabold text-lg text-honeydeep">RM 0.00</p>
+              </div>
+            </div>
+
+            <div class="bg-white border border-sand rounded-3xl p-5 mb-6">
+              <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+                <h3 class="font-display font-bold text-ink">Trend Jualan</h3>
+                <div class="flex gap-1 bg-cream rounded-xl p-1">
+                  <button data-period="harian" onclick="window.setReportPeriod('harian')" class="rep-period-btn text-[11px] font-bold px-3 py-1.5 rounded-lg bg-forest text-white">Harian</button>
+                  <button data-period="mingguan" onclick="window.setReportPeriod('mingguan')" class="rep-period-btn text-[11px] font-bold px-3 py-1.5 rounded-lg text-inksoft">Mingguan</button>
+                  <button data-period="bulanan" onclick="window.setReportPeriod('bulanan')" class="rep-period-btn text-[11px] font-bold px-3 py-1.5 rounded-lg text-inksoft">Bulanan</button>
+                </div>
+              </div>
+              <div class="h-56 sm:h-64"><canvas id="sales-chart"></canvas></div>
+            </div>
+
+            <div class="grid lg:grid-cols-2 gap-6">
+              <div class="bg-white border border-sand rounded-3xl p-5">
+                <h3 class="font-display font-bold text-ink mb-4 flex items-center gap-2"><i data-lucide="trophy" class="w-4 h-4 text-honey"></i> Top 10 Produk Terlaris</h3>
+                <div id="rep-top-products" class="space-y-3"></div>
+              </div>
+              <div class="bg-white border border-sand rounded-3xl p-5">
+                <h3 class="font-display font-bold text-ink mb-4 flex items-center gap-2"><i data-lucide="medal" class="w-4 h-4 text-honey"></i> Prestasi Ejen</h3>
+                <div id="rep-agent-rank" class="space-y-3"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- BOTTOM NAV (mobile) -->
+  <nav class="fixed bottom-0 inset-x-0 z-40 bg-white border-t border-sand md:hidden">
+    <div class="grid grid-cols-4">
+      <button data-nav="home" onclick="window.showView('home')" class="flex flex-col items-center gap-1 py-2.5 text-inksoft text-[10px] font-bold">
+        <span class="nav-ic w-9 h-9 rounded-full flex items-center justify-center"><i data-lucide="home" class="w-5 h-5"></i></span>Utama
+      </button>
+      <button data-nav="catalog" onclick="window.showView('catalog')" class="flex flex-col items-center gap-1 py-2.5 text-inksoft text-[10px] font-bold">
+        <span class="nav-ic w-9 h-9 rounded-full flex items-center justify-center"><i data-lucide="layout-grid" class="w-5 h-5"></i></span>Produk
+      </button>
+      <button data-nav="cart" onclick="window.showView('cart')" class="relative flex flex-col items-center gap-1 py-2.5 text-inksoft text-[10px] font-bold">
+        <span class="nav-ic w-9 h-9 rounded-full flex items-center justify-center relative">
+          <i data-lucide="shopping-bag" class="w-5 h-5"></i>
+          <span id="cart-badge-bottom" class="hidden absolute -top-0.5 right-0.5 bg-honey text-ink text-[9px] font-black w-4 h-4 rounded-full items-center justify-center border-2 border-white">0</span>
+        </span>Troli
+      </button>
+      <button data-nav="agent" onclick="window.showView('agent')" class="flex flex-col items-center gap-1 py-2.5 text-inksoft text-[10px] font-bold">
+        <span class="nav-ic w-9 h-9 rounded-full flex items-center justify-center"><i data-lucide="user-round" class="w-5 h-5"></i></span>Ejen
+      </button>
+    </div>
+  </nav>
+
+  <!-- WHATSAPP FAB -->
+  <a href="https://wa.me/60123456789?text=Hai%2C%20saya%20berminat%20dengan%20produk%20Kedai%20PASTI%20Sarawak%20Official" target="_blank" class="fixed right-4 bottom-20 md:bottom-6 z-40 w-14 h-14 bg-[#25D366] hover:bg-[#1DA851] text-white rounded-full shadow-xl flex items-center justify-center transition-colors">
+    <i data-lucide="message-circle" class="w-7 h-7"></i>
+  </a>
+
+  <!-- TOAST -->
+  <div id="toast" class="hidden fixed bottom-24 md:bottom-8 left-1/2 z-[100] bg-ink text-white text-sm font-semibold px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-2"></div>
+
+  <!-- MODAL: QUICK VIEW PRODUK -->
+  <div id="modal-quickview" class="hidden fixed inset-0 z-[90] flex items-end sm:items-center justify-center p-0 sm:p-4 modal-mask">
+    <div class="bg-white rounded-t-[2rem] sm:rounded-[2rem] w-full sm:max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+      <div id="qv-content"></div>
+    </div>
+  </div>
+
+  <!-- MODAL: TAMBAH/EDIT PRODUK (Admin) -->
+  <div id="modal-admin-product" class="hidden fixed inset-0 z-[95] flex items-end sm:items-center justify-center p-0 sm:p-4 modal-mask">
+    <div class="bg-white rounded-t-[2rem] sm:rounded-[2rem] w-full sm:max-w-lg max-h-[92vh] overflow-y-auto shadow-2xl">
+      <div class="p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h3 id="pm-title" class="font-display font-bold text-lg text-ink">Tambah Produk</h3>
+          <button onclick="window.closeProductModal()" class="w-8 h-8 rounded-full bg-cream flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        <div class="space-y-3">
+          <input type="hidden" id="pm-id">
+          <input id="pm-name" type="text" placeholder="Nama Produk" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          <select id="pm-category" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium"></select>
+          <div class="grid grid-cols-2 gap-3">
+            <input id="pm-price" type="number" step="0.01" placeholder="Harga (RM)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+            <input id="pm-weight" type="number" step="0.01" placeholder="Berat (kg)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+            <input id="pm-stock" type="number" placeholder="Stok" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+            <input id="pm-comm" type="number" step="0.1" placeholder="Komisen (%)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          </div>
+          <textarea id="pm-desc" rows="3" placeholder="Deskripsi produk" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium"></textarea>
+          <input id="pm-seller" type="text" placeholder="Nama Penjual" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          <label class="flex items-center gap-2 text-xs font-bold text-inksoft px-1"><input id="pm-popular" type="checkbox" class="w-4 h-4 accent-[#0B5D3B]"> Tandakan sebagai Produk Popular</label>
+        </div>
+        <div class="flex gap-3 mt-5">
+          <button onclick="window.closeProductModal()" class="flex-1 bg-cream text-ink font-bold py-3 rounded-xl">Batal</button>
+          <button onclick="window.saveProduct()" class="flex-1 bg-forest hover:bg-forestdark text-white font-bold py-3 rounded-xl">Simpan</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: TAMBAH/EDIT EJEN (Admin) -->
+  <div id="modal-admin-agent" class="hidden fixed inset-0 z-[95] flex items-end sm:items-center justify-center p-0 sm:p-4 modal-mask">
+    <div class="bg-white rounded-t-[2rem] sm:rounded-[2rem] w-full sm:max-w-md max-h-[92vh] overflow-y-auto shadow-2xl">
+      <div class="p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h3 id="am-title" class="font-display font-bold text-lg text-ink">Tambah Ejen</h3>
+          <button onclick="window.closeAgentModal()" class="w-8 h-8 rounded-full bg-cream flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        <div class="space-y-3">
+          <input type="hidden" id="am-code-orig">
+          <input id="am-code" type="text" placeholder="Kod Ejen (Cth: AG006)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-bold uppercase">
+          <input id="am-name" type="text" placeholder="Nama Penuh" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          <div class="grid grid-cols-2 gap-3">
+            <input id="am-phone" type="text" placeholder="No. Telefon" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+            <input id="am-area" type="text" placeholder="Kawasan" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          </div>
+          <input id="am-email" type="email" placeholder="Emel" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          <input id="am-pass" type="text" placeholder="Kata Laluan" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+        </div>
+        <div class="flex gap-3 mt-5">
+          <button onclick="window.closeAgentModal()" class="flex-1 bg-cream text-ink font-bold py-3 rounded-xl">Batal</button>
+          <button onclick="window.saveAgent()" class="flex-1 bg-forest hover:bg-forestdark text-white font-bold py-3 rounded-xl">Simpan</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ================= DATA ================= */
+const D = (n)=> new Date(Date.now() - n*86400000).toISOString();
+
+const CATEGORIES = {
+  kurma:     { name:'Kurma & Tamar',      icon:'wheat',      grad:['#B3810A','#D4A017'] },
+  minuman:   { name:'Minuman & Serbuk',   icon:'coffee',     grad:['#0B5D3B','#3F9D64'] },
+  kesihatan: { name:'Madu & Kesihatan',   icon:'leaf',       grad:['#3F9D64','#8BC79E'] },
+  kudapan:   { name:'Kudapan & Snek',     icon:'cookie',     grad:['#8A5A2B','#C08A4E'] },
+  ibadah:    { name:'Solat & Ibadah',     icon:'moon-star',  grad:['#1C2B24','#3F9D64'] },
+};
+
+const STATES = ["Perlis","Kedah","Pulau Pinang","Perak","Selangor","Kuala Lumpur","Putrajaya","Negeri Sembilan","Melaka","Johor","Pahang","Terengganu","Kelantan","Sarawak","Sabah","Labuan"];
+const EAST_MY = ["Sarawak","Sabah","Labuan"];
+
+const defaultProducts = [
+  { id:'P01', name:'Tamar Cocoa 450g', category:'minuman', price:29.90, weight:0.45, stock:80, commissionPct:10, popular:true,  sellerName:'Kedai PASTI Sarawak Official', desc:'Serbuk koko premium bercampur perisa tamar pilihan, sedia dinikmati panas atau sejuk. Sumber tenaga semula jadi yang lazat untuk seisi keluarga.', createdAt:D(2) },
+  { id:'P02', name:'Tamar Cocoa 900g', category:'minuman', price:49.90, weight:0.90, stock:60, commissionPct:10, popular:false, sellerName:'Kedai PASTI Sarawak Official', desc:'Saiz jimat untuk keluarga — serbuk koko tamar yang sama kualiti premium dalam bekas 900g.', createdAt:D(2) },
+  { id:'P03', name:'Madu Asli Kelulut 500ml', category:'kesihatan', price:65.00, weight:1.20, stock:40, commissionPct:12, popular:true, sellerName:'Kedai PASTI Sarawak Official', desc:'Madu kelulut tulen tanpa campuran, dituai terus daripada penternak tempatan Sarawak. Kaya khasiat semula jadi.', createdAt:D(5) },
+  { id:'P04', name:'Kurma Ajwa Madinah 500g', category:'kurma', price:38.00, weight:0.55, stock:100, commissionPct:8, popular:true, sellerName:'Kedai PASTI Sarawak Official', desc:'Kurma Ajwa gred premium terus dari Madinah, lembut dan manis semula jadi. Pilihan popular musim perayaan.', createdAt:D(1) },
+  { id:'P05', name:'Kurma Mariami 1kg', category:'kurma', price:25.00, weight:1.05, stock:120, commissionPct:8, popular:false, sellerName:'Kedai PASTI Sarawak Official', desc:'Kurma Mariami saiz besar & berdaging, sesuai untuk juadah harian dan hidangan tetamu.', createdAt:D(8) },
+  { id:'P06', name:'Habbatus Sauda Kapsul 100s', category:'kesihatan', price:45.00, weight:0.30, stock:70, commissionPct:15, popular:true, sellerName:'Kedai PASTI Sarawak Official', desc:'Kapsul habbatus sauda tulen, diproses sejuk untuk kekalkan khasiat. 100 kapsul sebotol.', createdAt:D(3) },
+  { id:'P07', name:'Minyak Zaitun Extra Virgin 250ml', category:'kesihatan', price:32.00, weight:0.40, stock:55, commissionPct:10, popular:false, sellerName:'Kedai PASTI Sarawak Official', desc:'Minyak zaitun gred extra virgin, sesuai untuk masakan dan penjagaan kulit harian.', createdAt:D(10) },
+  { id:'P08', name:'Kopi O PASTI Sarawak 200g', category:'minuman', price:18.90, weight:0.25, stock:90, commissionPct:10, popular:false, sellerName:'Kedai PASTI Sarawak Official', desc:'Kopi O tradisional panggangan kayu, digiling segar khas untuk pencinta kopi kampung.', createdAt:D(1) },
+  { id:'P09', name:'Bertih & Kacang Tradisional 300g', category:'kudapan', price:15.00, weight:0.35, stock:65, commissionPct:12, popular:false, sellerName:'Kedai PASTI Sarawak Official', desc:'Campuran bertih dan kacang rangup, snek ringan yang sesuai untuk majlis dan hantaran.', createdAt:D(6) },
+  { id:'P10', name:'Sejadah & Set Solat Mini', category:'ibadah', price:55.00, weight:0.60, stock:30, commissionPct:10, popular:false, sellerName:'Kedai PASTI Sarawak Official', desc:'Set sejadah mudah alih dengan beg simpanan, ringan dan sesuai dibawa ke mana-mana.', createdAt:D(4) },
+];
+
+const defaultAgents = [
+  { code:'AG001', name:'Siti Fatimah',    phone:'0139876543', email:'siti.fatimah@example.com', area:'Kuching', password:'demo123', joinedAt:D(60) },
+  { code:'AG002', name:'Ahmad Zulkifli',  phone:'0123456789', email:'ahmad.z@example.com',       area:'Miri',    password:'demo123', joinedAt:D(50) },
+  { code:'AG003', name:'Nurul Ain',       phone:'0198765432', email:'nurul.ain@example.com',     area:'Sibu',    password:'demo123', joinedAt:D(40) },
+  { code:'AG004', name:'Hafiz Al-Haddad', phone:'0134567890', email:'hafiz@pastisarawak.my',    area:'Kuching', password:'demo123', joinedAt:D(90) },
+  { code:'AG005', name:'Dayang Suraya',   phone:'0167891234', email:'dayang.s@example.com',      area:'Bintulu', password:'demo123', joinedAt:D(30) },
+];
+
+const seedSpecs = [
+  {d:1,  agent:'AG001', items:[['P01',2],['P04',1]], status:'Baru',      state:'Sarawak',      name:'Nur Aisyah',        phone:'0111234567'},
+  {d:1,  agent:null,    items:[['P03',1]],           status:'Baru',      state:'Selangor',     name:'Farah Aina',        phone:'0122345678'},
+  {d:2,  agent:'AG004', items:[['P02',1],['P06',2]], status:'Diproses',  state:'Sarawak',      name:'Rosli Hamid',       phone:'0133456789'},
+  {d:3,  agent:'AG002', items:[['P08',3]],           status:'Diproses',  state:'Sarawak',      name:'Chong Wei Ling',    phone:'0144567890'},
+  {d:4,  agent:'AG001', items:[['P04',2],['P05',1]], status:'Dihantar',  state:'Johor',        name:'Amirul Hakim',      phone:'0155678901'},
+  {d:5,  agent:null,    items:[['P10',1]],           status:'Dihantar',  state:'Sarawak',      name:'Wan Zulaikha',      phone:'0166789012'},
+  {d:6,  agent:'AG003', items:[['P03',1],['P07',1]], status:'Selesai',   state:'Sarawak',      name:'Hafizah Yusof',     phone:'0177890123'},
+  {d:8,  agent:'AG004', items:[['P01',3]],           status:'Selesai',   state:'Sabah',        name:'Kelvin Anak Jimbai',phone:'0188901234'},
+  {d:9,  agent:'AG002', items:[['P09',2],['P08',1]], status:'Selesai',   state:'Sarawak',      name:'Ain Batrisyia',     phone:'0191012345'},
+  {d:11, agent:'AG005', items:[['P04',1],['P06',1]], status:'Selesai',   state:'Sarawak',      name:'Mohd Nizam',        phone:'0102123456'},
+  {d:13, agent:'AG001', items:[['P02',2]],           status:'Selesai',   state:'Pulau Pinang', name:'Tan Mei Ling',      phone:'0113234567'},
+  {d:16, agent:null,    items:[['P03',1],['P10',1]], status:'Selesai',   state:'Sarawak',      name:'Suhaila Rahman',    phone:'0124345678'},
+  {d:19, agent:'AG004', items:[['P05',3]],           status:'Selesai',   state:'Sarawak',      name:'Jong Ah Fatt',      phone:'0135456789'},
+  {d:22, agent:'AG003', items:[['P01',1],['P08',2]], status:'Selesai',   state:'Sarawak',      name:'Nurhaliza Basir',   phone:'0146567890'},
+];
+
+/* ================= STATE ================= */
+let appProducts = [];
+let appAgents = [];
+let appOrders = [];
+let cart = [];
+let currentAgent = null;
+let isAdminIn = false;
+let catalogState = { search:'', cat:'all', sort:'default' };
+let qvProduct = null, qvQty = 1;
+
+/* ================= UTIL ================= */
+function formatRM(n){ return 'RM ' + (Number(n)||0).toFixed(2); }
+function formatDate(iso){ try{ return new Date(iso).toLocaleDateString('ms-MY',{day:'2-digit',month:'short',year:'numeric'}); }catch(e){ return '-'; } }
+function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function genId(prefix){ return prefix + '-' + Date.now().toString().slice(-6) + Math.floor(Math.random()*90+10); }
+function icons(){ if(window.lucide) lucide.createIcons(); }
+
+function showToast(msg, icon){
+  const t = document.getElementById('toast');
+  t.innerHTML = `<i data-lucide="${icon||'check-circle'}" class="w-4 h-4 text-honey shrink-0"></i><span>${escapeHtml(msg)}</span>`;
+  t.classList.remove('hidden'); t.classList.add('toast-show'); icons();
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(()=>{ t.classList.add('hidden'); t.classList.remove('toast-show'); }, 2600);
+}
+
+function calcCommission(item){ return item.price * item.qty * ((item.commissionPct||0)/100); }
+
+function calculateShippingOptions(state, weightKg){
+  const sameZone = EAST_MY.includes(state);
+  const w = Math.max(weightKg, 0.1);
+  const extraKg = Math.ceil(Math.max(0, w - 1));
+  const table = sameZone
+    ? [ {courier:'Poslaju', eta:'2-3 hari bekerja', b:7.00, k:3.00},
+        {courier:'J&T Express', eta:'2-4 hari bekerja', b:6.50, k:2.80},
+        {courier:'City-Link Express', eta:'1-3 hari bekerja', b:8.00, k:3.20} ]
+    : [ {courier:'Poslaju', eta:'3-5 hari bekerja', b:11.00, k:4.50},
+        {courier:'J&T Express', eta:'3-6 hari bekerja', b:9.90, k:4.00},
+        {courier:'City-Link Express', eta:'2-4 hari bekerja', b:12.50, k:4.80} ];
+  return table.map(c=>({ courier:c.courier, eta:c.eta, price:+(c.b + extraKg*c.k).toFixed(2) }));
+}
+
+function statsForAgent(code){
+  const rel = appOrders.filter(o=>o.agentCode===code && o.status!=='Dibatalkan');
+  const sales = rel.reduce((s,o)=>s+o.total,0);
+  const commission = rel.reduce((s,o)=>s+(o.agentCommission||0),0);
+  return { sales:+sales.toFixed(2), commission:+commission.toFixed(2), orderCount:rel.length };
+}
+
+function generateSeedOrders(){
+  return seedSpecs.map((s,idx)=>{
+    const items = s.items.map(([pid,qty])=>{
+      const p = defaultProducts.find(x=>x.id===pid);
+      return { productId:pid, name:p.name, qty, price:p.price, weight:p.weight, commissionPct:p.commissionPct };
+    });
+    const subtotal = items.reduce((sum,it)=>sum+it.price*it.qty,0);
+    const weight = items.reduce((sum,it)=>sum+it.weight*it.qty,0);
+    const opts = calculateShippingOptions(s.state, weight);
+    const shippingFee = opts[0].price;
+    const total = +(subtotal+shippingFee).toFixed(2);
+    const commission = s.agent ? items.reduce((sum,it)=>sum+it.price*it.qty*(it.commissionPct/100),0) : 0;
+    return {
+      orderId:'ORD-'+(100000+idx), createdAt:D(s.d),
+      customerName:s.name, phone:s.phone, email:'', address:'Alamat tidak dinyatakan', postcode:'93000', city:'-', state:s.state,
+      items, subtotal:+subtotal.toFixed(2), shippingFee, courier:{name:opts[0].courier,eta:opts[0].eta}, total,
+      agentCode:s.agent, agentCommission:+commission.toFixed(2), status:s.status
+    };
+  });
+}
+
+/* ================= STORAGE ================= */
+async function loadAllData(){
+  try{
+    const p = await window.storage.get('alhaddad:products', true);
+    appProducts = p ? JSON.parse(p.value) : defaultProducts.slice();
+    if(!p) await window.storage.set('alhaddad:products', JSON.stringify(appProducts), true);
+  }catch(e){ appProducts = defaultProducts.slice(); }
+
+  try{
+    const a = await window.storage.get('alhaddad:agents', true);
+    appAgents = a ? JSON.parse(a.value) : defaultAgents.slice();
+    if(!a) await window.storage.set('alhaddad:agents', JSON.stringify(appAgents), true);
+  }catch(e){ appAgents = defaultAgents.slice(); }
+
+  try{
+    const o = await window.storage.get('alhaddad:orders', true);
+    appOrders = o ? JSON.parse(o.value) : generateSeedOrders();
+    if(!o) await window.storage.set('alhaddad:orders', JSON.stringify(appOrders), true);
+  }catch(e){ appOrders = generateSeedOrders(); }
+
+  try{
+    const c = await window.storage.get('alhaddad:cart', false);
+    cart = c ? JSON.parse(c.value) : [];
+  }catch(e){ cart = []; }
+
+  try{
+    const sess = await window.storage.get('alhaddad:session', false);
+    if(sess){
+      const parsed = JSON.parse(sess.value);
+      if(parsed.type==='agent'){ currentAgent = appAgents.find(a=>a.code===parsed.code) || null; }
+      if(parsed.type==='admin'){ isAdminIn = true; }
+    }
+  }catch(e){}
+}
+async function persistProducts(){ try{ await window.storage.set('alhaddad:products', JSON.stringify(appProducts), true); }catch(e){} }
+async function persistAgents(){ try{ await window.storage.set('alhaddad:agents', JSON.stringify(appAgents), true); }catch(e){} }
+async function persistOrders(){ try{ await window.storage.set('alhaddad:orders', JSON.stringify(appOrders), true); }catch(e){} }
+async function persistCart(){ try{ await window.storage.set('alhaddad:cart', JSON.stringify(cart), false); }catch(e){} }
+async function persistSession(val){ try{ if(val) await window.storage.set('alhaddad:session', JSON.stringify(val), false); else await window.storage.delete('alhaddad:session', false); }catch(e){} }
+
+/* ================= RENDER: SHARED PRODUCT TILE ================= */
+function productTileHTML(p){
+  const cat = CATEGORIES[p.category] || CATEGORIES.kurma;
+  const stockLabel = p.stock>0 ? `${p.stock} lagi` : 'Stok Habis';
+  const stockClass = p.stock>0 ? 'text-forest' : 'text-red-500';
+  return `
+  <div class="bg-white rounded-3xl border border-sand overflow-hidden card-hover shadow-sm flex flex-col">
+    <button onclick="window.openQuickView('${p.id}')" class="relative h-28 sm:h-36 w-full flex items-center justify-center" style="background:linear-gradient(135deg, ${cat.grad[0]}, ${cat.grad[1]})">
+      <i data-lucide="${cat.icon}" class="w-11 h-11 sm:w-12 sm:h-12 text-white/90"></i>
+      ${p.popular ? `<span class="absolute top-2 left-2 bg-honey text-ink text-[9px] font-black px-2 py-1 rounded-full">POPULAR</span>` : ''}
+    </button>
+    <div class="p-3 flex flex-col flex-1">
+      <p class="text-[9px] font-bold text-inksoft uppercase tracking-wide">${escapeHtml(cat.name)}</p>
+      <button onclick="window.openQuickView('${p.id}')" class="text-left font-display font-semibold text-sm text-ink leading-snug mt-0.5 line-clamp-2">${escapeHtml(p.name)}</button>
+      <div class="mt-auto pt-2 flex items-end justify-between gap-2">
+        <div>
+          <p class="font-display font-bold text-forest text-sm sm:text-base">${formatRM(p.price)}</p>
+          <p class="text-[10px] ${stockClass} font-semibold">${stockLabel}</p>
+        </div>
+        <button ${p.stock<=0?'disabled':''} onclick="window.addToCart('${p.id}',1); event.stopPropagation();" class="shrink-0 ${p.stock<=0?'bg-slate-200 text-slate-400':'bg-forest hover:bg-forestdark text-white'} rounded-full w-9 h-9 flex items-center justify-center shadow-sm transition-colors" title="Tambah ke Troli">
+          <i data-lucide="plus" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderCategoryChips(targetId, onHome){
+  const el = document.getElementById(targetId);
+  if(!el) return;
+  const active = catalogState.cat;
+  let html = `<button onclick="window.setCategory('all')" class="shrink-0 px-4 py-2 rounded-full text-xs font-bold border transition-colors ${active==='all'?'bg-forest text-white border-forest':'bg-white text-ink border-sand'}">Semua</button>`;
+  Object.entries(CATEGORIES).forEach(([key,cat])=>{
+    html += `<button onclick="window.setCategory('${key}')" class="shrink-0 px-4 py-2 rounded-full text-xs font-bold border flex items-center gap-1.5 transition-colors ${active===key?'bg-forest text-white border-forest':'bg-white text-ink border-sand'}"><i data-lucide="${cat.icon}" class="w-3.5 h-3.5"></i>${escapeHtml(cat.name)}</button>`;
+  });
+  el.innerHTML = html; icons();
+}
+
+function renderHomeCatGrid(){
+  const el = document.getElementById('home-cat-grid');
+  if(!el) return;
+  el.innerHTML = Object.entries(CATEGORIES).map(([key,cat])=>`
+    <button onclick="window.setCategory('${key}'); window.showView('catalog');" class="bg-white border border-sand rounded-2xl p-3 flex flex-col items-center gap-2 card-hover">
+      <div class="w-11 h-11 rounded-xl flex items-center justify-center text-white" style="background:linear-gradient(135deg, ${cat.grad[0]}, ${cat.grad[1]})"><i data-lucide="${cat.icon}" class="w-5 h-5"></i></div>
+      <span class="text-[10px] sm:text-[11px] font-bold text-ink text-center leading-tight">${escapeHtml(cat.name)}</span>
+    </button>`).join('');
+  icons();
+}
+
+function renderHome(){
+  renderHomeCatGrid();
+  const latest = appProducts.slice().sort((a,b)=> new Date(b.createdAt)-new Date(a.createdAt)).slice(0,6);
+  document.getElementById('home-latest').innerHTML = latest.map(p=>`<div class="w-40 sm:w-48 shrink-0">${productTileHTML(p)}</div>`).join('');
+  const popular = appProducts.filter(p=>p.popular).slice(0,4);
+  document.getElementById('home-popular').innerHTML = popular.map(productTileHTML).join('');
+  icons();
+}
+
+/* ================= RENDER: CATALOG ================= */
+window.setCategory = function(key){ catalogState.cat = key; renderCatalog(); };
+window.setSort = function(val){ catalogState.sort = val; renderCatalog(); };
+window.setSearch = function(val){ catalogState.search = val.toLowerCase(); renderCatalog(); };
+
+function renderCatalog(){
+  renderCategoryChips('catalog-cat-chips');
+  let list = appProducts.slice();
+  if(catalogState.cat !== 'all') list = list.filter(p=>p.category===catalogState.cat);
+  if(catalogState.search) list = list.filter(p=>p.name.toLowerCase().includes(catalogState.search));
+  if(catalogState.sort==='price-asc') list.sort((a,b)=>a.price-b.price);
+  else if(catalogState.sort==='price-desc') list.sort((a,b)=>b.price-a.price);
+  else if(catalogState.sort==='newest') list.sort((a,b)=> new Date(b.createdAt)-new Date(a.createdAt));
+
+  document.getElementById('catalog-count').innerText = list.length + ' produk';
+  const grid = document.getElementById('catalog-grid');
+  const empty = document.getElementById('catalog-empty');
+  if(list.length===0){ grid.innerHTML=''; empty.classList.remove('hidden'); }
+  else { empty.classList.add('hidden'); grid.innerHTML = list.map(productTileHTML).join(''); }
+  icons();
+}
+
+/* ================= QUICK VIEW ================= */
+window.openQuickView = function(id){
+  qvProduct = appProducts.find(p=>p.id===id);
+  if(!qvProduct) return;
+  qvQty = 1;
+  const cat = CATEGORIES[qvProduct.category] || CATEGORIES.kurma;
+  document.getElementById('qv-content').innerHTML = `
+    <div class="relative h-48 flex items-center justify-center" style="background:linear-gradient(135deg, ${cat.grad[0]}, ${cat.grad[1]})">
+      <i data-lucide="${cat.icon}" class="w-16 h-16 text-white/90"></i>
+      <button onclick="window.closeQuickView()" class="absolute top-3 right-3 w-9 h-9 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    <div class="p-5 sm:p-6">
+      <p class="text-[10px] font-bold text-honeydeep uppercase tracking-widest">${escapeHtml(cat.name)}</p>
+      <h3 class="font-display font-bold text-xl text-ink mt-1">${escapeHtml(qvProduct.name)}</h3>
+      <p class="font-display font-extrabold text-forest text-2xl mt-2">${formatRM(qvProduct.price)}</p>
+      <p class="text-inksoft text-sm mt-3 leading-relaxed">${escapeHtml(qvProduct.desc||'')}</p>
+      <div class="grid grid-cols-3 gap-2 mt-4">
+        <div class="bg-cream rounded-xl p-2.5 text-center"><p class="text-[9px] font-bold text-inksoft uppercase">Berat</p><p class="text-xs font-bold text-ink">${qvProduct.weight} kg</p></div>
+        <div class="bg-cream rounded-xl p-2.5 text-center"><p class="text-[9px] font-bold text-inksoft uppercase">Stok</p><p class="text-xs font-bold text-ink">${qvProduct.stock}</p></div>
+        <div class="bg-cream rounded-xl p-2.5 text-center"><p class="text-[9px] font-bold text-inksoft uppercase">Penjual</p><p class="text-[11px] font-bold text-ink truncate">${escapeHtml(qvProduct.sellerName||'-')}</p></div>
+      </div>
+      <div class="flex items-center gap-4 mt-5">
+        <div class="flex items-center gap-3 bg-cream rounded-full px-3 py-2">
+          <button onclick="window.qvChangeQty(-1)" class="w-7 h-7 rounded-full bg-white shadow flex items-center justify-center"><i data-lucide="minus" class="w-3.5 h-3.5"></i></button>
+          <span id="qv-qty" class="font-bold text-sm w-5 text-center">1</span>
+          <button onclick="window.qvChangeQty(1)" class="w-7 h-7 rounded-full bg-white shadow flex items-center justify-center"><i data-lucide="plus" class="w-3.5 h-3.5"></i></button>
+        </div>
+        <button ${qvProduct.stock<=0?'disabled':''} onclick="window.addToCart('${qvProduct.id}', qvQty); window.closeQuickView();" class="flex-1 ${qvProduct.stock<=0?'bg-slate-200 text-slate-400':'bg-forest hover:bg-forestdark text-white'} font-bold py-3 rounded-2xl flex items-center justify-center gap-2 transition-colors">
+          <i data-lucide="shopping-bag" class="w-4 h-4"></i> ${qvProduct.stock<=0?'Stok Habis':'Tambah ke Troli'}
+        </button>
+      </div>
+    </div>`;
+  document.getElementById('modal-quickview').classList.remove('hidden');
+  icons();
+}
+window.closeQuickView = function(){ document.getElementById('modal-quickview').classList.add('hidden'); }
+window.qvChangeQty = function(delta){ qvQty = Math.max(1, qvQty+delta); document.getElementById('qv-qty').innerText = qvQty; }
+
+/* ================= CART CORE ================= */
+window.addToCart = function(productId, qty){
+  const p = appProducts.find(x=>x.id===productId);
+  if(!p || p.stock<=0) return;
+  const existing = cart.find(c=>c.id===productId);
+  const addQty = qty||1;
+  if(existing){ existing.qty = Math.min(existing.qty+addQty, p.stock); }
+  else { cart.push({ id:p.id, name:p.name, price:p.price, weight:p.weight, commissionPct:p.commissionPct, qty:Math.min(addQty,p.stock) }); }
+  persistCart(); updateCartBadge(); showToast(p.name+' ditambah ke troli', 'shopping-bag');
+  if(typeof renderCart==='function') renderCart();
+}
+function updateCartBadge(){
+  const count = cart.reduce((s,c)=>s+c.qty,0);
+  [ 'cart-badge-header','cart-badge-bottom' ].forEach(id=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.innerText = count>99?'99+':count;
+    if(count>0){ el.classList.remove('hidden'); el.classList.add('flex'); } else { el.classList.add('hidden'); el.classList.remove('flex'); }
+  });
+}
+
+/* ================= NAV / VIEW SWITCH ================= */
+const VIEW_IDS = ['home','catalog','cart','checkout','agent','admin'];
+window.showView = function(name){
+  VIEW_IDS.forEach(v=>{
+    const sec = document.getElementById('view-'+v);
+    if(sec) sec.classList.toggle('hidden', v!==name);
+  });
+  document.querySelectorAll('[data-nav]').forEach(btn=>{
+    btn.classList.toggle('bottom-nav-active', btn.getAttribute('data-nav')===name);
+  });
+  window.scrollTo({top:0, behavior:'instant' in window ? 'instant':'auto'});
+  if(name==='cart' && typeof renderCart==='function') renderCart();
+  if(name==='checkout' && typeof renderCheckoutEnter==='function') renderCheckoutEnter();
+  if(name==='agent' && typeof renderAgentView==='function') renderAgentView();
+  if(name==='admin' && typeof renderAdminView==='function') renderAdminView();
+  icons();
+}
+
+/* ================= CART VIEW ================= */
+function cartItemHTML(item){
+  const prod = appProducts.find(p=>p.id===item.id);
+  const cat = CATEGORIES[prod?prod.category:'kurma'] || CATEGORIES.kurma;
+  return `
+  <div class="bg-white border border-sand rounded-2xl p-3 flex items-center gap-3">
+    <div class="w-16 h-16 rounded-xl flex items-center justify-center shrink-0" style="background:linear-gradient(135deg, ${cat.grad[0]}, ${cat.grad[1]})"><i data-lucide="${cat.icon}" class="w-6 h-6 text-white/90"></i></div>
+    <div class="flex-1 min-w-0">
+      <p class="font-semibold text-sm text-ink truncate">${escapeHtml(item.name)}</p>
+      <p class="text-forest font-bold text-sm">${formatRM(item.price)}</p>
+      <div class="flex items-center gap-2 mt-1.5">
+        <button onclick="window.updateCartQty('${item.id}',-1)" class="w-6 h-6 rounded-full bg-cream flex items-center justify-center"><i data-lucide="minus" class="w-3 h-3"></i></button>
+        <span class="text-xs font-bold w-4 text-center">${item.qty}</span>
+        <button onclick="window.updateCartQty('${item.id}',1)" class="w-6 h-6 rounded-full bg-cream flex items-center justify-center"><i data-lucide="plus" class="w-3 h-3"></i></button>
+      </div>
+    </div>
+    <div class="text-right shrink-0">
+      <p class="font-bold text-sm text-ink">${formatRM(item.price*item.qty)}</p>
+      <button onclick="window.removeFromCart('${item.id}')" class="text-red-400 hover:text-red-600 mt-2.5"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+    </div>
+  </div>`;
+}
+
+function renderCart(){
+  const list = document.getElementById('cart-list');
+  const empty = document.getElementById('cart-empty');
+  const summary = document.getElementById('cart-summary-wrap');
+  if(!list) return;
+  if(cart.length===0){ list.innerHTML=''; empty.classList.remove('hidden'); summary.classList.add('hidden'); icons(); return; }
+  empty.classList.add('hidden'); summary.classList.remove('hidden');
+  list.innerHTML = cart.map(cartItemHTML).join('');
+  const subtotal = cart.reduce((s,c)=>s+c.price*c.qty,0);
+  document.getElementById('cart-subtotal').innerText = formatRM(subtotal);
+  document.getElementById('cart-total').innerText = formatRM(subtotal);
+  icons();
+}
+window.updateCartQty = function(id, delta){
+  const item = cart.find(c=>c.id===id);
+  if(!item) return;
+  const p = appProducts.find(x=>x.id===id);
+  item.qty += delta;
+  if(item.qty <= 0){ cart = cart.filter(c=>c.id!==id); }
+  else if(p && item.qty > p.stock){ item.qty = p.stock; }
+  persistCart(); updateCartBadge(); renderCart();
+}
+window.removeFromCart = function(id){
+  cart = cart.filter(c=>c.id!==id);
+  persistCart(); updateCartBadge(); renderCart();
+}
+window.goToCheckout = function(){
+  if(cart.length===0){ showToast('Troli anda kosong','alert-circle'); return; }
+  window.showView('checkout');
+}
+
+/* ================= CHECKOUT VIEW ================= */
+window.selectedShipping = null;
+window._shipOpts = [];
+
+function populateStateSelect(){
+  const sel = document.getElementById('co-negeri');
+  if(!sel || sel.options.length>1) return;
+  STATES.forEach(s=>{ const o=document.createElement('option'); o.value=s; o.innerText=s; sel.appendChild(o); });
+}
+
+function renderCheckoutSummary(){
+  const itemsEl = document.getElementById('checkout-items');
+  if(!itemsEl) return;
+  itemsEl.innerHTML = cart.map(c=>`<div class="flex justify-between text-xs"><span class="text-inksoft">${c.qty}x ${escapeHtml(c.name)}</span><span class="font-bold text-ink">${formatRM(c.price*c.qty)}</span></div>`).join('') || `<p class="text-xs text-inksoft italic">Troli kosong</p>`;
+  const subtotal = cart.reduce((s,c)=>s+c.price*c.qty,0);
+  document.getElementById('co-subtotal').innerText = formatRM(subtotal);
+  document.getElementById('co-shipfee').innerText = selectedShipping ? formatRM(selectedShipping.price) : 'Belum dikira';
+  const total = subtotal + (selectedShipping?selectedShipping.price:0);
+  document.getElementById('co-total').innerText = formatRM(total);
+}
+
+function renderCheckoutEnter(){
+  if(cart.length===0){ showToast('Troli anda kosong','alert-circle'); window.showView('catalog'); return; }
+  document.getElementById('checkout-form-wrap').classList.remove('hidden');
+  document.getElementById('checkout-success').classList.add('hidden');
+  selectedShipping = null;
+  document.getElementById('shipping-options').innerHTML = '';
+  populateStateSelect();
+  renderCheckoutSummary();
+  const ref = (new URLSearchParams(window.location.search)).get('ref');
+  if(ref) document.getElementById('co-agentcode').value = ref.toUpperCase();
+}
+
+window.calculateShipping = function(){
+  const state = document.getElementById('co-negeri').value;
+  if(!state){ showToast('Sila pilih negeri dahulu','alert-circle'); return; }
+  if(cart.length===0){ showToast('Troli kosong','alert-circle'); return; }
+  const weight = cart.reduce((s,c)=>s+c.weight*c.qty,0);
+  const opts = calculateShippingOptions(state, weight);
+  window._shipOpts = opts;
+  selectedShipping = opts[0];
+  const wrap = document.getElementById('shipping-options');
+  wrap.innerHTML = opts.map((o,i)=>`
+    <label onclick="window.selectShipping(${i})" class="flex items-center justify-between gap-3 border-2 ${i===0?'border-forest bg-leaflight':'border-sand'} rounded-xl px-4 py-3 cursor-pointer transition-colors">
+      <div class="flex items-center gap-3">
+        <input type="radio" name="ship-opt" ${i===0?'checked':''} class="accent-[#0B5D3B] w-4 h-4">
+        <div>
+          <p class="font-bold text-sm text-ink">${escapeHtml(o.courier)}</p>
+          <p class="text-[11px] text-inksoft">${escapeHtml(o.eta)} · ${weight.toFixed(2)} kg</p>
+        </div>
+      </div>
+      <p class="font-display font-bold text-forest text-sm">${formatRM(o.price)}</p>
+    </label>`).join('');
+  renderCheckoutSummary();
+  icons();
+}
+window.selectShipping = function(i){
+  selectedShipping = window._shipOpts[i];
+  document.querySelectorAll('#shipping-options label').forEach((el,idx)=>{
+    el.classList.toggle('border-forest', idx===i);
+    el.classList.toggle('bg-leaflight', idx===i);
+    el.classList.toggle('border-sand', idx!==i);
+    el.querySelector('input').checked = idx===i;
+  });
+  renderCheckoutSummary();
+}
+
+window.submitOrder = function(){
+  const nama = document.getElementById('co-nama').value.trim();
+  const phone = document.getElementById('co-phone').value.trim();
+  const email = document.getElementById('co-email').value.trim();
+  const alamat = document.getElementById('co-alamat').value.trim();
+  const poskod = document.getElementById('co-poskod').value.trim();
+  const bandar = document.getElementById('co-bandar').value.trim();
+  const state = document.getElementById('co-negeri').value;
+  const agentCodeRaw = document.getElementById('co-agentcode').value.trim().toUpperCase();
+
+  if(cart.length===0){ showToast('Troli kosong','alert-circle'); return; }
+  if(!nama || !phone || !alamat || !poskod || !bandar || !state){ showToast('Sila lengkapkan semua maklumat wajib (*)','alert-circle'); return; }
+  if(!selectedShipping){ showToast('Sila kira kos penghantaran dahulu','alert-circle'); return; }
+
+  let agentCode = null;
+  if(agentCodeRaw){
+    const found = appAgents.find(a=>a.code===agentCodeRaw);
+    if(found) agentCode = found.code;
+    else showToast('Kod ejen tidak sah — diteruskan tanpa ejen','alert-circle');
+  }
+
+  const items = cart.map(c=>({ productId:c.id, name:c.name, qty:c.qty, price:c.price, weight:c.weight, commissionPct:c.commissionPct }));
+  const subtotal = items.reduce((s,it)=>s+it.price*it.qty,0);
+  const commission = agentCode ? items.reduce((s,it)=>s+it.price*it.qty*(it.commissionPct/100),0) : 0;
+  const total = +(subtotal + selectedShipping.price).toFixed(2);
+
+  const order = {
+    orderId: genId('ORD'), createdAt: new Date().toISOString(),
+    customerName:nama, phone, email, address:alamat, postcode:poskod, city:bandar, state,
+    items, subtotal:+subtotal.toFixed(2), shippingFee:selectedShipping.price,
+    courier:{ name:selectedShipping.courier, eta:selectedShipping.eta }, total,
+    agentCode, agentCommission:+commission.toFixed(2), status:'Baru'
+  };
+
+  items.forEach(it=>{
+    const p = appProducts.find(x=>x.id===it.productId);
+    if(p) p.stock = Math.max(0, p.stock - it.qty);
+  });
+
+  appOrders.unshift(order);
+  persistOrders(); persistProducts();
+  cart = []; persistCart(); updateCartBadge();
+
+  document.getElementById('checkout-form-wrap').classList.add('hidden');
+  const succ = document.getElementById('checkout-success');
+  succ.classList.remove('hidden');
+  document.getElementById('success-orderid').innerText = order.orderId;
+  document.getElementById('success-total').innerText = formatRM(order.total);
+  document.getElementById('success-courier').innerText = order.courier.name+' ('+order.courier.eta+')';
+  const waMsg = encodeURIComponent(`Assalamualaikum, saya ingin sahkan tempahan ${order.orderId} bernilai ${formatRM(order.total)} atas nama ${nama}.`);
+  document.getElementById('success-whatsapp').href = `https://wa.me/60123456789?text=${waMsg}`;
+
+  showToast('Tempahan berjaya dihantar!','check-circle-2');
+  window.scrollTo({top:0});
+}
+
+/* ================= AGENT PORTAL ================= */
+function statusClass(status){
+  return { 'Baru':'baru','Diproses':'diproses','Dihantar':'dihantar','Selesai':'selesai','Dibatalkan':'batal' }[status] || 'baru';
+}
+
+window.loginAgent = function(){
+  const code = document.getElementById('agent-login-code').value.trim().toUpperCase();
+  const pass = document.getElementById('agent-login-pass').value;
+  const agent = appAgents.find(a=>a.code===code);
+  if(!agent){ showToast('Kod ejen tidak dijumpai','alert-circle'); return; }
+  if(agent.password !== pass){ showToast('Kata laluan salah','alert-circle'); return; }
+  currentAgent = agent;
+  persistSession({type:'agent', code:agent.code});
+  renderAgentView();
+  showToast('Selamat kembali, '+agent.name+'!','check-circle-2');
+}
+window.logoutAgent = function(){
+  currentAgent = null;
+  persistSession(null);
+  renderAgentView();
+  showToast('Berjaya log keluar','log-out');
+}
+window.copyRefLink = function(){
+  const inp = document.getElementById('agent-ref-link');
+  inp.select(); inp.setSelectionRange(0,999);
+  try{ document.execCommand('copy'); showToast('Link disalin!','copy'); }
+  catch(e){ showToast('Sila salin secara manual','info'); }
+}
+
+function renderAgentView(){
+  const loginWrap = document.getElementById('agent-login-wrap');
+  const dashWrap = document.getElementById('agent-dashboard-wrap');
+  if(!loginWrap) return;
+  if(!currentAgent){ loginWrap.classList.remove('hidden'); dashWrap.classList.add('hidden'); return; }
+  loginWrap.classList.add('hidden'); dashWrap.classList.remove('hidden');
+
+  document.getElementById('agent-dash-name').innerText = currentAgent.name;
+  document.getElementById('agent-dash-area').innerHTML = `<i data-lucide="map-pin" class="w-3.5 h-3.5"></i> PASTI ${escapeHtml(currentAgent.area)}`;
+
+  const stats = statsForAgent(currentAgent.code);
+  document.getElementById('agent-stat-sales').innerText = formatRM(stats.sales);
+  document.getElementById('agent-stat-comm').innerText = formatRM(stats.commission);
+  document.getElementById('agent-stat-orders').innerText = stats.orderCount;
+  document.getElementById('agent-ref-link').value = window.location.href.split('?')[0] + '?ref=' + currentAgent.code;
+
+  const myOrders = appOrders.filter(o=>o.agentCode===currentAgent.code).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+  const tbody = document.getElementById('agent-orders-body');
+  tbody.innerHTML = myOrders.length ? myOrders.map(o=>`
+    <tr class="border-t border-sand">
+      <td class="p-3 font-bold text-ink">${o.orderId}</td>
+      <td class="p-3 text-inksoft">${formatDate(o.createdAt)}</td>
+      <td class="p-3 text-inksoft">${escapeHtml(o.customerName)}</td>
+      <td class="p-3 font-bold text-ink">${formatRM(o.total)}</td>
+      <td class="p-3 font-bold text-honeydeep">${formatRM(o.agentCommission)}</td>
+      <td class="p-3"><span class="px-2 py-1 rounded-full text-[10px] font-bold status-${statusClass(o.status)}">${escapeHtml(o.status)}</span></td>
+    </tr>`).join('') : `<tr><td colspan="6" class="p-6 text-center text-inksoft italic">Belum ada tempahan lagi.</td></tr>`;
+  icons();
+}
+
+/* ================= ADMIN: LOGIN & TABS ================= */
+window.adminCurrentTab = 'produk';
+
+window.loginAdmin = function(){
+  const email = document.getElementById('admin-login-email').value.trim().toLowerCase();
+  const pass = document.getElementById('admin-login-pass').value;
+  if(email==='admin@pastisarawak.my' && pass==='admin123'){
+    isAdminIn = true;
+    persistSession({type:'admin'});
+    renderAdminView();
+    showToast('Selamat datang, Admin!','shield-check');
+  } else {
+    showToast('Emel atau kata laluan salah','alert-circle');
+  }
+}
+window.logoutAdmin = function(){
+  isAdminIn = false;
+  persistSession(null);
+  renderAdminView();
+  showToast('Berjaya log keluar','log-out');
+}
+window.setAdminTab = function(tab){
+  adminCurrentTab = tab;
+  ['produk','tempahan','ejen','laporan'].forEach(t=>{
+    const panel = document.getElementById('admin-tab-'+t);
+    if(panel) panel.classList.toggle('hidden', t!==tab);
+  });
+  document.querySelectorAll('.admin-tab-btn').forEach(btn=>{
+    const active = btn.getAttribute('data-tab')===tab;
+    btn.classList.toggle('bg-forest', active); btn.classList.toggle('text-white', active);
+    btn.classList.toggle('bg-cream', !active); btn.classList.toggle('text-inksoft', !active);
+  });
+  if(tab==='produk') renderAdminProducts();
+  if(tab==='tempahan') renderAdminOrders();
+  if(tab==='ejen') renderAdminAgents();
+  if(tab==='laporan' && typeof renderReports==='function') renderReports();
+}
+function renderAdminView(){
+  const loginWrap = document.getElementById('admin-login-wrap');
+  const dashWrap = document.getElementById('admin-dashboard-wrap');
+  if(!loginWrap) return;
+  if(!isAdminIn){ loginWrap.classList.remove('hidden'); dashWrap.classList.add('hidden'); return; }
+  loginWrap.classList.add('hidden'); dashWrap.classList.remove('hidden');
+  window.setAdminTab(adminCurrentTab);
+}
+
+/* ================= ADMIN: PRODUK ================= */
+window.openProductModal = function(id){
+  const editing = id ? appProducts.find(p=>p.id===id) : null;
+  document.getElementById('pm-title').innerText = editing ? 'Edit Produk' : 'Tambah Produk';
+  document.getElementById('pm-id').value = editing ? editing.id : '';
+  document.getElementById('pm-name').value = editing ? editing.name : '';
+  document.getElementById('pm-price').value = editing ? editing.price : '';
+  document.getElementById('pm-weight').value = editing ? editing.weight : '';
+  document.getElementById('pm-stock').value = editing ? editing.stock : '';
+  document.getElementById('pm-comm').value = editing ? editing.commissionPct : 10;
+  document.getElementById('pm-desc').value = editing ? (editing.desc||'') : '';
+  document.getElementById('pm-seller').value = editing ? editing.sellerName : 'Kedai PASTI Sarawak Official';
+  document.getElementById('pm-popular').checked = editing ? !!editing.popular : false;
+  const catSel = document.getElementById('pm-category');
+  if(catSel.options.length===0){
+    Object.entries(CATEGORIES).forEach(([key,cat])=>{ const o=document.createElement('option'); o.value=key; o.innerText=cat.name; catSel.appendChild(o); });
+  }
+  catSel.value = editing ? editing.category : Object.keys(CATEGORIES)[0];
+  document.getElementById('modal-admin-product').classList.remove('hidden');
+}
+window.closeProductModal = function(){ document.getElementById('modal-admin-product').classList.add('hidden'); }
+window.saveProduct = function(){
+  const id = document.getElementById('pm-id').value;
+  const name = document.getElementById('pm-name').value.trim();
+  const price = parseFloat(document.getElementById('pm-price').value);
+  const weight = parseFloat(document.getElementById('pm-weight').value);
+  const stock = parseInt(document.getElementById('pm-stock').value);
+  const commissionPct = parseFloat(document.getElementById('pm-comm').value);
+  const category = document.getElementById('pm-category').value;
+  const desc = document.getElementById('pm-desc').value.trim();
+  const sellerName = document.getElementById('pm-seller').value.trim() || 'Kedai PASTI Sarawak Official';
+  const popular = document.getElementById('pm-popular').checked;
+
+  if(!name || isNaN(price) || isNaN(weight) || isNaN(stock) || isNaN(commissionPct)){
+    showToast('Sila lengkapkan semua medan dengan betul','alert-circle'); return;
+  }
+  if(id){
+    const p = appProducts.find(x=>x.id===id);
+    Object.assign(p, {name,price,weight,stock,commissionPct,category,desc,sellerName,popular});
+  } else {
+    appProducts.push({ id:genId('P'), name,price,weight,stock,commissionPct,category,desc,sellerName,popular, createdAt:new Date().toISOString() });
+  }
+  persistProducts();
+  window.closeProductModal();
+  renderAdminProducts(); renderHome(); renderCatalog();
+  showToast('Produk berjaya disimpan','check-circle-2');
+}
+window.deleteProduct = function(id){
+  if(!confirm('Padam produk ini?')) return;
+  appProducts = appProducts.filter(p=>p.id!==id);
+  persistProducts();
+  renderAdminProducts(); renderHome(); renderCatalog();
+  showToast('Produk dipadam','trash-2');
+}
+function renderAdminProducts(){
+  const tbody = document.getElementById('admin-product-body');
+  if(!tbody) return;
+  document.getElementById('admin-produk-count').innerText = appProducts.length+' produk';
+  tbody.innerHTML = appProducts.map(p=>{
+    const cat = CATEGORIES[p.category]||CATEGORIES.kurma;
+    return `<tr class="border-t border-sand">
+      <td class="p-3">
+        <div class="flex items-center gap-2">
+          <div class="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style="background:linear-gradient(135deg, ${cat.grad[0]}, ${cat.grad[1]})"><i data-lucide="${cat.icon}" class="w-4 h-4 text-white"></i></div>
+          <span class="font-bold text-ink">${escapeHtml(p.name)}</span>
+        </div>
+      </td>
+      <td class="p-3 text-inksoft">${escapeHtml(cat.name)}</td>
+      <td class="p-3"><span class="font-bold text-forest">${formatRM(p.price)}</span><br><span class="text-inksoft text-[10px]">${p.weight} kg</span></td>
+      <td class="p-3 font-bold text-honeydeep">${p.commissionPct}%</td>
+      <td class="p-3 font-bold ${p.stock>0?'text-ink':'text-red-500'}">${p.stock}</td>
+      <td class="p-3">
+        <div class="flex gap-1.5">
+          <button onclick="window.openProductModal('${p.id}')" class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+          <button onclick="window.deleteProduct('${p.id}')" class="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="6" class="p-6 text-center text-inksoft italic">Tiada produk.</td></tr>`;
+  icons();
+}
+
+/* ================= ADMIN: TEMPAHAN ================= */
+function renderAdminOrders(){
+  const tbody = document.getElementById('admin-order-body');
+  if(!tbody) return;
+  const filter = document.getElementById('admin-order-filter').value;
+  let list = appOrders.slice().sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+  if(filter!=='all') list = list.filter(o=>o.status===filter);
+  document.getElementById('admin-order-count').innerText = list.length+' tempahan';
+  tbody.innerHTML = list.map(o=>`
+    <tr class="border-t border-sand">
+      <td class="p-3 font-bold text-ink">${o.orderId}<br><span class="text-[10px] text-inksoft font-normal">${formatDate(o.createdAt)}</span></td>
+      <td class="p-3 text-inksoft">${escapeHtml(o.customerName)}<br><span class="text-[10px]">${escapeHtml(o.phone)}</span></td>
+      <td class="p-3 text-inksoft">${o.agentCode?escapeHtml(o.agentCode):'<span class="italic">Tiada</span>'}</td>
+      <td class="p-3 font-bold text-ink">${formatRM(o.total)}</td>
+      <td class="p-3">
+        <select onchange="window.updateOrderStatus('${o.orderId}', this.value)" class="text-[10px] font-bold rounded-full px-2 py-1.5 border-0 status-${statusClass(o.status)}">
+          ${['Baru','Diproses','Dihantar','Selesai','Dibatalkan'].map(s=>`<option value="${s}" ${o.status===s?'selected':''}>${s}</option>`).join('')}
+        </select>
+      </td>
+      <td class="p-3"><button onclick="window.deleteOrder('${o.orderId}')" class="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button></td>
+    </tr>`).join('') || `<tr><td colspan="6" class="p-6 text-center text-inksoft italic">Tiada tempahan.</td></tr>`;
+  icons();
+}
+window.updateOrderStatus = function(orderId, status){
+  const o = appOrders.find(x=>x.orderId===orderId);
+  if(!o) return;
+  o.status = status;
+  persistOrders();
+  showToast('Status tempahan dikemaskini','check-circle-2');
+  renderAdminOrders();
+}
+window.deleteOrder = function(orderId){
+  if(!confirm('Padam tempahan ini?')) return;
+  appOrders = appOrders.filter(o=>o.orderId!==orderId);
+  persistOrders();
+  renderAdminOrders();
+  showToast('Tempahan dipadam','trash-2');
+}
+
+/* ================= ADMIN: EJEN ================= */
+window.openAgentModal = function(code){
+  const editing = code ? appAgents.find(a=>a.code===code) : null;
+  document.getElementById('am-title').innerText = editing ? 'Edit Ejen' : 'Tambah Ejen';
+  document.getElementById('am-code-orig').value = editing ? editing.code : '';
+  document.getElementById('am-code').value = editing ? editing.code : '';
+  document.getElementById('am-name').value = editing ? editing.name : '';
+  document.getElementById('am-phone').value = editing ? editing.phone : '';
+  document.getElementById('am-area').value = editing ? editing.area : '';
+  document.getElementById('am-email').value = editing ? editing.email : '';
+  document.getElementById('am-pass').value = editing ? editing.password : 'demo123';
+  document.getElementById('modal-admin-agent').classList.remove('hidden');
+}
+window.closeAgentModal = function(){ document.getElementById('modal-admin-agent').classList.add('hidden'); }
+window.saveAgent = function(){
+  const origCode = document.getElementById('am-code-orig').value;
+  const code = document.getElementById('am-code').value.trim().toUpperCase();
+  const name = document.getElementById('am-name').value.trim();
+  const phone = document.getElementById('am-phone').value.trim();
+  const area = document.getElementById('am-area').value.trim();
+  const email = document.getElementById('am-email').value.trim();
+  const password = document.getElementById('am-pass').value.trim() || 'demo123';
+
+  if(!code || !name){ showToast('Kod dan nama ejen wajib diisi','alert-circle'); return; }
+  if(!origCode && appAgents.find(a=>a.code===code)){ showToast('Kod ejen sudah wujud','alert-circle'); return; }
+
+  if(origCode){
+    const a = appAgents.find(x=>x.code===origCode);
+    Object.assign(a, {code,name,phone,area,email,password});
+    appOrders.forEach(o=>{ if(o.agentCode===origCode) o.agentCode=code; });
+  } else {
+    appAgents.push({ code,name,phone,area,email,password, joinedAt:new Date().toISOString() });
+  }
+  persistAgents(); persistOrders();
+  window.closeAgentModal();
+  renderAdminAgents();
+  showToast('Ejen berjaya disimpan','check-circle-2');
+}
+window.deleteAgent = function(code){
+  if(!confirm('Padam ejen ini? Tempahan sedia ada akan kekal tanpa ejen dikaitkan.')) return;
+  appAgents = appAgents.filter(a=>a.code!==code);
+  appOrders.forEach(o=>{ if(o.agentCode===code) o.agentCode=null; });
+  persistAgents(); persistOrders();
+  renderAdminAgents();
+  showToast('Ejen dipadam','trash-2');
+}
+function renderAdminAgents(){
+  const tbody = document.getElementById('admin-agent-body');
+  if(!tbody) return;
+  document.getElementById('admin-agent-count').innerText = appAgents.length+' ejen';
+  tbody.innerHTML = appAgents.map(a=>{
+    const stats = statsForAgent(a.code);
+    return `<tr class="border-t border-sand">
+      <td class="p-3 font-mono font-bold text-forest">${escapeHtml(a.code)}</td>
+      <td class="p-3 font-bold text-ink">${escapeHtml(a.name)}<br><span class="text-[10px] text-inksoft font-normal">${escapeHtml(a.phone)}</span></td>
+      <td class="p-3 text-inksoft">${escapeHtml(a.area)}</td>
+      <td class="p-3 font-bold text-ink">${formatRM(stats.sales)}</td>
+      <td class="p-3 font-bold text-honeydeep">${formatRM(stats.commission)}</td>
+      <td class="p-3 text-ink">${stats.orderCount}</td>
+      <td class="p-3">
+        <div class="flex gap-1.5">
+          <button onclick="window.openAgentModal('${a.code}')" class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+          <button onclick="window.deleteAgent('${a.code}')" class="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="7" class="p-6 text-center text-inksoft italic">Tiada ejen.</td></tr>`;
+  icons();
+}
+
+/* ================= ADMIN: LAPORAN ================= */
+window.reportPeriod = 'harian';
+window.salesChartInstance = null;
+
+function ordersExcCancelled(){ return appOrders.filter(o=>o.status!=='Dibatalkan'); }
+
+window.setReportPeriod = function(p){
+  reportPeriod = p;
+  document.querySelectorAll('.rep-period-btn').forEach(btn=>{
+    const active = btn.getAttribute('data-period')===p;
+    btn.classList.toggle('bg-forest', active); btn.classList.toggle('text-white', active);
+    btn.classList.toggle('text-inksoft', !active);
+  });
+  renderSalesChart();
+}
+
+function renderReports(){
+  const valid = ordersExcCancelled();
+  const totalSales = valid.reduce((s,o)=>s+o.total,0);
+  const totalComm = valid.reduce((s,o)=>s+(o.agentCommission||0),0);
+  document.getElementById('rep-total-sales').innerText = formatRM(totalSales);
+  document.getElementById('rep-total-orders').innerText = valid.length;
+  document.getElementById('rep-avg-order').innerText = formatRM(valid.length ? totalSales/valid.length : 0);
+  document.getElementById('rep-total-comm').innerText = formatRM(totalComm);
+  renderSalesChart();
+  renderTopProducts();
+  renderAgentRanking();
+}
+
+function renderSalesChart(){
+  const canvas = document.getElementById('sales-chart');
+  if(!canvas || !window.Chart) return;
+  const valid = ordersExcCancelled();
+  let labels = [], data = [];
+
+  if(reportPeriod==='harian'){
+    for(let i=13;i>=0;i--){
+      const day = new Date(Date.now()-i*86400000);
+      const key = day.toISOString().slice(0,10);
+      labels.push(day.toLocaleDateString('ms-MY',{day:'2-digit',month:'short'}));
+      data.push(valid.filter(o=>o.createdAt.slice(0,10)===key).reduce((s,o)=>s+o.total,0));
+    }
+  } else if(reportPeriod==='mingguan'){
+    for(let i=7;i>=0;i--){
+      const end = new Date(Date.now()-i*7*86400000);
+      const start = new Date(end.getTime()-6*86400000);
+      const startMid = new Date(start.getFullYear(),start.getMonth(),start.getDate(),0,0,0);
+      const endMid = new Date(end.getFullYear(),end.getMonth(),end.getDate(),23,59,59);
+      labels.push(start.toLocaleDateString('ms-MY',{day:'2-digit',month:'short'}));
+      data.push(valid.filter(o=>{ const d=new Date(o.createdAt); return d>=startMid && d<=endMid; }).reduce((s,o)=>s+o.total,0));
+    }
+  } else {
+    for(let i=5;i>=0;i--){
+      const d = new Date(); d.setDate(1); d.setMonth(d.getMonth()-i);
+      const key = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+      labels.push(d.toLocaleDateString('ms-MY',{month:'short',year:'2-digit'}));
+      data.push(valid.filter(o=>o.createdAt.slice(0,7)===key).reduce((s,o)=>s+o.total,0));
+    }
+  }
+
+  if(salesChartInstance) salesChartInstance.destroy();
+  salesChartInstance = new Chart(canvas, {
+    type:'line',
+    data:{ labels, datasets:[{ label:'Jualan (RM)', data, borderColor:'#0B5D3B', backgroundColor:'rgba(11,93,59,0.08)', fill:true, tension:0.35, pointBackgroundColor:'#D4A017', pointRadius:4, pointHoverRadius:6 }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:(ctx)=>' RM '+ctx.parsed.y.toFixed(2) } } }, scales:{ y:{ beginAtZero:true, ticks:{ callback:v=>'RM '+v } }, x:{ grid:{display:false} } } }
+  });
+}
+
+function renderTopProducts(){
+  const valid = ordersExcCancelled();
+  const agg = {};
+  valid.forEach(o=>{
+    o.items.forEach(it=>{
+      if(!agg[it.productId]) agg[it.productId] = { name:it.name, qty:0, revenue:0 };
+      agg[it.productId].qty += it.qty;
+      agg[it.productId].revenue += it.price*it.qty;
+    });
+  });
+  const top = Object.values(agg).sort((a,b)=>b.qty-a.qty).slice(0,10);
+  const maxQty = top.length ? top[0].qty : 1;
+  const el = document.getElementById('rep-top-products');
+  el.innerHTML = top.length ? top.map((p,i)=>`
+    <div>
+      <div class="flex justify-between items-center mb-1 gap-2">
+        <p class="text-xs font-bold text-ink flex items-center gap-1.5 min-w-0"><span class="w-5 h-5 shrink-0 rounded-full ${i<3?'bg-honey text-ink':'bg-cream text-inksoft'} flex items-center justify-center text-[10px] font-black">${i+1}</span><span class="truncate">${escapeHtml(p.name)}</span></p>
+        <p class="text-xs font-bold text-forest shrink-0">${p.qty} unit</p>
+      </div>
+      <div class="h-2 bg-cream rounded-full overflow-hidden"><div class="h-full bg-gradient-to-r from-forest to-leaf rounded-full" style="width:${(p.qty/maxQty*100).toFixed(0)}%"></div></div>
+    </div>`).join('') : `<p class="text-xs text-inksoft italic">Tiada data jualan lagi.</p>`;
+}
+
+function renderAgentRanking(){
+  const ranked = appAgents.map(a=>({ ...a, ...statsForAgent(a.code) })).sort((a,b)=>b.sales-a.sales);
+  const maxSales = ranked.length ? ranked[0].sales : 1;
+  const el = document.getElementById('rep-agent-rank');
+  el.innerHTML = ranked.length ? ranked.map((a,i)=>`
+    <div>
+      <div class="flex justify-between items-center mb-1 gap-2">
+        <p class="text-xs font-bold text-ink flex items-center gap-1.5 min-w-0"><span class="w-5 h-5 shrink-0 rounded-full ${i<3?'bg-honey text-ink':'bg-cream text-inksoft'} flex items-center justify-center text-[10px] font-black">${i+1}</span><span class="truncate">${escapeHtml(a.name)}</span><span class="text-inksoft font-normal shrink-0">(${a.code})</span></p>
+        <p class="text-xs font-bold text-forest shrink-0">${formatRM(a.sales)}</p>
+      </div>
+      <div class="h-2 bg-cream rounded-full overflow-hidden"><div class="h-full bg-gradient-to-r from-honeydeep to-honey rounded-full" style="width:${maxSales>0?(a.sales/maxSales*100).toFixed(0):0}%"></div></div>
+    </div>`).join('') : `<p class="text-xs text-inksoft italic">Tiada ejen lagi.</p>`;
+}
+
+/* ================= INIT ================= */
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadAllData();
+  renderHome();
+  renderCatalog();
+  renderCart();
+  updateCartBadge();
+  renderAgentView();
+  renderAdminView();
+  icons();
+});
+</script>
+</body>
+</html>
