@@ -30,8 +30,14 @@
   h1,h2,h3,h4,.font-display{ font-family:'Sora',sans-serif; }
   .no-scrollbar::-webkit-scrollbar{ display:none; }
   .no-scrollbar{ -ms-overflow-style:none; scrollbar-width:none; }
-  .card-hover{ transition:transform .25s ease, box-shadow .25s ease; }
-  .card-hover:hover{ transform:translateY(-4px); box-shadow:0 16px 30px -10px rgba(11,93,59,.28); }
+  .card-hover{ transition:transform .3s cubic-bezier(.25,.46,.45,.94), box-shadow .3s cubic-bezier(.25,.46,.45,.94); }
+  .card-hover:hover{ transform:translateY(-6px); box-shadow:0 20px 40px -12px rgba(11,93,59,.32); }
+  .btn-tactile{ transition:all .2s ease; }
+  .btn-tactile:active{ transform:scale(.97); }
+  .btn-gold{ background:linear-gradient(135deg,#E0B12B,#D4A017); box-shadow:0 10px 25px -8px rgba(212,160,23,.55); border:1px solid rgba(255,255,255,.25); }
+  .btn-gold:hover{ background:linear-gradient(135deg,#EABF3F,#C4930F); }
+  .btn-forest{ background:linear-gradient(135deg,#12734A,#0B5D3B); box-shadow:0 10px 25px -8px rgba(11,93,59,.45); border:1px solid rgba(255,255,255,.1); }
+  .btn-forest:hover{ background:linear-gradient(135deg,#158054,#0F4A32); }
   .line-clamp-2{ display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
   .tab-active{ background:#0B5D3B !important; color:#fff !important; }
   .bottom-nav-active{ color:#0B5D3B !important; }
@@ -102,35 +108,36 @@
     <section id="view-home">
 
       <!-- HERO -->
-      <div class="relative overflow-hidden" style="background:linear-gradient(160deg,#0B5D3B 0%,#0F4A32 55%,#083F28 100%)">
+      <div class="relative overflow-hidden rounded-b-[2.5rem] sm:rounded-b-[3rem] border-b-[6px] border-honey/50 shadow-[0_20px_50px_-20px_rgba(8,63,40,0.6)]" style="background:linear-gradient(160deg,#0B5D3B 0%,#0F4A32 55%,#083F28 100%)">
         <div class="absolute inset-0 opacity-50" style="background-image:url('header-bg.jpg');background-size:cover;background-position:center 40%;"></div>
         <div class="absolute inset-0" style="background:linear-gradient(160deg,rgba(11,93,59,0.55) 0%,rgba(15,74,50,0.45) 55%,rgba(8,63,40,0.75) 100%)"></div>
+        <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(8,63,40,0.95) 0%,rgba(15,74,50,0.35) 45%,transparent 75%)"></div>
         <div class="absolute inset-0 text-honey opacity-[0.10]" style="background-image:url(#star8-fill)"></div>
         <div class="absolute inset-0" style="background-image:url('data:image/svg+xml;utf8,&lt;svg xmlns=%27http://www.w3.org/2000/svg%27 width=%2246%27 height=%2246%27&gt;&lt;g fill=%27none%27 stroke=%27%23D4A017%27 stroke-width=%271%27 opacity=%270.16%27&gt;&lt;rect x=%279%27 y=%279%27 width=%2228%27 height=%2228%27/&gt;&lt;rect x=%279%27 y=%279%27 width=%2228%27 height=%2228%27 transform=%27rotate(45 23 23)%27/&gt;&lt;/g&gt;&lt;/svg&gt;');"></div>
-        <div class="relative max-w-6xl mx-auto px-4 sm:px-6 pt-10 pb-12 sm:pt-14 sm:pb-16 grid lg:grid-cols-[0.85fr_2fr] gap-6 lg:gap-8 items-center">
+        <div class="relative max-w-6xl mx-auto px-4 sm:px-6 pt-10 pb-14 sm:pt-14 sm:pb-20 grid lg:grid-cols-[0.85fr_2fr] gap-6 lg:gap-8 items-center">
           <div>
-            <span class="inline-block bg-white/10 text-honey text-[11px] font-bold tracking-widest uppercase px-3 py-1.5 rounded-full border border-white/15">Platform Komuniti • Seluruh Malaysia</span>
-            <h1 class="font-display font-extrabold text-3xl sm:text-5xl lg:text-2xl xl:text-3xl text-white leading-tight mt-4">Kurma, Madu &amp; Barangan Komuniti — Setiap Tempahan Menyokong PASTI Sarawak</h1>
-            <p class="text-leaflight/90 text-sm sm:text-base mt-3 max-w-md">Beli produk pilihan terus daripada ejen komuniti kami. Mudah, telus, dan setiap ringgit memberi impak.</p>
+            <span class="inline-block bg-white/10 text-honey text-[11px] font-bold tracking-widest uppercase px-3 py-1.5 rounded-full border border-white/15 shadow-sm">Platform Komuniti • Seluruh Malaysia</span>
+            <h1 class="font-display font-extrabold text-3xl sm:text-5xl lg:text-2xl xl:text-3xl text-white leading-tight mt-4 drop-shadow-lg">Kurma, Madu &amp; Barangan Komuniti — Setiap Tempahan Menyokong PASTI Sarawak</h1>
+            <p class="text-leaflight/90 text-sm sm:text-base mt-3 max-w-md drop-shadow-sm">Beli produk pilihan terus daripada ejen komuniti kami. Mudah, telus, dan setiap ringgit memberi impak.</p>
             <div class="flex flex-wrap gap-3 mt-6">
-              <button onclick="window.showView('catalog')" class="bg-honey hover:bg-honeydeep text-ink font-bold px-6 py-3 rounded-2xl shadow-lg flex items-center gap-2 transition-colors">
+              <button onclick="window.showView('catalog')" class="btn-gold btn-tactile text-ink font-bold px-6 py-3 rounded-full flex items-center gap-2">
                 <i data-lucide="shopping-cart" class="w-4 h-4"></i> Mula Beli-Belah
               </button>
-              <button onclick="window.showView('agent')" class="bg-white/10 hover:bg-white/20 text-white font-bold px-6 py-3 rounded-2xl border border-white/20 flex items-center gap-2 transition-colors">
+              <button onclick="window.showView('agent')" class="btn-tactile bg-white/10 hover:bg-white/20 text-white font-bold px-6 py-3 rounded-full border border-white/20 flex items-center gap-2 transition-colors backdrop-blur-sm">
                 <i data-lucide="users" class="w-4 h-4"></i> Jadi Ejen Kami
               </button>
             </div>
 
             <div class="grid grid-cols-3 gap-3 mt-8 max-w-md">
-              <div class="bg-white/10 border border-white/15 rounded-2xl px-3 py-3 text-center">
+              <div class="bg-white/10 hover:bg-white/15 border border-white/15 rounded-2xl px-3 py-3 text-center transition-colors">
                 <p class="font-display font-extrabold text-honey text-lg sm:text-xl">500+</p>
                 <p class="text-white/70 text-[10px] font-semibold uppercase tracking-wide">Pelanggan</p>
               </div>
-              <div class="bg-white/10 border border-white/15 rounded-2xl px-3 py-3 text-center">
+              <div class="bg-white/10 hover:bg-white/15 border border-white/15 rounded-2xl px-3 py-3 text-center transition-colors">
                 <p class="font-display font-extrabold text-honey text-lg sm:text-xl">50+</p>
                 <p class="text-white/70 text-[10px] font-semibold uppercase tracking-wide">Ejen Aktif</p>
               </div>
-              <div class="bg-white/10 border border-white/15 rounded-2xl px-3 py-3 text-center">
+              <div class="bg-white/10 hover:bg-white/15 border border-white/15 rounded-2xl px-3 py-3 text-center transition-colors">
                 <p class="font-display font-extrabold text-honey text-lg sm:text-xl">15</p>
                 <p class="text-white/70 text-[10px] font-semibold uppercase tracking-wide">Kawasan Sarawak</p>
               </div>
@@ -171,18 +178,19 @@
         </div>
 
         <!-- KISAH KAMI -->
-        <div class="mt-12 bg-white border border-sand rounded-[2rem] p-6 sm:p-8 shadow-sm grid sm:grid-cols-5 gap-6 items-center">
+        <div class="mt-12 relative bg-white border border-sand rounded-[2rem] p-6 sm:p-8 shadow-sm grid sm:grid-cols-5 gap-6 items-center overflow-hidden card-hover">
+          <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-honey to-honeydeep"></div>
           <div class="sm:col-span-3">
             <p class="text-honeydeep text-[11px] font-bold tracking-widest uppercase mb-2">Kisah Kami</p>
             <h3 class="font-display font-bold text-xl text-ink mb-2">Bermula Daripada Komuniti, Untuk Komuniti</h3>
             <p class="text-inksoft text-sm leading-relaxed">Kedai PASTI Sarawak Official bermula sebagai inisiatif kecil keluarga Al-Haddad bersama ibu bapa dan guru-guru PASTI di Sarawak, bagi menjana dana ekonomi tadika sambil berkongsi produk komuniti pilihan — dari kurma, madu, sehingga kudapan tradisional — kepada seluruh Malaysia.</p>
           </div>
           <div class="sm:col-span-2 grid grid-cols-2 gap-3">
-            <div class="bg-leaflight rounded-2xl p-4 text-center">
+            <div class="bg-leaflight rounded-2xl p-4 text-center transition-transform duration-300 hover:-translate-y-1">
               <i data-lucide="heart-handshake" class="w-6 h-6 text-forest mx-auto mb-1"></i>
               <p class="text-[11px] font-bold text-ink">Komisen Telus</p>
             </div>
-            <div class="bg-sand rounded-2xl p-4 text-center">
+            <div class="bg-sand rounded-2xl p-4 text-center transition-transform duration-300 hover:-translate-y-1">
               <i data-lucide="package-check" class="w-6 h-6 text-honeydeep mx-auto mb-1"></i>
               <p class="text-[11px] font-bold text-ink">Produk Terpilih</p>
             </div>
@@ -191,7 +199,7 @@
       </div>
 
       <!-- FOOTER -->
-      <footer class="mt-14 bg-ink text-white/80">
+      <footer class="mt-14 bg-ink text-white/80 border-t-4 border-honey">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 py-10 grid sm:grid-cols-2 lg:grid-cols-4 gap-8 text-sm">
           <div>
             <div class="flex items-center gap-2 mb-3">
@@ -1036,22 +1044,23 @@ async function persistSession(val){ try{ if(val) await window.storage.set('alhad
 function productTileHTML(p){
   const cat = CATEGORIES[p.category] || CATEGORIES.kurma;
   const stockLabel = p.stock>0 ? `${p.stock} lagi` : 'Stok Habis';
-  const stockClass = p.stock>0 ? 'text-forest' : 'text-red-500';
+  const stockClass = p.stock>0 ? 'text-forest bg-leaflight' : 'text-red-500 bg-red-50';
   return `
-  <div class="bg-white rounded-3xl border border-sand overflow-hidden card-hover shadow-sm flex flex-col">
-    <button onclick="window.openQuickView('${p.id}')" class="relative h-28 sm:h-36 w-full flex items-center justify-center" style="background:linear-gradient(135deg, ${cat.grad[0]}, ${cat.grad[1]})">
-      <i data-lucide="${cat.icon}" class="w-11 h-11 sm:w-12 sm:h-12 text-white/90"></i>
-      ${p.popular ? `<span class="absolute top-2 left-2 bg-honey text-ink text-[9px] font-black px-2 py-1 rounded-full">POPULAR</span>` : ''}
+  <div class="group bg-white rounded-3xl border border-sand overflow-hidden card-hover shadow-sm flex flex-col ${p.stock<=0?'opacity-80':''}">
+    <button onclick="window.openQuickView('${p.id}')" class="relative h-28 sm:h-36 w-full flex items-center justify-center overflow-hidden" style="background:linear-gradient(135deg, ${cat.grad[0]}, ${cat.grad[1]})">
+      <i data-lucide="${cat.icon}" class="w-11 h-11 sm:w-12 sm:h-12 text-white/90 transition-transform duration-500 group-hover:scale-110"></i>
+      ${p.popular ? `<span class="absolute top-2 left-2 btn-gold text-ink text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">Popular</span>` : ''}
+      ${p.stock<=0 ? `<span class="absolute top-2 right-2 bg-red-500 text-white text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">Habis</span>` : ''}
     </button>
     <div class="p-3 flex flex-col flex-1">
       <p class="text-[9px] font-bold text-inksoft uppercase tracking-wide">${escapeHtml(cat.name)}</p>
-      <button onclick="window.openQuickView('${p.id}')" class="text-left font-display font-semibold text-sm text-ink leading-snug mt-0.5 line-clamp-2">${escapeHtml(p.name)}</button>
+      <button onclick="window.openQuickView('${p.id}')" class="text-left font-display font-semibold text-sm text-ink leading-snug mt-0.5 line-clamp-2 group-hover:text-forest transition-colors">${escapeHtml(p.name)}</button>
       <div class="mt-auto pt-2 flex items-end justify-between gap-2">
         <div>
           <p class="font-display font-bold text-forest text-sm sm:text-base">${formatRM(p.price)}</p>
-          <p class="text-[10px] ${stockClass} font-semibold">${stockLabel}</p>
+          <p class="text-[9px] ${stockClass} font-bold mt-0.5 inline-block px-1.5 py-0.5 rounded">${stockLabel}</p>
         </div>
-        <button ${p.stock<=0?'disabled':''} onclick="window.addToCart('${p.id}',1); event.stopPropagation();" class="shrink-0 ${p.stock<=0?'bg-slate-200 text-slate-400':'bg-forest hover:bg-forestdark text-white'} rounded-full w-9 h-9 flex items-center justify-center shadow-sm transition-colors" title="Tambah ke Troli">
+        <button ${p.stock<=0?'disabled':''} onclick="window.addToCart('${p.id}',1); event.stopPropagation();" class="btn-tactile shrink-0 ${p.stock<=0?'bg-slate-200 text-slate-400':'btn-forest text-white'} rounded-full w-9 h-9 flex items-center justify-center" title="Tambah ke Troli">
           <i data-lucide="plus" class="w-4 h-4"></i>
         </button>
       </div>
@@ -1074,9 +1083,9 @@ function renderHomeCatGrid(){
   const el = document.getElementById('home-cat-grid');
   if(!el) return;
   el.innerHTML = Object.entries(CATEGORIES).map(([key,cat])=>`
-    <button onclick="window.setCategory('${key}'); window.showView('catalog');" class="bg-white border border-sand rounded-2xl p-3 flex flex-col items-center gap-2 card-hover">
-      <div class="w-11 h-11 rounded-xl flex items-center justify-center text-white" style="background:linear-gradient(135deg, ${cat.grad[0]}, ${cat.grad[1]})"><i data-lucide="${cat.icon}" class="w-5 h-5"></i></div>
-      <span class="text-[10px] sm:text-[11px] font-bold text-ink text-center leading-tight">${escapeHtml(cat.name)}</span>
+    <button onclick="window.setCategory('${key}'); window.showView('catalog');" class="group bg-white border border-sand rounded-2xl p-3 flex flex-col items-center gap-2 card-hover shadow-sm">
+      <div class="w-11 h-11 rounded-xl flex items-center justify-center text-white shadow-sm transition-transform duration-300 group-hover:scale-110" style="background:linear-gradient(135deg, ${cat.grad[0]}, ${cat.grad[1]})"><i data-lucide="${cat.icon}" class="w-5 h-5"></i></div>
+      <span class="text-[10px] sm:text-[11px] font-bold text-ink text-center leading-tight group-hover:text-forest transition-colors">${escapeHtml(cat.name)}</span>
     </button>`).join('');
   icons();
 }
