@@ -78,10 +78,13 @@
         </div>
       </button>
 
-      <nav class="hidden md:flex items-center gap-1 text-sm font-bold text-inksoft">
+      <nav class="hidden lg:flex items-center gap-1 text-sm font-bold text-inksoft">
         <button onclick="window.showView('home')" class="px-3 py-2 rounded-xl hover:bg-leaflight hover:text-forest transition-colors">Utama</button>
         <button onclick="window.showView('catalog')" class="px-3 py-2 rounded-xl hover:bg-leaflight hover:text-forest transition-colors">Produk</button>
         <button onclick="window.showView('agent')" class="px-3 py-2 rounded-xl hover:bg-leaflight hover:text-forest transition-colors">Ejen</button>
+        <button onclick="window.showView('kawasan')" class="px-3 py-2 rounded-xl hover:bg-leaflight hover:text-forest transition-colors">Kawasan PASTI</button>
+        <button onclick="window.showView('pengurusan')" class="px-3 py-2 rounded-xl hover:bg-leaflight hover:text-forest transition-colors">Pengurusan</button>
+        <button onclick="window.showView('tentang')" class="px-3 py-2 rounded-xl hover:bg-leaflight hover:text-forest transition-colors">Tentang Kami</button>
       </nav>
 
       <div class="flex items-center gap-2">
@@ -93,7 +96,7 @@
     </div>
   </header>
 
-  <main class="flex-1 pb-24 md:pb-10">
+  <main class="flex-1 pb-24 lg:pb-10">
 
     <!-- ==================== VIEW: HOME ==================== -->
     <section id="view-home">
@@ -104,10 +107,10 @@
         <div class="absolute inset-0" style="background:linear-gradient(160deg,rgba(11,93,59,0.55) 0%,rgba(15,74,50,0.45) 55%,rgba(8,63,40,0.75) 100%)"></div>
         <div class="absolute inset-0 text-honey opacity-[0.10]" style="background-image:url(#star8-fill)"></div>
         <div class="absolute inset-0" style="background-image:url('data:image/svg+xml;utf8,&lt;svg xmlns=%27http://www.w3.org/2000/svg%27 width=%2246%27 height=%2246%27&gt;&lt;g fill=%27none%27 stroke=%27%23D4A017%27 stroke-width=%271%27 opacity=%270.16%27&gt;&lt;rect x=%279%27 y=%279%27 width=%2228%27 height=%2228%27/&gt;&lt;rect x=%279%27 y=%279%27 width=%2228%27 height=%2228%27 transform=%27rotate(45 23 23)%27/&gt;&lt;/g&gt;&lt;/svg&gt;');"></div>
-        <div class="relative max-w-6xl mx-auto px-4 sm:px-6 pt-10 pb-12 sm:pt-14 sm:pb-16 grid lg:grid-cols-2 gap-10 items-center">
+        <div class="relative max-w-6xl mx-auto px-4 sm:px-6 pt-10 pb-12 sm:pt-14 sm:pb-16 grid lg:grid-cols-[0.85fr_2fr] gap-6 lg:gap-8 items-center">
           <div>
             <span class="inline-block bg-white/10 text-honey text-[11px] font-bold tracking-widest uppercase px-3 py-1.5 rounded-full border border-white/15">Platform Komuniti • Seluruh Malaysia</span>
-            <h1 class="font-display font-extrabold text-3xl sm:text-5xl text-white leading-tight mt-4 max-w-xl">Kurma, Madu &amp; Barangan Komuniti — Setiap Tempahan Menyokong PASTI Sarawak</h1>
+            <h1 class="font-display font-extrabold text-3xl sm:text-5xl lg:text-2xl xl:text-3xl text-white leading-tight mt-4">Kurma, Madu &amp; Barangan Komuniti — Setiap Tempahan Menyokong PASTI Sarawak</h1>
             <p class="text-leaflight/90 text-sm sm:text-base mt-3 max-w-md">Beli produk pilihan terus daripada ejen komuniti kami. Mudah, telus, dan setiap ringgit memberi impak.</p>
             <div class="flex flex-wrap gap-3 mt-6">
               <button onclick="window.showView('catalog')" class="bg-honey hover:bg-honeydeep text-ink font-bold px-6 py-3 rounded-2xl shadow-lg flex items-center gap-2 transition-colors">
@@ -134,13 +137,9 @@
             </div>
           </div>
 
-          <div class="relative">
+          <div class="relative min-h-[420px] sm:min-h-[520px] lg:min-h-0 flex items-center justify-center">
             <div class="absolute -inset-6 sm:-inset-10 rounded-[2.5rem] opacity-50 blur-2xl pointer-events-none" style="background:radial-gradient(circle at 25% 25%,#D4A017,transparent 60%),radial-gradient(circle at 75% 70%,#3F9D64,transparent 60%)"></div>
-            <div class="relative rounded-[2rem] overflow-hidden border border-white/15 shadow-2xl">
-              <img src="header.png" alt="Kedai PASTI Sarawak Official" class="w-full h-full object-cover" style="filter:saturate(1.05) contrast(1.02)">
-              <div class="absolute inset-0" style="background:linear-gradient(160deg,rgba(11,93,59,0.35) 0%,rgba(15,74,50,0.05) 40%,rgba(8,63,40,0.55) 100%)"></div>
-              <div class="absolute inset-0" style="background:linear-gradient(0deg,rgba(8,63,40,0.65) 0%,transparent 30%)"></div>
-            </div>
+            <img src="header-nobg.png" alt="Kedai PASTI Sarawak Official" class="relative w-full h-full object-contain" style="filter:drop-shadow(0 20px 30px rgba(0,0,0,0.35))">
           </div>
         </div>
       </div>
@@ -193,7 +192,7 @@
 
       <!-- FOOTER -->
       <footer class="mt-14 bg-ink text-white/80">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 py-10 grid sm:grid-cols-3 gap-8 text-sm">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 py-10 grid sm:grid-cols-2 lg:grid-cols-4 gap-8 text-sm">
           <div>
             <div class="flex items-center gap-2 mb-3">
               <div class="w-8 h-8 rounded-xl overflow-hidden bg-white flex items-center justify-center shrink-0">
@@ -214,6 +213,17 @@
             <div class="flex flex-col gap-2 text-white/60 text-xs">
               <button onclick="window.showView('catalog')" class="text-left hover:text-honey w-fit">Katalog Produk</button>
               <button onclick="window.showView('agent')" class="text-left hover:text-honey w-fit">Portal Ejen</button>
+              <button onclick="window.showView('kawasan')" class="text-left hover:text-honey w-fit">Kawasan PASTI</button>
+              <button onclick="window.showView('pengurusan')" class="text-left hover:text-honey w-fit">Pengurusan</button>
+              <button onclick="window.showView('tentang')" class="text-left hover:text-honey w-fit">Tentang Kami</button>
+            </div>
+          </div>
+          <div>
+            <p class="font-bold text-white text-xs uppercase tracking-widest mb-3">Maklumat</p>
+            <div class="flex flex-col gap-2 text-white/60 text-xs">
+              <button onclick="window.showView('faq')" class="text-left hover:text-honey w-fit">Soalan Lazim (FAQ)</button>
+              <button onclick="window.showView('terma')" class="text-left hover:text-honey w-fit">Terma &amp; Syarat</button>
+              <button onclick="window.showView('privasi')" class="text-left hover:text-honey w-fit">Polisi Privasi</button>
             </div>
           </div>
         </div>
@@ -539,10 +549,195 @@
       </div>
     </section>
 
+    <!-- ==================== VIEW: KAWASAN PASTI ==================== -->
+    <section id="view-kawasan" class="hidden">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-16">
+        <button onclick="window.showView('home')" class="text-forest text-xs font-bold flex items-center gap-1 mb-4"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Kembali ke Utama</button>
+        <p class="text-honeydeep text-[11px] font-bold tracking-widest uppercase mb-2">Liputan Komuniti</p>
+        <h1 class="font-display font-bold text-2xl sm:text-3xl text-ink mb-2">Kawasan PASTI Sarawak</h1>
+        <p class="text-inksoft text-sm mb-8 max-w-2xl">Ejen komuniti kami beroperasi merentasi 15 kawasan di seluruh Sarawak, membolehkan tempahan dihantar dengan lebih pantas dan menyokong ekonomi tadika PASTI setempat.</p>
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          <div class="bg-white border border-sand rounded-2xl p-4 text-center card-hover"><i data-lucide="map-pin" class="w-5 h-5 text-forest mx-auto mb-2"></i><p class="font-display font-bold text-sm text-ink">Kuching</p></div>
+          <div class="bg-white border border-sand rounded-2xl p-4 text-center card-hover"><i data-lucide="map-pin" class="w-5 h-5 text-forest mx-auto mb-2"></i><p class="font-display font-bold text-sm text-ink">Padawan</p></div>
+          <div class="bg-white border border-sand rounded-2xl p-4 text-center card-hover"><i data-lucide="map-pin" class="w-5 h-5 text-forest mx-auto mb-2"></i><p class="font-display font-bold text-sm text-ink">Bau</p></div>
+          <div class="bg-white border border-sand rounded-2xl p-4 text-center card-hover"><i data-lucide="map-pin" class="w-5 h-5 text-forest mx-auto mb-2"></i><p class="font-display font-bold text-sm text-ink">Samarahan</p></div>
+          <div class="bg-white border border-sand rounded-2xl p-4 text-center card-hover"><i data-lucide="map-pin" class="w-5 h-5 text-forest mx-auto mb-2"></i><p class="font-display font-bold text-sm text-ink">Serian</p></div>
+          <div class="bg-white border border-sand rounded-2xl p-4 text-center card-hover"><i data-lucide="map-pin" class="w-5 h-5 text-forest mx-auto mb-2"></i><p class="font-display font-bold text-sm text-ink">Sri Aman</p></div>
+          <div class="bg-white border border-sand rounded-2xl p-4 text-center card-hover"><i data-lucide="map-pin" class="w-5 h-5 text-forest mx-auto mb-2"></i><p class="font-display font-bold text-sm text-ink">Betong</p></div>
+          <div class="bg-white border border-sand rounded-2xl p-4 text-center card-hover"><i data-lucide="map-pin" class="w-5 h-5 text-forest mx-auto mb-2"></i><p class="font-display font-bold text-sm text-ink">Saratok</p></div>
+          <div class="bg-white border border-sand rounded-2xl p-4 text-center card-hover"><i data-lucide="map-pin" class="w-5 h-5 text-forest mx-auto mb-2"></i><p class="font-display font-bold text-sm text-ink">Sarikei</p></div>
+          <div class="bg-white border border-sand rounded-2xl p-4 text-center card-hover"><i data-lucide="map-pin" class="w-5 h-5 text-forest mx-auto mb-2"></i><p class="font-display font-bold text-sm text-ink">Sibu</p></div>
+          <div class="bg-white border border-sand rounded-2xl p-4 text-center card-hover"><i data-lucide="map-pin" class="w-5 h-5 text-forest mx-auto mb-2"></i><p class="font-display font-bold text-sm text-ink">Mukah</p></div>
+          <div class="bg-white border border-sand rounded-2xl p-4 text-center card-hover"><i data-lucide="map-pin" class="w-5 h-5 text-forest mx-auto mb-2"></i><p class="font-display font-bold text-sm text-ink">Bintulu</p></div>
+          <div class="bg-white border border-sand rounded-2xl p-4 text-center card-hover"><i data-lucide="map-pin" class="w-5 h-5 text-forest mx-auto mb-2"></i><p class="font-display font-bold text-sm text-ink">Miri</p></div>
+          <div class="bg-white border border-sand rounded-2xl p-4 text-center card-hover"><i data-lucide="map-pin" class="w-5 h-5 text-forest mx-auto mb-2"></i><p class="font-display font-bold text-sm text-ink">Limbang</p></div>
+          <div class="bg-white border border-sand rounded-2xl p-4 text-center card-hover"><i data-lucide="map-pin" class="w-5 h-5 text-forest mx-auto mb-2"></i><p class="font-display font-bold text-sm text-ink">Lawas</p></div>
+        </div>
+        <div class="mt-8 bg-leaflight rounded-3xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div>
+            <p class="font-display font-bold text-ink mb-1">Kawasan anda belum disenaraikan?</p>
+            <p class="text-inksoft text-sm">Jadi ejen kami dan bawa Kedai PASTI Sarawak Official ke kawasan anda.</p>
+          </div>
+          <button onclick="window.showView('agent')" class="shrink-0 bg-forest hover:bg-forestdark text-white font-bold px-6 py-3 rounded-2xl flex items-center gap-2 transition-colors"><i data-lucide="users" class="w-4 h-4"></i> Jadi Ejen Kami</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== VIEW: PENGURUSAN ==================== -->
+    <section id="view-pengurusan" class="hidden">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-16">
+        <button onclick="window.showView('home')" class="text-forest text-xs font-bold flex items-center gap-1 mb-4"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Kembali ke Utama</button>
+        <p class="text-honeydeep text-[11px] font-bold tracking-widest uppercase mb-2">Jawatankuasa</p>
+        <h1 class="font-display font-bold text-2xl sm:text-3xl text-ink mb-2">Pasukan Pengurusan</h1>
+        <p class="text-inksoft text-sm mb-8 max-w-2xl">Diuruskan oleh sukarelawan ibu bapa dan guru-guru PASTI Sarawak, bersama keluarga Al-Haddad yang mengasaskan inisiatif ini.</p>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div class="bg-white border border-sand rounded-3xl p-5 text-center card-hover">
+            <div class="w-16 h-16 rounded-full bg-leaflight flex items-center justify-center mx-auto mb-3"><i data-lucide="user-round" class="w-7 h-7 text-forest"></i></div>
+            <p class="font-display font-bold text-ink">Hafiz Al-Haddad</p>
+            <p class="text-honeydeep text-xs font-bold uppercase tracking-wide mt-0.5">Pengerusi</p>
+          </div>
+          <div class="bg-white border border-sand rounded-3xl p-5 text-center card-hover">
+            <div class="w-16 h-16 rounded-full bg-leaflight flex items-center justify-center mx-auto mb-3"><i data-lucide="user-round" class="w-7 h-7 text-forest"></i></div>
+            <p class="font-display font-bold text-ink">Siti Fatimah</p>
+            <p class="text-honeydeep text-xs font-bold uppercase tracking-wide mt-0.5">Naib Pengerusi</p>
+          </div>
+          <div class="bg-white border border-sand rounded-3xl p-5 text-center card-hover">
+            <div class="w-16 h-16 rounded-full bg-leaflight flex items-center justify-center mx-auto mb-3"><i data-lucide="user-round" class="w-7 h-7 text-forest"></i></div>
+            <p class="font-display font-bold text-ink">Nurul Ain</p>
+            <p class="text-honeydeep text-xs font-bold uppercase tracking-wide mt-0.5">Setiausaha</p>
+          </div>
+          <div class="bg-white border border-sand rounded-3xl p-5 text-center card-hover">
+            <div class="w-16 h-16 rounded-full bg-leaflight flex items-center justify-center mx-auto mb-3"><i data-lucide="user-round" class="w-7 h-7 text-forest"></i></div>
+            <p class="font-display font-bold text-ink">Ahmad Zulkifli</p>
+            <p class="text-honeydeep text-xs font-bold uppercase tracking-wide mt-0.5">Bendahari</p>
+          </div>
+          <div class="bg-white border border-sand rounded-3xl p-5 text-center card-hover">
+            <div class="w-16 h-16 rounded-full bg-leaflight flex items-center justify-center mx-auto mb-3"><i data-lucide="user-round" class="w-7 h-7 text-forest"></i></div>
+            <p class="font-display font-bold text-ink">Dayang Suraya</p>
+            <p class="text-honeydeep text-xs font-bold uppercase tracking-wide mt-0.5">AJK Pemasaran</p>
+          </div>
+          <div class="bg-white border border-sand rounded-3xl p-5 text-center card-hover">
+            <div class="w-16 h-16 rounded-full bg-leaflight flex items-center justify-center mx-auto mb-3"><i data-lucide="user-round" class="w-7 h-7 text-forest"></i></div>
+            <p class="font-display font-bold text-ink">Rosli Hamid</p>
+            <p class="text-honeydeep text-xs font-bold uppercase tracking-wide mt-0.5">AJK Logistik</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== VIEW: TENTANG KAMI ==================== -->
+    <section id="view-tentang" class="hidden">
+      <div class="max-w-4xl mx-auto px-4 sm:px-6 pt-8 pb-16">
+        <button onclick="window.showView('home')" class="text-forest text-xs font-bold flex items-center gap-1 mb-4"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Kembali ke Utama</button>
+        <p class="text-honeydeep text-[11px] font-bold tracking-widest uppercase mb-2">Tentang Kami</p>
+        <h1 class="font-display font-bold text-2xl sm:text-3xl text-ink mb-4">Bermula Daripada Komuniti, Untuk Komuniti</h1>
+        <p class="text-inksoft text-sm leading-relaxed mb-4">Kedai PASTI Sarawak Official bermula sebagai inisiatif kecil keluarga Al-Haddad bersama ibu bapa dan guru-guru PASTI di Sarawak, bagi menjana dana ekonomi tadika sambil berkongsi produk komuniti pilihan — dari kurma, madu, sehingga kudapan tradisional — kepada seluruh Malaysia.</p>
+        <p class="text-inksoft text-sm leading-relaxed mb-8">Setiap tempahan yang dibuat menyumbang terus kepada dana operasi tadika PASTI dan komisen ejen komuniti yang menjualnya, menjadikan setiap pembelian anda satu sokongan langsung kepada pendidikan awal kanak-kanak di Sarawak.</p>
+        <div class="grid sm:grid-cols-2 gap-4 mb-8">
+          <div class="bg-white border border-sand rounded-3xl p-6">
+            <div class="w-11 h-11 rounded-xl bg-leaflight flex items-center justify-center mb-3"><i data-lucide="target" class="w-5 h-5 text-forest"></i></div>
+            <p class="font-display font-bold text-ink mb-1">Misi Kami</p>
+            <p class="text-inksoft text-sm leading-relaxed">Menjana dana mampan untuk tadika PASTI melalui perkongsian produk komuniti yang berkualiti, telus dan memberi impak langsung kepada penjual tempatan.</p>
+          </div>
+          <div class="bg-white border border-sand rounded-3xl p-6">
+            <div class="w-11 h-11 rounded-xl bg-sand flex items-center justify-center mb-3"><i data-lucide="eye" class="w-5 h-5 text-honeydeep"></i></div>
+            <p class="font-display font-bold text-ink mb-1">Visi Kami</p>
+            <p class="text-inksoft text-sm leading-relaxed">Menjadi platform komuniti PASTI paling dipercayai di Sarawak, menghubungkan ejen tempatan dengan pelanggan di seluruh Malaysia.</p>
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-3">
+          <div class="bg-forest/5 border border-forest/10 rounded-2xl p-4 text-center">
+            <i data-lucide="heart-handshake" class="w-6 h-6 text-forest mx-auto mb-1"></i>
+            <p class="text-[11px] font-bold text-ink">Komisen Telus</p>
+          </div>
+          <div class="bg-forest/5 border border-forest/10 rounded-2xl p-4 text-center">
+            <i data-lucide="package-check" class="w-6 h-6 text-forest mx-auto mb-1"></i>
+            <p class="text-[11px] font-bold text-ink">Produk Terpilih</p>
+          </div>
+          <div class="bg-forest/5 border border-forest/10 rounded-2xl p-4 text-center">
+            <i data-lucide="graduation-cap" class="w-6 h-6 text-forest mx-auto mb-1"></i>
+            <p class="text-[11px] font-bold text-ink">Sokong Tadika PASTI</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== VIEW: FAQ ==================== -->
+    <section id="view-faq" class="hidden">
+      <div class="max-w-3xl mx-auto px-4 sm:px-6 pt-8 pb-16">
+        <button onclick="window.showView('home')" class="text-forest text-xs font-bold flex items-center gap-1 mb-4"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Kembali ke Utama</button>
+        <p class="text-honeydeep text-[11px] font-bold tracking-widest uppercase mb-2">Bantuan</p>
+        <h1 class="font-display font-bold text-2xl sm:text-3xl text-ink mb-8">Soalan Lazim</h1>
+        <div class="space-y-3">
+          <details class="bg-white border border-sand rounded-2xl p-4 group" open>
+            <summary class="font-display font-bold text-sm text-ink cursor-pointer list-none flex items-center justify-between">Bagaimana cara membuat tempahan?<i data-lucide="chevron-down" class="w-4 h-4 text-inksoft group-open:rotate-180 transition-transform"></i></summary>
+            <p class="text-inksoft text-sm mt-3 leading-relaxed">Pilih produk di Katalog, tambah ke troli, isi maklumat penghantaran semasa checkout, dan hantar tempahan. Anda akan terima nombor pesanan dan boleh sahkan terus via WhatsApp.</p>
+          </details>
+          <details class="bg-white border border-sand rounded-2xl p-4 group">
+            <summary class="font-display font-bold text-sm text-ink cursor-pointer list-none flex items-center justify-between">Apakah kaedah pembayaran yang diterima?<i data-lucide="chevron-down" class="w-4 h-4 text-inksoft group-open:rotate-180 transition-transform"></i></summary>
+            <p class="text-inksoft text-sm mt-3 leading-relaxed">Pembayaran disahkan secara manual melalui WhatsApp selepas tempahan dibuat — pelanggan boleh memilih pindahan bank atau e-wallet mengikut arahan yang diberikan oleh ejen/kedai.</p>
+          </details>
+          <details class="bg-white border border-sand rounded-2xl p-4 group">
+            <summary class="font-display font-bold text-sm text-ink cursor-pointer list-none flex items-center justify-between">Berapa lama tempoh penghantaran?<i data-lucide="chevron-down" class="w-4 h-4 text-inksoft group-open:rotate-180 transition-transform"></i></summary>
+            <p class="text-inksoft text-sm mt-3 leading-relaxed">Purata 2-4 hari bekerja bagi kawasan Sarawak, dan 3-6 hari bekerja bagi Semenanjung/Sabah, bergantung kepada kurier yang dipilih semasa checkout.</p>
+          </details>
+          <details class="bg-white border border-sand rounded-2xl p-4 group">
+            <summary class="font-display font-bold text-sm text-ink cursor-pointer list-none flex items-center justify-between">Bagaimana untuk menjadi ejen?<i data-lucide="chevron-down" class="w-4 h-4 text-inksoft group-open:rotate-180 transition-transform"></i></summary>
+            <p class="text-inksoft text-sm mt-3 leading-relaxed">Klik "Jadi Ejen Kami" atau pergi ke Portal Ejen, kemudian hubungi kami via WhatsApp untuk pendaftaran. Ejen mendapat komisen telus bagi setiap jualan melalui link rujukan sendiri.</p>
+          </details>
+          <details class="bg-white border border-sand rounded-2xl p-4 group">
+            <summary class="font-display font-bold text-sm text-ink cursor-pointer list-none flex items-center justify-between">Bolehkah saya batalkan atau pulangkan pesanan?<i data-lucide="chevron-down" class="w-4 h-4 text-inksoft group-open:rotate-180 transition-transform"></i></summary>
+            <p class="text-inksoft text-sm mt-3 leading-relaxed">Pembatalan dibenarkan sebelum status pesanan bertukar kepada "Diproses". Untuk produk rosak/tidak sepadan, hubungi kami dalam masa 3 hari selepas terima untuk pemulangan/penggantian.</p>
+          </details>
+          <details class="bg-white border border-sand rounded-2xl p-4 group">
+            <summary class="font-display font-bold text-sm text-ink cursor-pointer list-none flex items-center justify-between">Ke mana perginya keuntungan jualan?<i data-lucide="chevron-down" class="w-4 h-4 text-inksoft group-open:rotate-180 transition-transform"></i></summary>
+            <p class="text-inksoft text-sm mt-3 leading-relaxed">Sebahagian hasil jualan menyumbang kepada dana operasi tadika PASTI Sarawak, manakala ejen komuniti menerima komisen telus bagi setiap produk yang berjaya dijual.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== VIEW: TERMA & SYARAT ==================== -->
+    <section id="view-terma" class="hidden">
+      <div class="max-w-3xl mx-auto px-4 sm:px-6 pt-8 pb-16">
+        <button onclick="window.showView('home')" class="text-forest text-xs font-bold flex items-center gap-1 mb-4"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Kembali ke Utama</button>
+        <p class="text-honeydeep text-[11px] font-bold tracking-widest uppercase mb-2">Legal</p>
+        <h1 class="font-display font-bold text-2xl sm:text-3xl text-ink mb-2">Terma &amp; Syarat</h1>
+        <p class="text-inksoft text-xs mb-8">Kemas kini terakhir: Januari 2026</p>
+        <div class="space-y-6 text-sm text-inksoft leading-relaxed">
+          <div><h2 class="font-display font-bold text-ink mb-1.5">1. Penerimaan Tempahan</h2><p>Setiap tempahan yang dihantar melalui laman ini tertakluk kepada pengesahan stok dan pembayaran. Kedai PASTI Sarawak Official berhak menolak atau membatalkan tempahan sekiranya produk kehabisan stok atau maklumat pelanggan tidak lengkap.</p></div>
+          <div><h2 class="font-display font-bold text-ink mb-1.5">2. Harga &amp; Pembayaran</h2><p>Semua harga dipaparkan dalam Ringgit Malaysia (RM) dan tidak termasuk kos penghantaran, yang dikira berasingan semasa checkout. Harga boleh berubah tanpa notis awal.</p></div>
+          <div><h2 class="font-display font-bold text-ink mb-1.5">3. Penghantaran</h2><p>Tempoh penghantaran adalah anggaran sahaja dan boleh terjejas oleh faktor luar kawalan seperti cuaca atau gangguan perkhidmatan kurier. Kedai tidak bertanggungjawab ke atas kelewatan yang disebabkan oleh pihak kurier.</p></div>
+          <div><h2 class="font-display font-bold text-ink mb-1.5">4. Pembatalan &amp; Pemulangan</h2><p>Pembatalan hanya dibenarkan sebelum pesanan diproses untuk penghantaran. Produk yang rosak semasa penghantaran boleh dipulangkan/ditukar dalam tempoh 3 hari dari tarikh terima, tertakluk kepada bukti kerosakan.</p></div>
+          <div><h2 class="font-display font-bold text-ink mb-1.5">5. Sistem Ejen &amp; Komisen</h2><p>Ejen berdaftar layak menerima komisen mengikut kadar yang ditetapkan bagi setiap produk yang berjaya dijual melalui link rujukan masing-masing. Komisen tertakluk kepada pengesahan pembayaran penuh oleh pelanggan.</p></div>
+          <div><h2 class="font-display font-bold text-ink mb-1.5">6. Had Liabiliti</h2><p>Kedai PASTI Sarawak Official tidak bertanggungjawab ke atas sebarang kerugian tidak langsung yang timbul daripada penggunaan laman web atau produk yang dibeli, melainkan diwajibkan oleh undang-undang.</p></div>
+          <div><h2 class="font-display font-bold text-ink mb-1.5">7. Pindaan Terma</h2><p>Terma &amp; Syarat ini boleh dikemas kini dari semasa ke semasa tanpa notis terdahulu. Penggunaan berterusan laman ini selepas kemas kini dianggap sebagai penerimaan terma baharu.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== VIEW: POLISI PRIVASI ==================== -->
+    <section id="view-privasi" class="hidden">
+      <div class="max-w-3xl mx-auto px-4 sm:px-6 pt-8 pb-16">
+        <button onclick="window.showView('home')" class="text-forest text-xs font-bold flex items-center gap-1 mb-4"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Kembali ke Utama</button>
+        <p class="text-honeydeep text-[11px] font-bold tracking-widest uppercase mb-2">Legal</p>
+        <h1 class="font-display font-bold text-2xl sm:text-3xl text-ink mb-2">Polisi Privasi</h1>
+        <p class="text-inksoft text-xs mb-8">Kemas kini terakhir: Januari 2026</p>
+        <div class="space-y-6 text-sm text-inksoft leading-relaxed">
+          <div><h2 class="font-display font-bold text-ink mb-1.5">1. Maklumat Yang Dikumpul</h2><p>Kami mengumpul maklumat seperti nama, nombor telefon, emel dan alamat penghantaran yang anda berikan semasa membuat tempahan atau mendaftar sebagai ejen.</p></div>
+          <div><h2 class="font-display font-bold text-ink mb-1.5">2. Penggunaan Maklumat</h2><p>Maklumat digunakan semata-mata untuk memproses tempahan, pengiraan komisen ejen, penghantaran produk, dan komunikasi berkaitan pesanan anda melalui WhatsApp atau emel.</p></div>
+          <div><h2 class="font-display font-bold text-ink mb-1.5">3. Perkongsian Data</h2><p>Maklumat penghantaran dikongsi dengan syarikat kurier (cth. EasyParcel) semata-mata untuk tujuan penghantaran. Kami tidak menjual atau mendedahkan maklumat peribadi anda kepada pihak ketiga untuk tujuan pemasaran.</p></div>
+          <div><h2 class="font-display font-bold text-ink mb-1.5">4. Keselamatan Data</h2><p>Kami mengambil langkah munasabah untuk melindungi maklumat peribadi anda daripada akses, pengubahan atau pendedahan yang tidak dibenarkan.</p></div>
+          <div><h2 class="font-display font-bold text-ink mb-1.5">5. Hak Anda (PDPA)</h2><p>Selaras dengan Akta Perlindungan Data Peribadi 2010 (PDPA), anda berhak untuk mengakses, membetulkan atau meminta pemadaman maklumat peribadi anda dengan menghubungi kami.</p></div>
+          <div><h2 class="font-display font-bold text-ink mb-1.5">6. Hubungi Kami</h2><p>Sebarang pertanyaan berkaitan privasi data boleh dihantar ke <span class="text-forest font-semibold">hello@pastisarawak.my</span> atau melalui WhatsApp di 012-345 6789.</p></div>
+        </div>
+      </div>
+    </section>
+
   </main>
 
   <!-- BOTTOM NAV (mobile) -->
-  <nav class="fixed bottom-0 inset-x-0 z-40 bg-white border-t border-sand md:hidden">
+  <nav class="fixed bottom-0 inset-x-0 z-40 bg-white border-t border-sand lg:hidden">
     <div class="grid grid-cols-4">
       <button data-nav="home" onclick="window.showView('home')" class="flex flex-col items-center gap-1 py-2.5 text-inksoft text-[10px] font-bold">
         <span class="nav-ic w-9 h-9 rounded-full flex items-center justify-center"><i data-lucide="home" class="w-5 h-5"></i></span>Utama
@@ -624,6 +819,7 @@
             <input id="am-area" type="text" placeholder="Kawasan" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
           </div>
           <input id="am-email" type="email" placeholder="Emel" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          <input id="am-branch" type="text" placeholder="Cawangan PASTI" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
           <input id="am-pass" type="text" placeholder="Kata Laluan" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
         </div>
         <div class="flex gap-3 mt-5">
@@ -665,11 +861,49 @@ const defaultProducts = [
 ];
 
 const defaultAgents = [
-  { code:'AG001', name:'Siti Fatimah',    phone:'0139876543', email:'siti.fatimah@example.com', area:'Kuching', password:'demo123', joinedAt:D(60) },
-  { code:'AG002', name:'Ahmad Zulkifli',  phone:'0123456789', email:'ahmad.z@example.com',       area:'Miri',    password:'demo123', joinedAt:D(50) },
-  { code:'AG003', name:'Nurul Ain',       phone:'0198765432', email:'nurul.ain@example.com',     area:'Sibu',    password:'demo123', joinedAt:D(40) },
-  { code:'AG004', name:'Hafiz Al-Haddad', phone:'0134567890', email:'hafiz@pastisarawak.my',    area:'Kuching', password:'demo123', joinedAt:D(90) },
-  { code:'AG005', name:'Dayang Suraya',   phone:'0167891234', email:'dayang.s@example.com',      area:'Bintulu', password:'demo123', joinedAt:D(30) },
+  { code:'AG001', name:'Dayang Nor Suria Binti Abang Raduan', phone:'0136191762', email:'', area:'Betong', branch:'Pasti HIDAYAH', password:'demo123', joinedAt:'2026-02-23T02:33:52.000Z' },
+  { code:'AG002', name:'Norhayati Binti Nasir', phone:'01118553817', email:'', area:'Sarikei', branch:'PASTI IMTIAZ SARIKEI', password:'demo123', joinedAt:'2026-02-23T02:31:53.000Z' },
+  { code:'AG003', name:'Cikgu Nurul', phone:'0194228245', email:'', area:'Sibu', branch:'PASTI AL- FATEH lll', password:'demo123', joinedAt:'2026-02-24T00:53:21.000Z' },
+  { code:'AG004', name:'Sarmi binti Alimin', phone:'601151454917', email:'', area:'Miri', branch:'PASTI AL-AMALULULLAH', password:'demo123', joinedAt:'2026-02-22T06:10:34.000Z' },
+  { code:'AG005', name:'Cg tasya', phone:'01129696044', email:'', area:'Mukah', branch:'Pasti Al Wafi Mukah', password:'demo123', joinedAt:'2026-02-22T13:40:51.000Z' },
+  { code:'AG006', name:'Cikgu Siti', phone:'148387601', email:'', area:'Kota Samarahan', branch:'Pasti Raudhah', password:'demo123', joinedAt:'2026-02-22T08:07:21.000Z' },
+  { code:'AG007', name:'Nurhafizah Binti Abdollah', phone:'01119837169', email:'', area:'Saratok', branch:'PASTI AL-MAHABBAH 2 , SARATOK', password:'demo123', joinedAt:'2026-02-22T04:14:23.000Z' },
+  { code:'AG008', name:'Nurfatni Aisah binti kassim', phone:'0124055052', email:'', area:'Petra Jaya', branch:'PASTI Damai', password:'demo123', joinedAt:'2026-02-22T05:05:57.000Z' },
+  { code:'AG009', name:'Cikgu Mas', phone:'0198198904', email:'', area:'Kota Samarahan', branch:'Pasti Raudhatul Ilmi 1', password:'demo123', joinedAt:'2026-02-23T02:18:26.000Z' },
+  { code:'AG010', name:'CIKGU NURFAIZ SYAREE', phone:'0178527339', email:'', area:'Petra Jaya', branch:'PASTI DARUL ILMI 1', password:'demo123', joinedAt:'2026-03-03T00:14:07.000Z' },
+  { code:'AG011', name:'NURUL AFIQAH BINTI JULLKANAINE', phone:'0194963035', email:'', area:'Mukah', branch:'PASTI AL-WAFI 1', password:'demo123', joinedAt:'2026-02-22T06:21:16.000Z' },
+  { code:'AG012', name:'Norzapazillah binti Rahmat', phone:'128673271', email:'', area:'Saratok', branch:'Pasti An-Nur', password:'demo123', joinedAt:'2026-02-22T06:30:17.000Z' },
+  { code:'AG013', name:'Atiqah', phone:'0138052161', email:'', area:'Sibu', branch:'Pasti alfateh 1', password:'demo123', joinedAt:'2026-03-04T02:39:16.000Z' },
+  { code:'AG014', name:'zati bayani binti sani', phone:'0109499162', email:'', area:'Kota Samarahan', branch:'pasti al falah', password:'demo123', joinedAt:'2026-02-24T23:45:22.000Z' },
+  { code:'AG015', name:'Nurul Ashikhin', phone:'0138383248', email:'', area:'Batang Sadong', branch:'Lukmanul Hakim', password:'demo123', joinedAt:'2026-02-23T02:32:53.000Z' },
+  { code:'AG016', name:'Cikgu Ikha', phone:'01116685942', email:'', area:'Mukah', branch:'PASTI AL-WAFI 3', password:'demo123', joinedAt:'2026-02-22T04:19:51.000Z' },
+  { code:'AG017', name:'Salasiah Bt Aslan', phone:'01114580751', email:'', area:'Petra Jaya', branch:'Insani', password:'demo123', joinedAt:'2026-02-22T05:07:18.000Z' },
+  { code:'AG018', name:'Raja Nafiera Binti Amil', phone:'0109837177', email:'', area:'Kota Samarahan', branch:'Pasti Raudhatul Ilmi 2', password:'demo123', joinedAt:'2026-02-25T05:50:56.000Z' },
+  { code:'AG019', name:'LENNY MALINA BINTI ABDULLAH', phone:'0128911061', email:'', area:'Betong', branch:'PASTI HIDAYAH BETONG', password:'demo123', joinedAt:'2026-02-23T02:37:10.000Z' },
+  { code:'AG020', name:'Cikgu Fira', phone:'0109837177', email:'', area:'Kota Samarahan', branch:'Pasti Raudhatul Ilmi 2', password:'demo123', joinedAt:'2026-02-25T05:57:33.000Z' },
+  { code:'AG021', name:'Nur Amirah binti Arbi', phone:'0183118567', email:'', area:'Petra Jaya', branch:'PASTI DARUL HANA', password:'demo123', joinedAt:'2026-02-23T05:11:30.000Z' },
+  { code:'AG022', name:'Nur Amalina Fariza', phone:'60138236964', email:'', area:'Petra Jaya', branch:'PASTI Darul Furqan', password:'demo123', joinedAt:'2026-02-22T04:47:53.000Z' },
+  { code:'AG023', name:'Siti Zuriani binti Abang Asa', phone:'01112822814', email:'', area:'Petra Jaya', branch:'Pasti Darul Ilmi 2', password:'demo123', joinedAt:'2026-02-22T04:51:27.000Z' },
+  { code:'AG024', name:'LENNY MALINA BINTI ABDULLAH', phone:'0128911061', email:'', area:'Betong', branch:'PASTI HIDAYAH BETONG', password:'demo123', joinedAt:'2026-02-23T03:05:15.000Z' },
+  { code:'AG025', name:'SITI NURHIDDONA BINTI DARAMAN (AIN)', phone:'0178509048', email:'', area:'Saratok', branch:'PASTI AN-NUR KABONG', password:'demo123', joinedAt:'2026-02-22T04:09:52.000Z' },
+  { code:'AG026', name:'CIKGU TINI', phone:'0138364540', email:'', area:'Kota Samarahan', branch:'PASTI RAUDHATUL ILMI 4', password:'demo123', joinedAt:'2026-02-25T05:25:29.000Z' },
+  { code:'AG027', name:'Siti Nuramira binti Taib', phone:'0178581601', email:'', area:'Petra Jaya', branch:'PASTI AT TAQWA', password:'demo123', joinedAt:'2026-02-22T05:16:39.000Z' },
+  { code:'AG028', name:'Norshiela binti Samaon', phone:'01119373721', email:'', area:'Sibu', branch:'Paati Al Fateh 2', password:'demo123', joinedAt:'2026-02-24T05:19:28.000Z' },
+  { code:'AG029', name:'Nurulhafizah mosli', phone:'1124748155', email:'', area:'Miri', branch:'Pasti al-irsyad piasau', password:'demo123', joinedAt:'2026-02-23T03:01:08.000Z' },
+  { code:'AG030', name:'Cikgu Aliz', phone:'1114580751', email:'', area:'Petra Jaya', branch:'Insani', password:'demo123', joinedAt:'2026-02-22T05:10:09.000Z' },
+  { code:'AG031', name:'Cikgu Siti Rahimah', phone:'0148387601', email:'', area:'Kota Samarahan', branch:'Pasti Raudhah', password:'demo123', joinedAt:'2026-02-22T08:11:01.000Z' },
+  { code:'AG032', name:'Nor Fadila Binti Hamzah', phone:'0109224614', email:'', area:'Mukah', branch:'PASTI AL WAFI MUKAH', password:'demo123', joinedAt:'2026-02-22T13:39:50.000Z' },
+  { code:'AG033', name:'Nur Muharini Binti Putit', phone:'0138240873', email:'', area:'Kota Samarahan', branch:'PASTI AL-FALAH', password:'demo123', joinedAt:'2026-02-22T09:03:29.000Z' },
+  { code:'AG034', name:'Aiennul Andriana', phone:'0167737154', email:'', area:'Sibu', branch:'PASTI Al-Fateh Junior Sibu Jaya', password:'demo123', joinedAt:'2026-02-25T00:06:33.000Z' },
+  { code:'AG035', name:'Mazalina binti Jali', phone:'60148991220', email:'', area:'Mukah', branch:'Pasti Al-Wafi 1', password:'demo123', joinedAt:'2026-02-22T05:45:31.000Z' },
+  { code:'AG036', name:'Dayang Shafica', phone:'0193853077', email:'', area:'Kota Samarahan', branch:'PASTI RAUDHAH', password:'demo123', joinedAt:'2026-02-25T14:02:25.000Z' },
+  { code:'AG037', name:'SABTUYAH BINTI BIDIN', phone:'0135683695', email:'', area:'Petra Jaya', branch:'PASTI AN NIDA’', password:'demo123', joinedAt:'2026-02-22T05:55:38.000Z' },
+  { code:'AG038', name:'Nur Siti Quzaimah Binti Osman', phone:'011129633718', email:'', area:'Betong', branch:'PASTI HIDAYAH BETONG', password:'demo123', joinedAt:'2026-02-23T02:54:52.000Z' },
+  { code:'AG039', name:'Nor Farahin binti Mohd daud', phone:'0135718350', email:'', area:'Petra Jaya', branch:'Al Ikhwan', password:'demo123', joinedAt:'2026-02-22T05:40:16.000Z' },
+  { code:'AG040', name:'Nurfahmiera', phone:'60168544914', email:'', area:'Sibu', branch:'PASTi Al FATEH JUNIOR SIBU JAYA', password:'demo123', joinedAt:'2026-02-24T02:14:15.000Z' },
+  { code:'AG041', name:'Normala Bt Affendi', phone:'01131750313', email:'', area:'Saratok', branch:'PASTI AL MAHABBAH SARATOK', password:'demo123', joinedAt:'2026-02-22T04:10:10.000Z' },
+  { code:'AG042', name:'Siti Naza Noorashikin Binti Zepari', phone:'+60128846907', email:'', area:'Sibuti', branch:'Pasti At-Taqwa', password:'demo123', joinedAt:'2026-02-23T02:52:00.000Z' },
+  { code:'AG043', name:'Cikgu Alam', phone:'0168709904', email:'', area:'Petra Jaya', branch:'Pasti Mawaddah', password:'demo123', joinedAt:'2026-02-22T05:08:39.000Z' },
 ];
 
 const seedSpecs = [
@@ -938,7 +1172,7 @@ function updateCartBadge(){
 }
 
 /* ================= NAV / VIEW SWITCH ================= */
-const VIEW_IDS = ['home','catalog','cart','checkout','agent','admin'];
+const VIEW_IDS = ['home','catalog','cart','checkout','agent','admin','kawasan','pengurusan','tentang','faq','terma','privasi'];
 window.showView = function(name){
   VIEW_IDS.forEach(v=>{
     const sec = document.getElementById('view-'+v);
@@ -1169,7 +1403,7 @@ function renderAgentView(){
   loginWrap.classList.add('hidden'); dashWrap.classList.remove('hidden');
 
   document.getElementById('agent-dash-name').innerText = currentAgent.name;
-  document.getElementById('agent-dash-area').innerHTML = `<i data-lucide="map-pin" class="w-3.5 h-3.5"></i> PASTI ${escapeHtml(currentAgent.area)}`;
+  document.getElementById('agent-dash-area').innerHTML = `<i data-lucide="map-pin" class="w-3.5 h-3.5"></i> PASTI ${escapeHtml(currentAgent.area)}${currentAgent.branch ? ' · '+escapeHtml(currentAgent.branch) : ''}`;
 
   const stats = statsForAgent(currentAgent.code);
   document.getElementById('agent-stat-sales').innerText = formatRM(stats.sales);
@@ -1368,6 +1602,7 @@ window.openAgentModal = function(code){
   document.getElementById('am-phone').value = editing ? editing.phone : '';
   document.getElementById('am-area').value = editing ? editing.area : '';
   document.getElementById('am-email').value = editing ? editing.email : '';
+  document.getElementById('am-branch').value = editing ? (editing.branch||'') : '';
   document.getElementById('am-pass').value = editing ? editing.password : 'demo123';
   document.getElementById('modal-admin-agent').classList.remove('hidden');
 }
@@ -1379,6 +1614,7 @@ window.saveAgent = function(){
   const phone = document.getElementById('am-phone').value.trim();
   const area = document.getElementById('am-area').value.trim();
   const email = document.getElementById('am-email').value.trim();
+  const branch = document.getElementById('am-branch').value.trim();
   const password = document.getElementById('am-pass').value.trim() || 'demo123';
 
   if(!code || !name){ showToast('Kod dan nama ejen wajib diisi','alert-circle'); return; }
@@ -1386,10 +1622,10 @@ window.saveAgent = function(){
 
   if(origCode){
     const a = appAgents.find(x=>x.code===origCode);
-    Object.assign(a, {code,name,phone,area,email,password});
+    Object.assign(a, {code,name,phone,area,email,branch,password});
     appOrders.forEach(o=>{ if(o.agentCode===origCode) o.agentCode=code; });
   } else {
-    appAgents.push({ code,name,phone,area,email,password, joinedAt:new Date().toISOString() });
+    appAgents.push({ code,name,phone,area,email,branch,password, joinedAt:new Date().toISOString() });
   }
   persistAgents(); persistOrders();
   window.closeAgentModal();
@@ -1413,7 +1649,7 @@ function renderAdminAgents(){
     return `<tr class="border-t border-sand">
       <td class="p-3 font-mono font-bold text-forest">${escapeHtml(a.code)}</td>
       <td class="p-3 font-bold text-ink">${escapeHtml(a.name)}<br><span class="text-[10px] text-inksoft font-normal">${escapeHtml(a.phone)}</span></td>
-      <td class="p-3 text-inksoft">${escapeHtml(a.area)}</td>
+      <td class="p-3 text-inksoft">${escapeHtml(a.area)}${a.branch ? `<br><span class="text-[10px] text-inksoft/70">${escapeHtml(a.branch)}</span>` : ''}</td>
       <td class="p-3 font-bold text-ink">${formatRM(stats.sales)}</td>
       <td class="p-3 font-bold text-honeydeep">${formatRM(stats.commission)}</td>
       <td class="p-3 text-ink">${stats.orderCount}</td>
