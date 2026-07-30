@@ -8,7 +8,7 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getAuth, signInAnonymously, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import { getAuth, signInAnonymously, signInWithEmailAndPassword, signInWithCustomToken, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
   import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
 
   const firebaseConfig = {
@@ -30,6 +30,17 @@
   const callAdminSaveAgent = httpsCallable(fbFns, 'adminSaveAgent');
   const callAdminDeleteAgent = httpsCallable(fbFns, 'adminDeleteAgent');
   const callLookupOrders = httpsCallable(fbFns, 'lookupOrders');
+  const callKawasanLogin = httpsCallable(fbFns, 'kawasanLogin');
+  const callListKawasanPublic = httpsCallable(fbFns, 'listKawasanPublic');
+  const callListKawasanProductsPublic = httpsCallable(fbFns, 'listKawasanProductsPublic');
+  const callKawasanListMyProducts = httpsCallable(fbFns, 'kawasanListMyProducts');
+  const callKawasanSaveProduct = httpsCallable(fbFns, 'kawasanSaveProduct');
+  const callKawasanDeleteProduct = httpsCallable(fbFns, 'kawasanDeleteProduct');
+  const callKawasanSetStock = httpsCallable(fbFns, 'kawasanSetStock');
+  const callKawasanSavePayout = httpsCallable(fbFns, 'kawasanSavePayout');
+  const callAdminListKawasan = httpsCallable(fbFns, 'adminListKawasan');
+  const callAdminSaveKawasan = httpsCallable(fbFns, 'adminSaveKawasan');
+  const callAdminDeleteKawasan = httpsCallable(fbFns, 'adminDeleteKawasan');
 
   let adminSignedIn = false;
   onAuthStateChanged(fbAuth, (user) => {
@@ -69,6 +80,76 @@
 
   window.fbAdminDeleteAgent = async function(code) {
     const res = await callAdminDeleteAgent({ code });
+    return res.data;
+  };
+
+  // Kawasan actions re-send {code, password} with every call instead of
+  // relying on a Firebase Auth session (avoids needing custom-token minting
+  // permissions). Kept in memory only — lost on page refresh by design.
+  let kwSession = null;
+
+  window.fbKawasanLogin = async function(code, password) {
+    const res = await callKawasanLogin({ code, password });
+    kwSession = { code, password };
+    return res.data.profile;
+  };
+
+  window.fbKawasanLogout = async function() {
+    kwSession = null;
+  };
+
+  window.fbListKawasanPublic = async function() {
+    const res = await callListKawasanPublic();
+    return res.data.kawasanList;
+  };
+
+  window.fbListKawasanProductsPublic = async function() {
+    const res = await callListKawasanProductsPublic();
+    return res.data.products;
+  };
+
+  window.fbKawasanListMyProducts = async function() {
+    if(!kwSession) throw new Error('not-logged-in');
+    const res = await callKawasanListMyProducts(kwSession);
+    return res.data.products;
+  };
+
+  window.fbKawasanSaveProduct = async function(product) {
+    if(!kwSession) throw new Error('not-logged-in');
+    const res = await callKawasanSaveProduct({ ...kwSession, ...product });
+    return res.data;
+  };
+
+  window.fbKawasanDeleteProduct = async function(id) {
+    if(!kwSession) throw new Error('not-logged-in');
+    const res = await callKawasanDeleteProduct({ ...kwSession, id });
+    return res.data;
+  };
+
+  window.fbKawasanSetStock = async function(id, stockStatus) {
+    if(!kwSession) throw new Error('not-logged-in');
+    const res = await callKawasanSetStock({ ...kwSession, id, stockStatus });
+    return res.data;
+  };
+
+  window.fbKawasanSavePayout = async function(payout) {
+    if(!kwSession) throw new Error('not-logged-in');
+    const res = await callKawasanSavePayout({ ...kwSession, ...payout });
+    return res.data;
+  };
+
+  window.fbAdminListKawasan = async function() {
+    const res = await callAdminListKawasan();
+    return res.data.kawasanList;
+  };
+
+  window.fbAdminSaveKawasan = async function(kawasan) {
+    const res = await callAdminSaveKawasan(kawasan);
+    return res.data;
+  };
+
+  window.fbAdminDeleteKawasan = async function(code) {
+    const res = await callAdminDeleteKawasan({ code });
     return res.data;
   };
 
@@ -286,6 +367,7 @@
             <div class="flex flex-col gap-2 text-white/60 text-xs">
               <button onclick="window.showView('catalog')" class="text-left hover:text-honey w-fit">Katalog Produk</button>
               <button onclick="window.showView('agent')" class="text-left hover:text-honey w-fit">Portal Ejen</button>
+              <button onclick="window.showView('kawasanportal')" class="text-left hover:text-honey w-fit">Portal PASTI Kawasan</button>
               <button onclick="window.showView('semak')" class="text-left hover:text-honey w-fit">Semak Tempahan</button>
               <button onclick="window.showView('kawasan')" class="text-left hover:text-honey w-fit">Kawasan PASTI</button>
               <button onclick="window.showView('pengurusan')" class="text-left hover:text-honey w-fit">Pengurusan</button>
@@ -494,6 +576,104 @@
       </div>
     </section>
 
+    <!-- ==================== VIEW: PORTAL KAWASAN ==================== -->
+    <section id="view-kawasanportal" class="hidden">
+      <div class="max-w-4xl mx-auto px-4 sm:px-6 pt-8 pb-16">
+
+        <div id="kw-login-wrap">
+          <div class="max-w-sm mx-auto">
+            <div class="text-center mb-6">
+              <div class="w-14 h-14 bg-leaflight rounded-2xl flex items-center justify-center mx-auto mb-3"><i data-lucide="store" class="w-7 h-7 text-forest"></i></div>
+              <h1 class="font-display font-bold text-xl text-ink">Portal PASTI Kawasan</h1>
+              <p class="text-inksoft text-sm mt-1">Log masuk untuk urus produk kawasan anda</p>
+            </div>
+            <div class="bg-white border border-sand rounded-3xl p-6 shadow-sm space-y-3">
+              <input id="kw-login-code" type="text" placeholder="Kod Kawasan (Cth: KW001)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-bold uppercase">
+              <input id="kw-login-pass" type="password" placeholder="Kata Laluan" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              <button onclick="window.loginKawasan()" class="w-full bg-forest hover:bg-forestdark text-white font-bold py-3 rounded-xl transition-colors">Log Masuk</button>
+            </div>
+            <p class="text-center text-xs text-inksoft mt-4">Belum berdaftar? <a href="https://wa.me/60123456789?text=Saya%20mahu%20daftarkan%20PASTI%20Kawasan%20saya" target="_blank" class="text-forest font-bold hover:underline">Hubungi kami via WhatsApp</a></p>
+          </div>
+        </div>
+
+        <div id="kw-dashboard-wrap" class="hidden">
+          <div class="flex items-center justify-between mb-6 gap-3">
+            <div>
+              <p class="text-inksoft text-xs font-bold uppercase tracking-widest">Portal Kawasan</p>
+              <h1 id="kw-dash-name" class="font-display font-bold text-xl sm:text-2xl text-ink">-</h1>
+            </div>
+            <button onclick="window.logoutKawasan()" class="shrink-0 bg-cream hover:bg-sand text-ink text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2"><i data-lucide="log-out" class="w-3.5 h-3.5"></i> Log Keluar</button>
+          </div>
+
+          <div class="flex gap-2 overflow-x-auto no-scrollbar mb-6 border-b border-sand pb-px">
+            <button data-kwtab="produk" onclick="window.setKawasanTab('produk')" class="kw-tab-btn px-4 py-2.5 rounded-t-xl text-sm font-bold shrink-0 bg-forest text-white">Produk Saya</button>
+            <button data-kwtab="butiran" onclick="window.setKawasanTab('butiran')" class="kw-tab-btn px-4 py-2.5 rounded-t-xl text-sm font-bold shrink-0 bg-cream text-inksoft">Butiran &amp; Bayaran</button>
+          </div>
+
+          <div id="kw-tab-produk" class="kw-tab-panel">
+            <div class="flex justify-between items-center mb-4">
+              <p class="text-xs font-bold text-inksoft" id="kw-product-count">0 produk</p>
+              <button onclick="window.openKwProductModal()" class="bg-forest hover:bg-forestdark text-white text-sm font-bold px-4 py-2.5 rounded-xl flex items-center gap-2"><i data-lucide="package-plus" class="w-4 h-4"></i> Tambah Produk</button>
+            </div>
+            <div id="kw-product-grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+          </div>
+
+          <div id="kw-tab-butiran" class="kw-tab-panel hidden">
+            <div class="bg-white border border-sand rounded-3xl p-5 max-w-lg space-y-3">
+              <h3 class="font-display font-bold text-ink mb-1">Butiran PIC &amp; Bayaran Komisen</h3>
+              <p class="text-inksoft text-xs mb-3">Maklumat ini digunakan admin untuk hubungi kawasan anda dan buat bayaran komisen.</p>
+              <input id="kw-pic-name" type="text" placeholder="Nama PIC" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              <input id="kw-pic-phone" type="text" placeholder="No. Telefon PIC" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              <input id="kw-pic-email" type="email" placeholder="Emel PIC" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              <div class="grid grid-cols-2 gap-3">
+                <input id="kw-bank-name" type="text" placeholder="Nama Bank" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                <input id="kw-bank-acc" type="text" placeholder="No. Akaun" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              </div>
+              <input id="kw-bank-acc-name" type="text" placeholder="Nama Pemilik Akaun" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              <input id="kw-qr-url" type="text" placeholder="URL Gambar QR Pembayaran (pilihan)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              <button onclick="window.saveKwPayout()" class="w-full bg-forest hover:bg-forestdark text-white font-bold py-3 rounded-xl">Simpan Butiran</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- KAWASAN PRODUCT MODAL -->
+    <div id="modal-kw-product" class="hidden fixed inset-0 z-50 modal-mask flex items-center justify-center p-4">
+      <div class="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+        <div class="p-6">
+          <div class="flex justify-between items-center mb-4">
+            <h3 id="kwpm-title" class="font-display font-bold text-lg text-ink">Tambah Produk</h3>
+            <button onclick="window.closeKwProductModal()" class="w-8 h-8 rounded-full bg-cream flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
+          </div>
+          <div class="space-y-3">
+            <input type="hidden" id="kwpm-id">
+            <input id="kwpm-name" type="text" placeholder="Nama Produk" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+            <select id="kwpm-category" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium"></select>
+            <div class="grid grid-cols-2 gap-3">
+              <input id="kwpm-price" type="number" step="0.01" placeholder="Harga Jualan (RM)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              <input id="kwpm-modal" type="number" step="0.01" placeholder="Modal/Kos (RM)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <input id="kwpm-weight" type="number" step="0.01" placeholder="Berat (kg)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              <input id="kwpm-comm" type="number" placeholder="Komisen Ejen (%)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+            </div>
+            <textarea id="kwpm-desc" placeholder="Penerangan produk" rows="2" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium"></textarea>
+            <input id="kwpm-img1" type="text" placeholder="URL Gambar 1" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+            <input id="kwpm-img2" type="text" placeholder="URL Gambar 2 (pilihan)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+            <input id="kwpm-img3" type="text" placeholder="URL Gambar 3 (pilihan)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+            <label class="flex items-center gap-2 bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium cursor-pointer">
+              <input id="kwpm-ready" type="checkbox" class="w-4 h-4"> Ready Stok (nyahtanda jika Stok Habis)
+            </label>
+          </div>
+          <div class="flex gap-3 mt-5">
+            <button onclick="window.closeKwProductModal()" class="flex-1 bg-cream text-ink font-bold py-3 rounded-xl">Batal</button>
+            <button onclick="window.saveKwProduct()" class="flex-1 bg-forest hover:bg-forestdark text-white font-bold py-3 rounded-xl">Simpan</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ==================== VIEW: ADMIN ==================== -->
     <section id="view-admin" class="hidden">
       <div class="max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-16">
@@ -523,6 +703,7 @@
             <button data-tab="produk" onclick="window.setAdminTab('produk')" class="admin-tab-btn px-4 py-2.5 rounded-t-xl text-sm font-bold shrink-0 bg-forest text-white">Produk</button>
             <button data-tab="tempahan" onclick="window.setAdminTab('tempahan')" class="admin-tab-btn px-4 py-2.5 rounded-t-xl text-sm font-bold shrink-0 bg-cream text-inksoft">Tempahan</button>
             <button data-tab="ejen" onclick="window.setAdminTab('ejen')" class="admin-tab-btn px-4 py-2.5 rounded-t-xl text-sm font-bold shrink-0 bg-cream text-inksoft">Ejen</button>
+            <button data-tab="kawasanadmin" onclick="window.setAdminTab('kawasanadmin')" class="admin-tab-btn px-4 py-2.5 rounded-t-xl text-sm font-bold shrink-0 bg-cream text-inksoft">Kawasan</button>
             <button data-tab="laporan" onclick="window.setAdminTab('laporan')" class="admin-tab-btn px-4 py-2.5 rounded-t-xl text-sm font-bold shrink-0 bg-cream text-inksoft">Laporan</button>
           </div>
 
@@ -571,6 +752,20 @@
               <table class="w-full text-left text-xs whitespace-nowrap">
                 <thead><tr class="bg-cream text-inksoft uppercase text-[10px]"><th class="p-3">Kod</th><th class="p-3">Nama</th><th class="p-3">Kawasan</th><th class="p-3">Jualan</th><th class="p-3">Komisen</th><th class="p-3">Tempahan</th><th class="p-3">Tindakan</th></tr></thead>
                 <tbody id="admin-agent-body"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- TAB KAWASAN -->
+          <div id="admin-tab-kawasanadmin" class="admin-tab-panel hidden">
+            <div class="flex justify-between items-center mb-4">
+              <p class="text-xs font-bold text-inksoft" id="admin-kawasan-count">0 kawasan</p>
+              <button onclick="window.openKawasanAdminModal()" class="bg-forest hover:bg-forestdark text-white text-sm font-bold px-4 py-2.5 rounded-xl flex items-center gap-2"><i data-lucide="store" class="w-4 h-4"></i> Tambah Kawasan</button>
+            </div>
+            <div class="overflow-x-auto bg-white border border-sand rounded-2xl">
+              <table class="w-full text-left text-xs whitespace-nowrap">
+                <thead><tr class="bg-cream text-inksoft uppercase text-[10px]"><th class="p-3">Kod</th><th class="p-3">Nama Kawasan</th><th class="p-3">PIC</th><th class="p-3">Status</th><th class="p-3">Tindakan</th></tr></thead>
+                <tbody id="admin-kawasan-body"></tbody>
               </table>
             </div>
           </div>
@@ -647,6 +842,14 @@
           <div class="bg-white border border-sand rounded-2xl p-4 text-center card-hover"><i data-lucide="map-pin" class="w-5 h-5 text-forest mx-auto mb-2"></i><p class="font-display font-bold text-sm text-ink">Limbang</p></div>
           <div class="bg-white border border-sand rounded-2xl p-4 text-center card-hover"><i data-lucide="map-pin" class="w-5 h-5 text-forest mx-auto mb-2"></i><p class="font-display font-bold text-sm text-ink">Lawas</p></div>
         </div>
+        <div class="mt-10">
+          <h2 class="font-display font-bold text-lg text-ink mb-1">PASTI Kawasan Berdaftar</h2>
+          <p class="text-inksoft text-sm mb-4">Kawasan yang telah mendaftar Portal PASTI Kawasan dan menjual produk sendiri di Kedai PASTI Sarawak Official.</p>
+          <div id="kawasan-registered-list" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <p class="text-inksoft text-sm italic col-span-full">Memuatkan...</p>
+          </div>
+        </div>
+
         <div class="mt-8 bg-leaflight rounded-3xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div>
             <p class="font-display font-bold text-ink mb-1">Kawasan anda belum disenaraikan?</p>
@@ -922,6 +1125,33 @@
     </div>
   </div>
 
+  <div id="modal-admin-kawasan" class="hidden fixed inset-0 z-[95] flex items-end sm:items-center justify-center p-0 sm:p-4 modal-mask">
+    <div class="bg-white rounded-t-[2rem] sm:rounded-[2rem] w-full sm:max-w-md max-h-[92vh] overflow-y-auto shadow-2xl">
+      <div class="p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h3 id="akm-title" class="font-display font-bold text-lg text-ink">Tambah Kawasan</h3>
+          <button onclick="window.closeKawasanAdminModal()" class="w-8 h-8 rounded-full bg-cream flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        <div class="space-y-3">
+          <input type="hidden" id="akm-code-orig">
+          <input id="akm-code" type="text" readonly placeholder="Kod Kawasan (auto-jana untuk kawasan baru)" class="w-full bg-sand/60 border border-sand rounded-xl px-4 py-3 text-sm font-bold uppercase text-inksoft cursor-not-allowed">
+          <input id="akm-nama" type="text" placeholder="Nama Kawasan (Cth: Kuching)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          <input id="akm-pic-name" type="text" placeholder="Nama PIC" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          <input id="akm-pic-phone" type="text" placeholder="No. Telefon PIC" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          <input id="akm-pic-email" type="email" placeholder="Emel PIC" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          <input id="akm-pass" type="text" placeholder="Kata Laluan" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          <label class="flex items-center gap-2 bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium cursor-pointer">
+            <input id="akm-active" type="checkbox" checked class="w-4 h-4"> Akaun Aktif
+          </label>
+        </div>
+        <div class="flex gap-3 mt-5">
+          <button onclick="window.closeKawasanAdminModal()" class="flex-1 bg-cream text-ink font-bold py-3 rounded-xl">Batal</button>
+          <button onclick="window.saveKawasanAdmin()" class="flex-1 bg-forest hover:bg-forestdark text-white font-bold py-3 rounded-xl">Simpan</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -1053,6 +1283,29 @@ async function loadAllData(){
     if(!p) await window.storage.set('alhaddad:products', JSON.stringify(appProducts), true);
   }catch(e){ appProducts = defaultProducts.slice(); }
 
+  appProducts = appProducts.filter(p => !String(p.id).startsWith('KWP-'));
+  try{
+    if(typeof window.fbListKawasanProductsPublic === 'function'){
+      const kwProds = await window.fbListKawasanProductsPublic();
+      const mapped = kwProds.map(kp => ({
+        id: 'KWP-'+kp.id,
+        name: kp.name,
+        category: CATEGORIES[kp.category] ? kp.category : 'kurma',
+        price: kp.price,
+        weight: kp.weight,
+        stock: kp.stockStatus==='ready' ? 999 : 0,
+        commissionPct: kp.commissionPct,
+        popular: false,
+        sellerName: kp.sellerName,
+        pickupKawasan: kp.pickupKawasan,
+        images: kp.images,
+        desc: kp.desc,
+        createdAt: kp.createdAt,
+      }));
+      appProducts = appProducts.concat(mapped);
+    }
+  }catch(e){ /* kawasan products optional, ignore failures */ }
+
   try{
     const a = await window.storage.get('alhaddad:agents', true);
     appAgents = a ? JSON.parse(a.value) : defaultAgents.slice();
@@ -1076,6 +1329,10 @@ async function loadAllData(){
       const parsed = JSON.parse(sess.value);
       if(parsed.type==='agent'){ currentAgent = parsed.profile || null; }
       if(parsed.type==='admin'){ isAdminIn = true; }
+      // Kawasan sessions are intentionally NOT restored across reloads —
+      // the credentials needed for kawasan-scoped actions live only in
+      // module-scope JS memory (kwSession), so a stale restored profile
+      // here would show as "logged in" while every action fails.
     }
   }catch(e){}
 }
@@ -1225,7 +1482,8 @@ function updateCartBadge(){
 }
 
 /* ================= NAV / VIEW SWITCH ================= */
-const VIEW_IDS = ['home','catalog','cart','checkout','agent','admin','kawasan','pengurusan','tentang','faq','terma','privasi','semak'];
+const VIEW_IDS = ['home','catalog','cart','checkout','agent','admin','kawasan','pengurusan','tentang','faq','terma','privasi','semak','kawasanportal'];
+let currentKawasan = null;
 window.showView = function(name){
   VIEW_IDS.forEach(v=>{
     const sec = document.getElementById('view-'+v);
@@ -1239,7 +1497,26 @@ window.showView = function(name){
   if(name==='checkout' && typeof renderCheckoutEnter==='function') renderCheckoutEnter();
   if(name==='agent' && typeof renderAgentView==='function') renderAgentView();
   if(name==='admin' && typeof renderAdminView==='function') renderAdminView();
+  if(name==='kawasanportal' && typeof renderKawasanPortalView==='function') renderKawasanPortalView();
+  if(name==='kawasan' && typeof renderKawasanPublicList==='function') renderKawasanPublicList();
   icons();
+}
+
+async function renderKawasanPublicList(){
+  const el = document.getElementById('kawasan-registered-list');
+  if(!el) return;
+  try{
+    const list = await window.fbListKawasanPublic();
+    const activeList = list.filter(k=>k.active!==false);
+    el.innerHTML = activeList.length ? activeList.map(k=>`
+      <div class="bg-white border border-sand rounded-2xl p-4">
+        <p class="font-display font-bold text-ink">PASTI ${escapeHtml(k.namaKawasan)}</p>
+        <p class="text-inksoft text-xs mt-1">${escapeHtml(k.picName||'PIC belum ditetapkan')}</p>
+        ${k.picPhone ? `<p class="text-inksoft text-xs">${escapeHtml(k.picPhone)}</p>` : ''}
+      </div>`).join('') : `<p class="text-inksoft text-sm italic col-span-full">Belum ada kawasan berdaftar melalui Portal PASTI Kawasan lagi.</p>`;
+  }catch(e){
+    el.innerHTML = `<p class="text-inksoft text-sm italic col-span-full">Gagal muatkan senarai kawasan.</p>`;
+  }
 }
 
 /* ================= CART VIEW ================= */
@@ -1515,6 +1792,174 @@ function renderAgentView(){
   icons();
 }
 
+/* ================= PORTAL KAWASAN ================= */
+window.kwCurrentTab = 'produk';
+let kwProducts = [];
+
+window.loginKawasan = async function(){
+  const code = document.getElementById('kw-login-code').value.trim().toUpperCase();
+  const pass = document.getElementById('kw-login-pass').value;
+  if(!code || !pass){ showToast('Sila isi kod & kata laluan','alert-circle'); return; }
+  if(typeof window.fbKawasanLogin !== 'function'){ showToast('Sistem belum sedia, cuba lagi sebentar','alert-circle'); return; }
+  try{
+    const profile = await window.fbKawasanLogin(code, pass);
+    currentKawasan = profile;
+    renderKawasanPortalView();
+    showToast('Selamat kembali, PASTI '+profile.namaKawasan+'!','check-circle-2');
+  }catch(err){
+    const msg = (err && err.code==='functions/not-found') ? 'Kod kawasan tidak dijumpai'
+      : (err && err.code==='functions/unauthenticated') ? 'Kata laluan salah'
+      : 'Log masuk gagal, cuba lagi';
+    showToast(msg,'alert-circle');
+  }
+}
+window.logoutKawasan = async function(){
+  currentKawasan = null;
+  kwProducts = [];
+  persistSession(null);
+  try{ await window.fbKawasanLogout(); }catch(e){}
+  renderKawasanPortalView();
+  showToast('Berjaya log keluar','log-out');
+}
+function renderKawasanPortalView(){
+  const loginWrap = document.getElementById('kw-login-wrap');
+  const dashWrap = document.getElementById('kw-dashboard-wrap');
+  if(!loginWrap) return;
+  if(!currentKawasan){ loginWrap.classList.remove('hidden'); dashWrap.classList.add('hidden'); return; }
+  loginWrap.classList.add('hidden'); dashWrap.classList.remove('hidden');
+  document.getElementById('kw-dash-name').innerText = 'PASTI ' + currentKawasan.namaKawasan;
+  document.getElementById('kw-pic-name').value = currentKawasan.picName || '';
+  document.getElementById('kw-pic-phone').value = currentKawasan.picPhone || '';
+  document.getElementById('kw-pic-email').value = currentKawasan.picEmail || '';
+  window.setKawasanTab(kwCurrentTab);
+}
+window.setKawasanTab = function(tab){
+  kwCurrentTab = tab;
+  ['produk','butiran'].forEach(t=>{
+    const panel = document.getElementById('kw-tab-'+t);
+    if(panel) panel.classList.toggle('hidden', t!==tab);
+  });
+  document.querySelectorAll('.kw-tab-btn').forEach(btn=>{
+    const active = btn.getAttribute('data-kwtab')===tab;
+    btn.classList.toggle('bg-forest', active); btn.classList.toggle('text-white', active);
+    btn.classList.toggle('bg-cream', !active); btn.classList.toggle('text-inksoft', !active);
+  });
+  if(tab==='produk') refreshKwProducts();
+}
+async function refreshKwProducts(){
+  const grid = document.getElementById('kw-product-grid');
+  if(grid) grid.innerHTML = `<p class="text-inksoft text-sm italic col-span-full text-center py-6">Memuatkan...</p>`;
+  try{
+    kwProducts = await window.fbKawasanListMyProducts();
+  }catch(e){
+    kwProducts = [];
+    showToast('Gagal muatkan produk','alert-circle');
+  }
+  renderKwProducts();
+}
+function renderKwProducts(){
+  document.getElementById('kw-product-count').innerText = kwProducts.length+' produk';
+  const grid = document.getElementById('kw-product-grid');
+  grid.innerHTML = kwProducts.map(p=>`
+    <div class="bg-white border border-sand rounded-2xl p-4">
+      <div class="flex items-start justify-between gap-2 mb-2">
+        <p class="font-display font-bold text-sm text-ink">${escapeHtml(p.name)}</p>
+        <span class="shrink-0 px-2 py-1 rounded-full text-[9px] font-bold ${p.stockStatus==='ready' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}">${p.stockStatus==='ready' ? 'READY STOK' : 'STOK HABIS'}</span>
+      </div>
+      <p class="text-forest font-bold text-sm mb-1">${formatRM(p.price)}</p>
+      <p class="text-inksoft text-xs mb-3">Modal: ${formatRM(p.modal||0)} · Komisen: ${p.commissionPct||0}%</p>
+      <div class="flex gap-1.5">
+        <button onclick="window.toggleKwStock('${p.id}','${p.stockStatus==='ready'?'habis':'ready'}')" class="flex-1 bg-cream hover:bg-sand text-ink text-[11px] font-bold py-2 rounded-lg">${p.stockStatus==='ready' ? 'Tandakan Habis' : 'Tandakan Ready'}</button>
+        <button onclick="window.openKwProductModal('${p.id}')" class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+        <button onclick="window.deleteKwProduct('${p.id}')" class="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center shrink-0"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+      </div>
+    </div>`).join('') || `<p class="text-inksoft text-sm italic col-span-full text-center py-6">Belum ada produk. Klik "Tambah Produk" untuk mula.</p>`;
+  icons();
+}
+window.openKwProductModal = function(id){
+  const editing = id ? kwProducts.find(p=>p.id===id) : null;
+  document.getElementById('kwpm-title').innerText = editing ? 'Edit Produk' : 'Tambah Produk';
+  document.getElementById('kwpm-id').value = editing ? editing.id : '';
+  document.getElementById('kwpm-name').value = editing ? editing.name : '';
+  const catSel = document.getElementById('kwpm-category');
+  catSel.innerHTML = Object.keys(CATEGORIES).map(k=>`<option value="${k}">${escapeHtml(CATEGORIES[k].name)}</option>`).join('');
+  catSel.value = editing ? editing.category : 'kurma';
+  document.getElementById('kwpm-price').value = editing ? editing.price : '';
+  document.getElementById('kwpm-modal').value = editing ? (editing.modal||'') : '';
+  document.getElementById('kwpm-weight').value = editing ? editing.weight : '';
+  document.getElementById('kwpm-comm').value = editing ? editing.commissionPct : 10;
+  document.getElementById('kwpm-desc').value = editing ? (editing.desc||'') : '';
+  const imgs = editing && Array.isArray(editing.images) ? editing.images : [];
+  document.getElementById('kwpm-img1').value = imgs[0] || '';
+  document.getElementById('kwpm-img2').value = imgs[1] || '';
+  document.getElementById('kwpm-img3').value = imgs[2] || '';
+  document.getElementById('kwpm-ready').checked = editing ? editing.stockStatus==='ready' : true;
+  document.getElementById('modal-kw-product').classList.remove('hidden');
+}
+window.closeKwProductModal = function(){ document.getElementById('modal-kw-product').classList.add('hidden'); }
+window.saveKwProduct = async function(){
+  const id = document.getElementById('kwpm-id').value;
+  const name = document.getElementById('kwpm-name').value.trim();
+  if(!name){ showToast('Nama produk wajib diisi','alert-circle'); return; }
+  const images = [document.getElementById('kwpm-img1').value.trim(), document.getElementById('kwpm-img2').value.trim(), document.getElementById('kwpm-img3').value.trim()].filter(Boolean);
+  const payload = {
+    id: id || undefined,
+    name,
+    category: document.getElementById('kwpm-category').value,
+    price: parseFloat(document.getElementById('kwpm-price').value) || 0,
+    modal: parseFloat(document.getElementById('kwpm-modal').value) || 0,
+    weight: parseFloat(document.getElementById('kwpm-weight').value) || 0.1,
+    commissionPct: parseFloat(document.getElementById('kwpm-comm').value) || 10,
+    desc: document.getElementById('kwpm-desc').value.trim(),
+    images,
+    stockStatus: document.getElementById('kwpm-ready').checked ? 'ready' : 'habis',
+  };
+  try{
+    await window.fbKawasanSaveProduct(payload);
+    window.closeKwProductModal();
+    await refreshKwProducts();
+    showToast('Produk berjaya disimpan','check-circle-2');
+  }catch(e){
+    showToast('Gagal simpan produk','alert-circle');
+  }
+}
+window.deleteKwProduct = async function(id){
+  if(!confirm('Padam produk ini?')) return;
+  try{
+    await window.fbKawasanDeleteProduct(id);
+    await refreshKwProducts();
+    showToast('Produk dipadam','trash-2');
+  }catch(e){
+    showToast('Gagal padam produk','alert-circle');
+  }
+}
+window.toggleKwStock = async function(id, stockStatus){
+  try{
+    await window.fbKawasanSetStock(id, stockStatus);
+    await refreshKwProducts();
+    showToast(stockStatus==='ready' ? 'Ditanda Ready Stok' : 'Ditanda Stok Habis','check-circle-2');
+  }catch(e){
+    showToast('Gagal kemas kini stok','alert-circle');
+  }
+}
+window.saveKwPayout = async function(){
+  const payload = {
+    picName: document.getElementById('kw-pic-name').value.trim(),
+    picPhone: document.getElementById('kw-pic-phone').value.trim(),
+    picEmail: document.getElementById('kw-pic-email').value.trim(),
+    bankName: document.getElementById('kw-bank-name').value.trim(),
+    bankAccountNo: document.getElementById('kw-bank-acc').value.trim(),
+    bankAccountName: document.getElementById('kw-bank-acc-name').value.trim(),
+    qrImageUrl: document.getElementById('kw-qr-url').value.trim(),
+  };
+  try{
+    await window.fbKawasanSavePayout(payload);
+    showToast('Butiran berjaya disimpan','check-circle-2');
+  }catch(e){
+    showToast('Gagal simpan butiran','alert-circle');
+  }
+}
+
 /* ================= ADMIN: LOGIN & TABS ================= */
 window.adminCurrentTab = 'produk';
 
@@ -1542,7 +1987,7 @@ window.logoutAdmin = async function(){
 }
 window.setAdminTab = function(tab){
   adminCurrentTab = tab;
-  ['produk','tempahan','ejen','laporan'].forEach(t=>{
+  ['produk','tempahan','ejen','kawasanadmin','laporan'].forEach(t=>{
     const panel = document.getElementById('admin-tab-'+t);
     if(panel) panel.classList.toggle('hidden', t!==tab);
   });
@@ -1554,7 +1999,87 @@ window.setAdminTab = function(tab){
   if(tab==='produk') renderAdminProducts();
   if(tab==='tempahan') renderAdminOrders();
   if(tab==='ejen') refreshAndRenderAdminAgents();
+  if(tab==='kawasanadmin') refreshAndRenderAdminKawasan();
   if(tab==='laporan' && typeof renderReports==='function') renderReports();
+}
+
+/* ================= ADMIN: KAWASAN ================= */
+let appKawasanList = [];
+async function refreshAndRenderAdminKawasan(){
+  const tbody = document.getElementById('admin-kawasan-body');
+  if(tbody) tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-inksoft italic">Memuatkan senarai kawasan...</td></tr>`;
+  try{
+    appKawasanList = await window.fbAdminListKawasan();
+  }catch(e){
+    appKawasanList = [];
+    showToast('Gagal muatkan senarai kawasan','alert-circle');
+  }
+  renderAdminKawasan();
+}
+function renderAdminKawasan(){
+  const tbody = document.getElementById('admin-kawasan-body');
+  if(!tbody) return;
+  document.getElementById('admin-kawasan-count').innerText = appKawasanList.length+' kawasan';
+  tbody.innerHTML = appKawasanList.map(k=>`
+    <tr class="border-t border-sand">
+      <td class="p-3 font-mono font-bold text-forest">${escapeHtml(k.code)}</td>
+      <td class="p-3 font-bold text-ink">PASTI ${escapeHtml(k.namaKawasan)}</td>
+      <td class="p-3 text-inksoft">${escapeHtml(k.picName||'-')}<br><span class="text-[10px]">${escapeHtml(k.picPhone||'')}</span></td>
+      <td class="p-3"><span class="px-2 py-1 rounded-full text-[10px] font-bold ${k.active!==false ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}">${k.active!==false ? 'Aktif' : 'Tidak Aktif'}</span></td>
+      <td class="p-3">
+        <div class="flex gap-1.5">
+          <button onclick="window.openKawasanAdminModal('${k.code}')" class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+          <button onclick="window.deleteKawasanAdmin('${k.code}')" class="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+        </div>
+      </td>
+    </tr>`).join('') || `<tr><td colspan="5" class="p-6 text-center text-inksoft italic">Tiada kawasan berdaftar.</td></tr>`;
+  icons();
+}
+window.openKawasanAdminModal = function(code){
+  const editing = code ? appKawasanList.find(k=>k.code===code) : null;
+  document.getElementById('akm-title').innerText = editing ? 'Edit Kawasan' : 'Tambah Kawasan';
+  document.getElementById('akm-code-orig').value = editing ? editing.code : '';
+  document.getElementById('akm-code').value = editing ? editing.code : '(auto)';
+  document.getElementById('akm-nama').value = editing ? editing.namaKawasan : '';
+  document.getElementById('akm-pic-name').value = editing ? (editing.picName||'') : '';
+  document.getElementById('akm-pic-phone').value = editing ? (editing.picPhone||'') : '';
+  document.getElementById('akm-pic-email').value = editing ? (editing.picEmail||'') : '';
+  document.getElementById('akm-pass').value = editing ? editing.password : 'demo123';
+  document.getElementById('akm-active').checked = editing ? editing.active!==false : true;
+  document.getElementById('modal-admin-kawasan').classList.remove('hidden');
+}
+window.closeKawasanAdminModal = function(){ document.getElementById('modal-admin-kawasan').classList.add('hidden'); }
+window.saveKawasanAdmin = async function(){
+  const code = document.getElementById('akm-code-orig').value;
+  const namaKawasan = document.getElementById('akm-nama').value.trim();
+  if(!namaKawasan){ showToast('Nama kawasan wajib diisi','alert-circle'); return; }
+  const payload = {
+    code: code || '',
+    namaKawasan,
+    picName: document.getElementById('akm-pic-name').value.trim(),
+    picPhone: document.getElementById('akm-pic-phone').value.trim(),
+    picEmail: document.getElementById('akm-pic-email').value.trim(),
+    password: document.getElementById('akm-pass').value.trim() || 'demo123',
+    active: document.getElementById('akm-active').checked,
+  };
+  try{
+    await window.fbAdminSaveKawasan(payload);
+    window.closeKawasanAdminModal();
+    await refreshAndRenderAdminKawasan();
+    showToast('Kawasan berjaya disimpan','check-circle-2');
+  }catch(e){
+    showToast('Gagal simpan kawasan','alert-circle');
+  }
+}
+window.deleteKawasanAdmin = async function(code){
+  if(!confirm('Padam akaun kawasan ini? Produk mereka akan kekal tanpa pemilik.')) return;
+  try{
+    await window.fbAdminDeleteKawasan(code);
+    await refreshAndRenderAdminKawasan();
+    showToast('Kawasan dipadam','trash-2');
+  }catch(e){
+    showToast('Gagal padam kawasan','alert-circle');
+  }
 }
 function renderAdminView(){
   const loginWrap = document.getElementById('admin-login-wrap');
