@@ -6,6 +6,70 @@
 <title>Kedai PASTI Sarawak Official — Produk Komuniti Seluruh Malaysia</title>
 <meta name="description" content="Kedai PASTI Sarawak Official — platform jualan produk komuniti (kurma, madu, kudapan tradisional) dengan sistem ejen & komisen, fokus utama Sarawak.">
 <script src="https://cdn.tailwindcss.com"></script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getAuth, signInAnonymously, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCqLlIHujEZDkS0OjsiUVaAnxku_rANFos",
+    authDomain: "sampul-raya.firebaseapp.com",
+    projectId: "sampul-raya",
+    storageBucket: "sampul-raya.firebasestorage.app",
+    messagingSenderId: "22826990485",
+    appId: "1:22826990485:web:54ee3ab2538ad5c29bd49c",
+    measurementId: "G-NDMM127JEE"
+  };
+
+  const fbApp = initializeApp(firebaseConfig);
+  const fbAuth = getAuth(fbApp);
+  const fbFns = getFunctions(fbApp);
+
+  const callAgentLogin = httpsCallable(fbFns, 'agentLogin');
+  const callAdminListAgents = httpsCallable(fbFns, 'adminListAgents');
+  const callAdminSaveAgent = httpsCallable(fbFns, 'adminSaveAgent');
+  const callAdminDeleteAgent = httpsCallable(fbFns, 'adminDeleteAgent');
+
+  let adminSignedIn = false;
+  onAuthStateChanged(fbAuth, (user) => {
+    adminSignedIn = !!(user && !user.isAnonymous);
+  });
+
+  window.fbAgentLogin = async function(code, password) {
+    const res = await callAgentLogin({ code, password });
+    return res.data;
+  };
+
+  window.fbAdminLogin = async function(email, password) {
+    const cred = await signInWithEmailAndPassword(fbAuth, email, password);
+    await cred.user.getIdToken(true);
+    return true;
+  };
+
+  window.fbAdminLogout = async function() {
+    await signOut(fbAuth);
+    await signInAnonymously(fbAuth).catch(()=>{});
+  };
+
+  window.fbAdminListAgents = async function() {
+    const res = await callAdminListAgents();
+    return res.data.agents;
+  };
+
+  window.fbAdminSaveAgent = async function(agent) {
+    const res = await callAdminSaveAgent(agent);
+    return res.data;
+  };
+
+  window.fbAdminDeleteAgent = async function(code) {
+    const res = await callAdminDeleteAgent({ code });
+    return res.data;
+  };
+
+  // Anonymous session for regular visitors (agentLogin doesn't require it,
+  // but keeps things consistent if we need authenticated reads later).
+  signInAnonymously(fbAuth).catch(()=>{});
+</script>
 <script>
   tailwind.config = {
     theme: {
@@ -812,7 +876,7 @@
         </div>
         <div class="space-y-3">
           <input type="hidden" id="am-code-orig">
-          <input id="am-code" type="text" placeholder="Kod Ejen (Cth: AG006)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-bold uppercase">
+          <input id="am-code" type="text" readonly placeholder="Kod Ejen (auto-jana untuk ejen baru)" class="w-full bg-sand/60 border border-sand rounded-xl px-4 py-3 text-sm font-bold uppercase text-inksoft cursor-not-allowed">
           <input id="am-name" type="text" placeholder="Nama Penuh" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
           <div class="grid grid-cols-2 gap-3">
             <input id="am-phone" type="text" placeholder="No. Telefon" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
@@ -860,51 +924,10 @@ const defaultProducts = [
   { id:'P10', name:'Sejadah & Set Solat Mini', category:'ibadah', price:55.00, weight:0.60, stock:30, commissionPct:10, popular:false, sellerName:'Kedai PASTI Sarawak Official', desc:'Set sejadah mudah alih dengan beg simpanan, ringan dan sesuai dibawa ke mana-mana.', createdAt:D(4) },
 ];
 
-const defaultAgents = [
-  { code:'AG001', name:'Dayang Nor Suria Binti Abang Raduan', phone:'0136191762', email:'', area:'Betong', branch:'Pasti HIDAYAH', password:'demo123', joinedAt:'2026-02-23T02:33:52.000Z' },
-  { code:'AG002', name:'Norhayati Binti Nasir', phone:'01118553817', email:'', area:'Sarikei', branch:'PASTI IMTIAZ SARIKEI', password:'demo123', joinedAt:'2026-02-23T02:31:53.000Z' },
-  { code:'AG003', name:'Cikgu Nurul', phone:'0194228245', email:'', area:'Sibu', branch:'PASTI AL- FATEH lll', password:'demo123', joinedAt:'2026-02-24T00:53:21.000Z' },
-  { code:'AG004', name:'Sarmi binti Alimin', phone:'601151454917', email:'', area:'Miri', branch:'PASTI AL-AMALULULLAH', password:'demo123', joinedAt:'2026-02-22T06:10:34.000Z' },
-  { code:'AG005', name:'Cg tasya', phone:'01129696044', email:'', area:'Mukah', branch:'Pasti Al Wafi Mukah', password:'demo123', joinedAt:'2026-02-22T13:40:51.000Z' },
-  { code:'AG006', name:'Cikgu Siti', phone:'148387601', email:'', area:'Kota Samarahan', branch:'Pasti Raudhah', password:'demo123', joinedAt:'2026-02-22T08:07:21.000Z' },
-  { code:'AG007', name:'Nurhafizah Binti Abdollah', phone:'01119837169', email:'', area:'Saratok', branch:'PASTI AL-MAHABBAH 2 , SARATOK', password:'demo123', joinedAt:'2026-02-22T04:14:23.000Z' },
-  { code:'AG008', name:'Nurfatni Aisah binti kassim', phone:'0124055052', email:'', area:'Petra Jaya', branch:'PASTI Damai', password:'demo123', joinedAt:'2026-02-22T05:05:57.000Z' },
-  { code:'AG009', name:'Cikgu Mas', phone:'0198198904', email:'', area:'Kota Samarahan', branch:'Pasti Raudhatul Ilmi 1', password:'demo123', joinedAt:'2026-02-23T02:18:26.000Z' },
-  { code:'AG010', name:'CIKGU NURFAIZ SYAREE', phone:'0178527339', email:'', area:'Petra Jaya', branch:'PASTI DARUL ILMI 1', password:'demo123', joinedAt:'2026-03-03T00:14:07.000Z' },
-  { code:'AG011', name:'NURUL AFIQAH BINTI JULLKANAINE', phone:'0194963035', email:'', area:'Mukah', branch:'PASTI AL-WAFI 1', password:'demo123', joinedAt:'2026-02-22T06:21:16.000Z' },
-  { code:'AG012', name:'Norzapazillah binti Rahmat', phone:'128673271', email:'', area:'Saratok', branch:'Pasti An-Nur', password:'demo123', joinedAt:'2026-02-22T06:30:17.000Z' },
-  { code:'AG013', name:'Atiqah', phone:'0138052161', email:'', area:'Sibu', branch:'Pasti alfateh 1', password:'demo123', joinedAt:'2026-03-04T02:39:16.000Z' },
-  { code:'AG014', name:'zati bayani binti sani', phone:'0109499162', email:'', area:'Kota Samarahan', branch:'pasti al falah', password:'demo123', joinedAt:'2026-02-24T23:45:22.000Z' },
-  { code:'AG015', name:'Nurul Ashikhin', phone:'0138383248', email:'', area:'Batang Sadong', branch:'Lukmanul Hakim', password:'demo123', joinedAt:'2026-02-23T02:32:53.000Z' },
-  { code:'AG016', name:'Cikgu Ikha', phone:'01116685942', email:'', area:'Mukah', branch:'PASTI AL-WAFI 3', password:'demo123', joinedAt:'2026-02-22T04:19:51.000Z' },
-  { code:'AG017', name:'Salasiah Bt Aslan', phone:'01114580751', email:'', area:'Petra Jaya', branch:'Insani', password:'demo123', joinedAt:'2026-02-22T05:07:18.000Z' },
-  { code:'AG018', name:'Raja Nafiera Binti Amil', phone:'0109837177', email:'', area:'Kota Samarahan', branch:'Pasti Raudhatul Ilmi 2', password:'demo123', joinedAt:'2026-02-25T05:50:56.000Z' },
-  { code:'AG019', name:'LENNY MALINA BINTI ABDULLAH', phone:'0128911061', email:'', area:'Betong', branch:'PASTI HIDAYAH BETONG', password:'demo123', joinedAt:'2026-02-23T02:37:10.000Z' },
-  { code:'AG020', name:'Cikgu Fira', phone:'0109837177', email:'', area:'Kota Samarahan', branch:'Pasti Raudhatul Ilmi 2', password:'demo123', joinedAt:'2026-02-25T05:57:33.000Z' },
-  { code:'AG021', name:'Nur Amirah binti Arbi', phone:'0183118567', email:'', area:'Petra Jaya', branch:'PASTI DARUL HANA', password:'demo123', joinedAt:'2026-02-23T05:11:30.000Z' },
-  { code:'AG022', name:'Nur Amalina Fariza', phone:'60138236964', email:'', area:'Petra Jaya', branch:'PASTI Darul Furqan', password:'demo123', joinedAt:'2026-02-22T04:47:53.000Z' },
-  { code:'AG023', name:'Siti Zuriani binti Abang Asa', phone:'01112822814', email:'', area:'Petra Jaya', branch:'Pasti Darul Ilmi 2', password:'demo123', joinedAt:'2026-02-22T04:51:27.000Z' },
-  { code:'AG024', name:'LENNY MALINA BINTI ABDULLAH', phone:'0128911061', email:'', area:'Betong', branch:'PASTI HIDAYAH BETONG', password:'demo123', joinedAt:'2026-02-23T03:05:15.000Z' },
-  { code:'AG025', name:'SITI NURHIDDONA BINTI DARAMAN (AIN)', phone:'0178509048', email:'', area:'Saratok', branch:'PASTI AN-NUR KABONG', password:'demo123', joinedAt:'2026-02-22T04:09:52.000Z' },
-  { code:'AG026', name:'CIKGU TINI', phone:'0138364540', email:'', area:'Kota Samarahan', branch:'PASTI RAUDHATUL ILMI 4', password:'demo123', joinedAt:'2026-02-25T05:25:29.000Z' },
-  { code:'AG027', name:'Siti Nuramira binti Taib', phone:'0178581601', email:'', area:'Petra Jaya', branch:'PASTI AT TAQWA', password:'demo123', joinedAt:'2026-02-22T05:16:39.000Z' },
-  { code:'AG028', name:'Norshiela binti Samaon', phone:'01119373721', email:'', area:'Sibu', branch:'Paati Al Fateh 2', password:'demo123', joinedAt:'2026-02-24T05:19:28.000Z' },
-  { code:'AG029', name:'Nurulhafizah mosli', phone:'1124748155', email:'', area:'Miri', branch:'Pasti al-irsyad piasau', password:'demo123', joinedAt:'2026-02-23T03:01:08.000Z' },
-  { code:'AG030', name:'Cikgu Aliz', phone:'1114580751', email:'', area:'Petra Jaya', branch:'Insani', password:'demo123', joinedAt:'2026-02-22T05:10:09.000Z' },
-  { code:'AG031', name:'Cikgu Siti Rahimah', phone:'0148387601', email:'', area:'Kota Samarahan', branch:'Pasti Raudhah', password:'demo123', joinedAt:'2026-02-22T08:11:01.000Z' },
-  { code:'AG032', name:'Nor Fadila Binti Hamzah', phone:'0109224614', email:'', area:'Mukah', branch:'PASTI AL WAFI MUKAH', password:'demo123', joinedAt:'2026-02-22T13:39:50.000Z' },
-  { code:'AG033', name:'Nur Muharini Binti Putit', phone:'0138240873', email:'', area:'Kota Samarahan', branch:'PASTI AL-FALAH', password:'demo123', joinedAt:'2026-02-22T09:03:29.000Z' },
-  { code:'AG034', name:'Aiennul Andriana', phone:'0167737154', email:'', area:'Sibu', branch:'PASTI Al-Fateh Junior Sibu Jaya', password:'demo123', joinedAt:'2026-02-25T00:06:33.000Z' },
-  { code:'AG035', name:'Mazalina binti Jali', phone:'60148991220', email:'', area:'Mukah', branch:'Pasti Al-Wafi 1', password:'demo123', joinedAt:'2026-02-22T05:45:31.000Z' },
-  { code:'AG036', name:'Dayang Shafica', phone:'0193853077', email:'', area:'Kota Samarahan', branch:'PASTI RAUDHAH', password:'demo123', joinedAt:'2026-02-25T14:02:25.000Z' },
-  { code:'AG037', name:'SABTUYAH BINTI BIDIN', phone:'0135683695', email:'', area:'Petra Jaya', branch:'PASTI AN NIDA’', password:'demo123', joinedAt:'2026-02-22T05:55:38.000Z' },
-  { code:'AG038', name:'Nur Siti Quzaimah Binti Osman', phone:'011129633718', email:'', area:'Betong', branch:'PASTI HIDAYAH BETONG', password:'demo123', joinedAt:'2026-02-23T02:54:52.000Z' },
-  { code:'AG039', name:'Nor Farahin binti Mohd daud', phone:'0135718350', email:'', area:'Petra Jaya', branch:'Al Ikhwan', password:'demo123', joinedAt:'2026-02-22T05:40:16.000Z' },
-  { code:'AG040', name:'Nurfahmiera', phone:'60168544914', email:'', area:'Sibu', branch:'PASTi Al FATEH JUNIOR SIBU JAYA', password:'demo123', joinedAt:'2026-02-24T02:14:15.000Z' },
-  { code:'AG041', name:'Normala Bt Affendi', phone:'01131750313', email:'', area:'Saratok', branch:'PASTI AL MAHABBAH SARATOK', password:'demo123', joinedAt:'2026-02-22T04:10:10.000Z' },
-  { code:'AG042', name:'Siti Naza Noorashikin Binti Zepari', phone:'+60128846907', email:'', area:'Sibuti', branch:'Pasti At-Taqwa', password:'demo123', joinedAt:'2026-02-23T02:52:00.000Z' },
-  { code:'AG043', name:'Cikgu Alam', phone:'0168709904', email:'', area:'Petra Jaya', branch:'Pasti Mawaddah', password:'demo123', joinedAt:'2026-02-22T05:08:39.000Z' },
-];
+// Real agent roster now lives in Firestore (sampul-raya project), gated
+// behind Cloud Functions + Firestore rules — see PANDUAN-DEPLOYMENT.md.
+// Nothing sensitive is hardcoded here anymore.
+const defaultAgents = [];
 
 const seedSpecs = [
   {d:1,  agent:'AG001', items:[['P01',2],['P04',1]], status:'Baru',      state:'Sarawak',      name:'Nur Aisyah',        phone:'0111234567'},
@@ -1021,7 +1044,7 @@ async function loadAllData(){
     const sess = await window.storage.get('alhaddad:session', false);
     if(sess){
       const parsed = JSON.parse(sess.value);
-      if(parsed.type==='agent'){ currentAgent = appAgents.find(a=>a.code===parsed.code) || null; }
+      if(parsed.type==='agent'){ currentAgent = parsed.profile || null; }
       if(parsed.type==='admin'){ isAdminIn = true; }
     }
   }catch(e){}
@@ -1371,16 +1394,23 @@ function statusClass(status){
   return { 'Baru':'baru','Diproses':'diproses','Dihantar':'dihantar','Selesai':'selesai','Dibatalkan':'batal' }[status] || 'baru';
 }
 
-window.loginAgent = function(){
+window.loginAgent = async function(){
   const code = document.getElementById('agent-login-code').value.trim().toUpperCase();
   const pass = document.getElementById('agent-login-pass').value;
-  const agent = appAgents.find(a=>a.code===code);
-  if(!agent){ showToast('Kod ejen tidak dijumpai','alert-circle'); return; }
-  if(agent.password !== pass){ showToast('Kata laluan salah','alert-circle'); return; }
-  currentAgent = agent;
-  persistSession({type:'agent', code:agent.code});
-  renderAgentView();
-  showToast('Selamat kembali, '+agent.name+'!','check-circle-2');
+  if(!code || !pass){ showToast('Sila isi kod & kata laluan','alert-circle'); return; }
+  if(typeof window.fbAgentLogin !== 'function'){ showToast('Sistem log masuk belum sedia, cuba lagi sebentar','alert-circle'); return; }
+  try{
+    const profile = await window.fbAgentLogin(code, pass);
+    currentAgent = profile;
+    persistSession({type:'agent', profile});
+    renderAgentView();
+    showToast('Selamat kembali, '+profile.name+'!','check-circle-2');
+  }catch(err){
+    const msg = (err && err.code==='functions/not-found') ? 'Kod ejen tidak dijumpai'
+      : (err && err.code==='functions/unauthenticated') ? 'Kata laluan salah'
+      : 'Log masuk gagal, cuba lagi';
+    showToast(msg,'alert-circle');
+  }
 }
 window.logoutAgent = function(){
   currentAgent = null;
@@ -1428,21 +1458,25 @@ function renderAgentView(){
 /* ================= ADMIN: LOGIN & TABS ================= */
 window.adminCurrentTab = 'produk';
 
-window.loginAdmin = function(){
+window.loginAdmin = async function(){
   const email = document.getElementById('admin-login-email').value.trim().toLowerCase();
   const pass = document.getElementById('admin-login-pass').value;
-  if(email==='admin@pastisarawak.my' && pass==='admin123'){
+  if(!email || !pass){ showToast('Sila isi emel & kata laluan','alert-circle'); return; }
+  if(typeof window.fbAdminLogin !== 'function'){ showToast('Sistem log masuk belum sedia, cuba lagi sebentar','alert-circle'); return; }
+  try{
+    await window.fbAdminLogin(email, pass);
     isAdminIn = true;
     persistSession({type:'admin'});
     renderAdminView();
     showToast('Selamat datang, Admin!','shield-check');
-  } else {
+  }catch(err){
     showToast('Emel atau kata laluan salah','alert-circle');
   }
 }
-window.logoutAdmin = function(){
+window.logoutAdmin = async function(){
   isAdminIn = false;
   persistSession(null);
+  try{ await window.fbAdminLogout(); }catch(e){}
   renderAdminView();
   showToast('Berjaya log keluar','log-out');
 }
@@ -1459,7 +1493,7 @@ window.setAdminTab = function(tab){
   });
   if(tab==='produk') renderAdminProducts();
   if(tab==='tempahan') renderAdminOrders();
-  if(tab==='ejen') renderAdminAgents();
+  if(tab==='ejen') refreshAndRenderAdminAgents();
   if(tab==='laporan' && typeof renderReports==='function') renderReports();
 }
 function renderAdminView(){
@@ -1593,52 +1627,61 @@ window.deleteOrder = function(orderId){
 }
 
 /* ================= ADMIN: EJEN ================= */
+async function refreshAndRenderAdminAgents(){
+  const tbody = document.getElementById('admin-agent-body');
+  if(tbody) tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-inksoft italic">Memuatkan senarai ejen...</td></tr>`;
+  try{
+    appAgents = await window.fbAdminListAgents();
+  }catch(e){
+    appAgents = [];
+    showToast('Gagal muatkan senarai ejen','alert-circle');
+  }
+  renderAdminAgents();
+}
 window.openAgentModal = function(code){
   const editing = code ? appAgents.find(a=>a.code===code) : null;
   document.getElementById('am-title').innerText = editing ? 'Edit Ejen' : 'Tambah Ejen';
   document.getElementById('am-code-orig').value = editing ? editing.code : '';
-  document.getElementById('am-code').value = editing ? editing.code : '';
+  document.getElementById('am-code').value = editing ? editing.code : '(auto)';
   document.getElementById('am-name').value = editing ? editing.name : '';
   document.getElementById('am-phone').value = editing ? editing.phone : '';
   document.getElementById('am-area').value = editing ? editing.area : '';
-  document.getElementById('am-email').value = editing ? editing.email : '';
+  document.getElementById('am-email').value = editing ? (editing.email||'') : '';
   document.getElementById('am-branch').value = editing ? (editing.branch||'') : '';
   document.getElementById('am-pass').value = editing ? editing.password : 'demo123';
   document.getElementById('modal-admin-agent').classList.remove('hidden');
 }
 window.closeAgentModal = function(){ document.getElementById('modal-admin-agent').classList.add('hidden'); }
-window.saveAgent = function(){
+window.saveAgent = async function(){
   const origCode = document.getElementById('am-code-orig').value;
-  const code = document.getElementById('am-code').value.trim().toUpperCase();
   const name = document.getElementById('am-name').value.trim();
   const phone = document.getElementById('am-phone').value.trim();
   const area = document.getElementById('am-area').value.trim();
-  const email = document.getElementById('am-email').value.trim();
   const branch = document.getElementById('am-branch').value.trim();
   const password = document.getElementById('am-pass').value.trim() || 'demo123';
 
-  if(!code || !name){ showToast('Kod dan nama ejen wajib diisi','alert-circle'); return; }
-  if(!origCode && appAgents.find(a=>a.code===code)){ showToast('Kod ejen sudah wujud','alert-circle'); return; }
+  if(!name){ showToast('Nama ejen wajib diisi','alert-circle'); return; }
 
-  if(origCode){
-    const a = appAgents.find(x=>x.code===origCode);
-    Object.assign(a, {code,name,phone,area,email,branch,password});
-    appOrders.forEach(o=>{ if(o.agentCode===origCode) o.agentCode=code; });
-  } else {
-    appAgents.push({ code,name,phone,area,email,branch,password, joinedAt:new Date().toISOString() });
+  try{
+    await window.fbAdminSaveAgent({ code:origCode||'', name, phone, area, branch, password });
+    window.closeAgentModal();
+    await refreshAndRenderAdminAgents();
+    showToast('Ejen berjaya disimpan','check-circle-2');
+  }catch(e){
+    showToast('Gagal simpan ejen','alert-circle');
   }
-  persistAgents(); persistOrders();
-  window.closeAgentModal();
-  renderAdminAgents();
-  showToast('Ejen berjaya disimpan','check-circle-2');
 }
-window.deleteAgent = function(code){
+window.deleteAgent = async function(code){
   if(!confirm('Padam ejen ini? Tempahan sedia ada akan kekal tanpa ejen dikaitkan.')) return;
-  appAgents = appAgents.filter(a=>a.code!==code);
-  appOrders.forEach(o=>{ if(o.agentCode===code) o.agentCode=null; });
-  persistAgents(); persistOrders();
-  renderAdminAgents();
-  showToast('Ejen dipadam','trash-2');
+  try{
+    await window.fbAdminDeleteAgent(code);
+    appOrders.forEach(o=>{ if(o.agentCode===code) o.agentCode=null; });
+    persistOrders();
+    await refreshAndRenderAdminAgents();
+    showToast('Ejen dipadam','trash-2');
+  }catch(e){
+    showToast('Gagal padam ejen','alert-circle');
+  }
 }
 function renderAdminAgents(){
   const tbody = document.getElementById('admin-agent-body');

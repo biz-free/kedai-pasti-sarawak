@@ -6,6 +6,12 @@
       "runtimeExecutable": "npx",
       "runtimeArgs": ["--yes", "serve", "-l", "5500", "."],
       "port": 5500
+    },
+    {
+      "name": "wafi-app",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["--yes", "serve", "-l", "5501", "E:/OneDrive/Desktop/Claude Code/Sistem Wafi Tijarah/extracted/wafi-app"],
+      "port": 5501
     }
   ]
 }

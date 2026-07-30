@@ -6,6 +6,70 @@
 <title>Kedai PASTI Sarawak Official — Produk Komuniti Seluruh Malaysia</title>
 <meta name="description" content="Kedai PASTI Sarawak Official — platform jualan produk komuniti (kurma, madu, kudapan tradisional) dengan sistem ejen & komisen, fokus utama Sarawak.">
 <script src="https://cdn.tailwindcss.com"></script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getAuth, signInAnonymously, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCqLlIHujEZDkS0OjsiUVaAnxku_rANFos",
+    authDomain: "sampul-raya.firebaseapp.com",
+    projectId: "sampul-raya",
+    storageBucket: "sampul-raya.firebasestorage.app",
+    messagingSenderId: "22826990485",
+    appId: "1:22826990485:web:54ee3ab2538ad5c29bd49c",
+    measurementId: "G-NDMM127JEE"
+  };
+
+  const fbApp = initializeApp(firebaseConfig);
+  const fbAuth = getAuth(fbApp);
+  const fbFns = getFunctions(fbApp);
+
+  const callAgentLogin = httpsCallable(fbFns, 'agentLogin');
+  const callAdminListAgents = httpsCallable(fbFns, 'adminListAgents');
+  const callAdminSaveAgent = httpsCallable(fbFns, 'adminSaveAgent');
+  const callAdminDeleteAgent = httpsCallable(fbFns, 'adminDeleteAgent');
+
+  let adminSignedIn = false;
+  onAuthStateChanged(fbAuth, (user) => {
+    adminSignedIn = !!(user && !user.isAnonymous);
+  });
+
+  window.fbAgentLogin = async function(code, password) {
+    const res = await callAgentLogin({ code, password });
+    return res.data;
+  };
+
+  window.fbAdminLogin = async function(email, password) {
+    const cred = await signInWithEmailAndPassword(fbAuth, email, password);
+    await cred.user.getIdToken(true);
+    return true;
+  };
+
+  window.fbAdminLogout = async function() {
+    await signOut(fbAuth);
+    await signInAnonymously(fbAuth).catch(()=>{});
+  };
+
+  window.fbAdminListAgents = async function() {
+    const res = await callAdminListAgents();
+    return res.data.agents;
+  };
+
+  window.fbAdminSaveAgent = async function(agent) {
+    const res = await callAdminSaveAgent(agent);
+    return res.data;
+  };
+
+  window.fbAdminDeleteAgent = async function(code) {
+    const res = await callAdminDeleteAgent({ code });
+    return res.data;
+  };
+
+  // Anonymous session for regular visitors (agentLogin doesn't require it,
+  // but keeps things consistent if we need authenticated reads later).
+  signInAnonymously(fbAuth).catch(()=>{});
+</script>
 <script>
   tailwind.config = {
     theme: {
@@ -30,14 +94,8 @@
   h1,h2,h3,h4,.font-display{ font-family:'Sora',sans-serif; }
   .no-scrollbar::-webkit-scrollbar{ display:none; }
   .no-scrollbar{ -ms-overflow-style:none; scrollbar-width:none; }
-  .card-hover{ transition:transform .3s cubic-bezier(.25,.46,.45,.94), box-shadow .3s cubic-bezier(.25,.46,.45,.94); }
-  .card-hover:hover{ transform:translateY(-6px); box-shadow:0 20px 40px -12px rgba(11,93,59,.32); }
-  .btn-tactile{ transition:all .2s ease; }
-  .btn-tactile:active{ transform:scale(.97); }
-  .btn-gold{ background:linear-gradient(135deg,#E0B12B,#D4A017); box-shadow:0 10px 25px -8px rgba(212,160,23,.55); border:1px solid rgba(255,255,255,.25); }
-  .btn-gold:hover{ background:linear-gradient(135deg,#EABF3F,#C4930F); }
-  .btn-forest{ background:linear-gradient(135deg,#12734A,#0B5D3B); box-shadow:0 10px 25px -8px rgba(11,93,59,.45); border:1px solid rgba(255,255,255,.1); }
-  .btn-forest:hover{ background:linear-gradient(135deg,#158054,#0F4A32); }
+  .card-hover{ transition:transform .25s ease, box-shadow .25s ease; }
+  .card-hover:hover{ transform:translateY(-4px); box-shadow:0 16px 30px -10px rgba(11,93,59,.28); }
   .line-clamp-2{ display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
   .tab-active{ background:#0B5D3B !important; color:#fff !important; }
   .bottom-nav-active{ color:#0B5D3B !important; }
@@ -108,36 +166,35 @@
     <section id="view-home">
 
       <!-- HERO -->
-      <div class="relative overflow-hidden rounded-b-[2.5rem] sm:rounded-b-[3rem] border-b-[6px] border-honey/50 shadow-[0_20px_50px_-20px_rgba(8,63,40,0.6)]" style="background:linear-gradient(160deg,#0B5D3B 0%,#0F4A32 55%,#083F28 100%)">
+      <div class="relative overflow-hidden" style="background:linear-gradient(160deg,#0B5D3B 0%,#0F4A32 55%,#083F28 100%)">
         <div class="absolute inset-0 opacity-50" style="background-image:url('header-bg.jpg');background-size:cover;background-position:center 40%;"></div>
         <div class="absolute inset-0" style="background:linear-gradient(160deg,rgba(11,93,59,0.55) 0%,rgba(15,74,50,0.45) 55%,rgba(8,63,40,0.75) 100%)"></div>
-        <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(8,63,40,0.95) 0%,rgba(15,74,50,0.35) 45%,transparent 75%)"></div>
         <div class="absolute inset-0 text-honey opacity-[0.10]" style="background-image:url(#star8-fill)"></div>
         <div class="absolute inset-0" style="background-image:url('data:image/svg+xml;utf8,&lt;svg xmlns=%27http://www.w3.org/2000/svg%27 width=%2246%27 height=%2246%27&gt;&lt;g fill=%27none%27 stroke=%27%23D4A017%27 stroke-width=%271%27 opacity=%270.16%27&gt;&lt;rect x=%279%27 y=%279%27 width=%2228%27 height=%2228%27/&gt;&lt;rect x=%279%27 y=%279%27 width=%2228%27 height=%2228%27 transform=%27rotate(45 23 23)%27/&gt;&lt;/g&gt;&lt;/svg&gt;');"></div>
-        <div class="relative max-w-6xl mx-auto px-4 sm:px-6 pt-10 pb-14 sm:pt-14 sm:pb-20 grid lg:grid-cols-[0.85fr_2fr] gap-6 lg:gap-8 items-center">
+        <div class="relative max-w-6xl mx-auto px-4 sm:px-6 pt-10 pb-12 sm:pt-14 sm:pb-16 grid lg:grid-cols-[0.85fr_2fr] gap-6 lg:gap-8 items-center">
           <div>
-            <span class="inline-block bg-white/10 text-honey text-[11px] font-bold tracking-widest uppercase px-3 py-1.5 rounded-full border border-white/15 shadow-sm">Platform Komuniti • Seluruh Malaysia</span>
-            <h1 class="font-display font-extrabold text-3xl sm:text-5xl lg:text-2xl xl:text-3xl text-white leading-tight mt-4 drop-shadow-lg">Kurma, Madu &amp; Barangan Komuniti — Setiap Tempahan Menyokong PASTI Sarawak</h1>
-            <p class="text-leaflight/90 text-sm sm:text-base mt-3 max-w-md drop-shadow-sm">Beli produk pilihan terus daripada ejen komuniti kami. Mudah, telus, dan setiap ringgit memberi impak.</p>
+            <span class="inline-block bg-white/10 text-honey text-[11px] font-bold tracking-widest uppercase px-3 py-1.5 rounded-full border border-white/15">Platform Komuniti • Seluruh Malaysia</span>
+            <h1 class="font-display font-extrabold text-3xl sm:text-5xl lg:text-2xl xl:text-3xl text-white leading-tight mt-4">Kurma, Madu &amp; Barangan Komuniti — Setiap Tempahan Menyokong PASTI Sarawak</h1>
+            <p class="text-leaflight/90 text-sm sm:text-base mt-3 max-w-md">Beli produk pilihan terus daripada ejen komuniti kami. Mudah, telus, dan setiap ringgit memberi impak.</p>
             <div class="flex flex-wrap gap-3 mt-6">
-              <button onclick="window.showView('catalog')" class="btn-gold btn-tactile text-ink font-bold px-6 py-3 rounded-full flex items-center gap-2">
+              <button onclick="window.showView('catalog')" class="bg-honey hover:bg-honeydeep text-ink font-bold px-6 py-3 rounded-2xl shadow-lg flex items-center gap-2 transition-colors">
                 <i data-lucide="shopping-cart" class="w-4 h-4"></i> Mula Beli-Belah
               </button>
-              <button onclick="window.showView('agent')" class="btn-tactile bg-white/10 hover:bg-white/20 text-white font-bold px-6 py-3 rounded-full border border-white/20 flex items-center gap-2 transition-colors backdrop-blur-sm">
+              <button onclick="window.showView('agent')" class="bg-white/10 hover:bg-white/20 text-white font-bold px-6 py-3 rounded-2xl border border-white/20 flex items-center gap-2 transition-colors">
                 <i data-lucide="users" class="w-4 h-4"></i> Jadi Ejen Kami
               </button>
             </div>
 
             <div class="grid grid-cols-3 gap-3 mt-8 max-w-md">
-              <div class="bg-white/10 hover:bg-white/15 border border-white/15 rounded-2xl px-3 py-3 text-center transition-colors">
+              <div class="bg-white/10 border border-white/15 rounded-2xl px-3 py-3 text-center">
                 <p class="font-display font-extrabold text-honey text-lg sm:text-xl">500+</p>
                 <p class="text-white/70 text-[10px] font-semibold uppercase tracking-wide">Pelanggan</p>
               </div>
-              <div class="bg-white/10 hover:bg-white/15 border border-white/15 rounded-2xl px-3 py-3 text-center transition-colors">
+              <div class="bg-white/10 border border-white/15 rounded-2xl px-3 py-3 text-center">
                 <p class="font-display font-extrabold text-honey text-lg sm:text-xl">50+</p>
                 <p class="text-white/70 text-[10px] font-semibold uppercase tracking-wide">Ejen Aktif</p>
               </div>
-              <div class="bg-white/10 hover:bg-white/15 border border-white/15 rounded-2xl px-3 py-3 text-center transition-colors">
+              <div class="bg-white/10 border border-white/15 rounded-2xl px-3 py-3 text-center">
                 <p class="font-display font-extrabold text-honey text-lg sm:text-xl">15</p>
                 <p class="text-white/70 text-[10px] font-semibold uppercase tracking-wide">Kawasan Sarawak</p>
               </div>
@@ -178,19 +235,18 @@
         </div>
 
         <!-- KISAH KAMI -->
-        <div class="mt-12 relative bg-white border border-sand rounded-[2rem] p-6 sm:p-8 shadow-sm grid sm:grid-cols-5 gap-6 items-center overflow-hidden card-hover">
-          <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-honey to-honeydeep"></div>
+        <div class="mt-12 bg-white border border-sand rounded-[2rem] p-6 sm:p-8 shadow-sm grid sm:grid-cols-5 gap-6 items-center">
           <div class="sm:col-span-3">
             <p class="text-honeydeep text-[11px] font-bold tracking-widest uppercase mb-2">Kisah Kami</p>
             <h3 class="font-display font-bold text-xl text-ink mb-2">Bermula Daripada Komuniti, Untuk Komuniti</h3>
             <p class="text-inksoft text-sm leading-relaxed">Kedai PASTI Sarawak Official bermula sebagai inisiatif kecil keluarga Al-Haddad bersama ibu bapa dan guru-guru PASTI di Sarawak, bagi menjana dana ekonomi tadika sambil berkongsi produk komuniti pilihan — dari kurma, madu, sehingga kudapan tradisional — kepada seluruh Malaysia.</p>
           </div>
           <div class="sm:col-span-2 grid grid-cols-2 gap-3">
-            <div class="bg-leaflight rounded-2xl p-4 text-center transition-transform duration-300 hover:-translate-y-1">
+            <div class="bg-leaflight rounded-2xl p-4 text-center">
               <i data-lucide="heart-handshake" class="w-6 h-6 text-forest mx-auto mb-1"></i>
               <p class="text-[11px] font-bold text-ink">Komisen Telus</p>
             </div>
-            <div class="bg-sand rounded-2xl p-4 text-center transition-transform duration-300 hover:-translate-y-1">
+            <div class="bg-sand rounded-2xl p-4 text-center">
               <i data-lucide="package-check" class="w-6 h-6 text-honeydeep mx-auto mb-1"></i>
               <p class="text-[11px] font-bold text-ink">Produk Terpilih</p>
             </div>
@@ -199,7 +255,7 @@
       </div>
 
       <!-- FOOTER -->
-      <footer class="mt-14 bg-ink text-white/80 border-t-4 border-honey">
+      <footer class="mt-14 bg-ink text-white/80">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 py-10 grid sm:grid-cols-2 lg:grid-cols-4 gap-8 text-sm">
           <div>
             <div class="flex items-center gap-2 mb-3">
@@ -820,7 +876,7 @@
         </div>
         <div class="space-y-3">
           <input type="hidden" id="am-code-orig">
-          <input id="am-code" type="text" placeholder="Kod Ejen (Cth: AG006)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-bold uppercase">
+          <input id="am-code" type="text" readonly placeholder="Kod Ejen (auto-jana untuk ejen baru)" class="w-full bg-sand/60 border border-sand rounded-xl px-4 py-3 text-sm font-bold uppercase text-inksoft cursor-not-allowed">
           <input id="am-name" type="text" placeholder="Nama Penuh" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
           <div class="grid grid-cols-2 gap-3">
             <input id="am-phone" type="text" placeholder="No. Telefon" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
@@ -868,51 +924,10 @@ const defaultProducts = [
   { id:'P10', name:'Sejadah & Set Solat Mini', category:'ibadah', price:55.00, weight:0.60, stock:30, commissionPct:10, popular:false, sellerName:'Kedai PASTI Sarawak Official', desc:'Set sejadah mudah alih dengan beg simpanan, ringan dan sesuai dibawa ke mana-mana.', createdAt:D(4) },
 ];
 
-const defaultAgents = [
-  { code:'AG001', name:'Dayang Nor Suria Binti Abang Raduan', phone:'0136191762', email:'', area:'Betong', branch:'Pasti HIDAYAH', password:'demo123', joinedAt:'2026-02-23T02:33:52.000Z' },
-  { code:'AG002', name:'Norhayati Binti Nasir', phone:'01118553817', email:'', area:'Sarikei', branch:'PASTI IMTIAZ SARIKEI', password:'demo123', joinedAt:'2026-02-23T02:31:53.000Z' },
-  { code:'AG003', name:'Cikgu Nurul', phone:'0194228245', email:'', area:'Sibu', branch:'PASTI AL- FATEH lll', password:'demo123', joinedAt:'2026-02-24T00:53:21.000Z' },
-  { code:'AG004', name:'Sarmi binti Alimin', phone:'601151454917', email:'', area:'Miri', branch:'PASTI AL-AMALULULLAH', password:'demo123', joinedAt:'2026-02-22T06:10:34.000Z' },
-  { code:'AG005', name:'Cg tasya', phone:'01129696044', email:'', area:'Mukah', branch:'Pasti Al Wafi Mukah', password:'demo123', joinedAt:'2026-02-22T13:40:51.000Z' },
-  { code:'AG006', name:'Cikgu Siti', phone:'148387601', email:'', area:'Kota Samarahan', branch:'Pasti Raudhah', password:'demo123', joinedAt:'2026-02-22T08:07:21.000Z' },
-  { code:'AG007', name:'Nurhafizah Binti Abdollah', phone:'01119837169', email:'', area:'Saratok', branch:'PASTI AL-MAHABBAH 2 , SARATOK', password:'demo123', joinedAt:'2026-02-22T04:14:23.000Z' },
-  { code:'AG008', name:'Nurfatni Aisah binti kassim', phone:'0124055052', email:'', area:'Petra Jaya', branch:'PASTI Damai', password:'demo123', joinedAt:'2026-02-22T05:05:57.000Z' },
-  { code:'AG009', name:'Cikgu Mas', phone:'0198198904', email:'', area:'Kota Samarahan', branch:'Pasti Raudhatul Ilmi 1', password:'demo123', joinedAt:'2026-02-23T02:18:26.000Z' },
-  { code:'AG010', name:'CIKGU NURFAIZ SYAREE', phone:'0178527339', email:'', area:'Petra Jaya', branch:'PASTI DARUL ILMI 1', password:'demo123', joinedAt:'2026-03-03T00:14:07.000Z' },
-  { code:'AG011', name:'NURUL AFIQAH BINTI JULLKANAINE', phone:'0194963035', email:'', area:'Mukah', branch:'PASTI AL-WAFI 1', password:'demo123', joinedAt:'2026-02-22T06:21:16.000Z' },
-  { code:'AG012', name:'Norzapazillah binti Rahmat', phone:'128673271', email:'', area:'Saratok', branch:'Pasti An-Nur', password:'demo123', joinedAt:'2026-02-22T06:30:17.000Z' },
-  { code:'AG013', name:'Atiqah', phone:'0138052161', email:'', area:'Sibu', branch:'Pasti alfateh 1', password:'demo123', joinedAt:'2026-03-04T02:39:16.000Z' },
-  { code:'AG014', name:'zati bayani binti sani', phone:'0109499162', email:'', area:'Kota Samarahan', branch:'pasti al falah', password:'demo123', joinedAt:'2026-02-24T23:45:22.000Z' },
-  { code:'AG015', name:'Nurul Ashikhin', phone:'0138383248', email:'', area:'Batang Sadong', branch:'Lukmanul Hakim', password:'demo123', joinedAt:'2026-02-23T02:32:53.000Z' },
-  { code:'AG016', name:'Cikgu Ikha', phone:'01116685942', email:'', area:'Mukah', branch:'PASTI AL-WAFI 3', password:'demo123', joinedAt:'2026-02-22T04:19:51.000Z' },
-  { code:'AG017', name:'Salasiah Bt Aslan', phone:'01114580751', email:'', area:'Petra Jaya', branch:'Insani', password:'demo123', joinedAt:'2026-02-22T05:07:18.000Z' },
-  { code:'AG018', name:'Raja Nafiera Binti Amil', phone:'0109837177', email:'', area:'Kota Samarahan', branch:'Pasti Raudhatul Ilmi 2', password:'demo123', joinedAt:'2026-02-25T05:50:56.000Z' },
-  { code:'AG019', name:'LENNY MALINA BINTI ABDULLAH', phone:'0128911061', email:'', area:'Betong', branch:'PASTI HIDAYAH BETONG', password:'demo123', joinedAt:'2026-02-23T02:37:10.000Z' },
-  { code:'AG020', name:'Cikgu Fira', phone:'0109837177', email:'', area:'Kota Samarahan', branch:'Pasti Raudhatul Ilmi 2', password:'demo123', joinedAt:'2026-02-25T05:57:33.000Z' },
-  { code:'AG021', name:'Nur Amirah binti Arbi', phone:'0183118567', email:'', area:'Petra Jaya', branch:'PASTI DARUL HANA', password:'demo123', joinedAt:'2026-02-23T05:11:30.000Z' },
-  { code:'AG022', name:'Nur Amalina Fariza', phone:'60138236964', email:'', area:'Petra Jaya', branch:'PASTI Darul Furqan', password:'demo123', joinedAt:'2026-02-22T04:47:53.000Z' },
-  { code:'AG023', name:'Siti Zuriani binti Abang Asa', phone:'01112822814', email:'', area:'Petra Jaya', branch:'Pasti Darul Ilmi 2', password:'demo123', joinedAt:'2026-02-22T04:51:27.000Z' },
-  { code:'AG024', name:'LENNY MALINA BINTI ABDULLAH', phone:'0128911061', email:'', area:'Betong', branch:'PASTI HIDAYAH BETONG', password:'demo123', joinedAt:'2026-02-23T03:05:15.000Z' },
-  { code:'AG025', name:'SITI NURHIDDONA BINTI DARAMAN (AIN)', phone:'0178509048', email:'', area:'Saratok', branch:'PASTI AN-NUR KABONG', password:'demo123', joinedAt:'2026-02-22T04:09:52.000Z' },
-  { code:'AG026', name:'CIKGU TINI', phone:'0138364540', email:'', area:'Kota Samarahan', branch:'PASTI RAUDHATUL ILMI 4', password:'demo123', joinedAt:'2026-02-25T05:25:29.000Z' },
-  { code:'AG027', name:'Siti Nuramira binti Taib', phone:'0178581601', email:'', area:'Petra Jaya', branch:'PASTI AT TAQWA', password:'demo123', joinedAt:'2026-02-22T05:16:39.000Z' },
-  { code:'AG028', name:'Norshiela binti Samaon', phone:'01119373721', email:'', area:'Sibu', branch:'Paati Al Fateh 2', password:'demo123', joinedAt:'2026-02-24T05:19:28.000Z' },
-  { code:'AG029', name:'Nurulhafizah mosli', phone:'1124748155', email:'', area:'Miri', branch:'Pasti al-irsyad piasau', password:'demo123', joinedAt:'2026-02-23T03:01:08.000Z' },
-  { code:'AG030', name:'Cikgu Aliz', phone:'1114580751', email:'', area:'Petra Jaya', branch:'Insani', password:'demo123', joinedAt:'2026-02-22T05:10:09.000Z' },
-  { code:'AG031', name:'Cikgu Siti Rahimah', phone:'0148387601', email:'', area:'Kota Samarahan', branch:'Pasti Raudhah', password:'demo123', joinedAt:'2026-02-22T08:11:01.000Z' },
-  { code:'AG032', name:'Nor Fadila Binti Hamzah', phone:'0109224614', email:'', area:'Mukah', branch:'PASTI AL WAFI MUKAH', password:'demo123', joinedAt:'2026-02-22T13:39:50.000Z' },
-  { code:'AG033', name:'Nur Muharini Binti Putit', phone:'0138240873', email:'', area:'Kota Samarahan', branch:'PASTI AL-FALAH', password:'demo123', joinedAt:'2026-02-22T09:03:29.000Z' },
-  { code:'AG034', name:'Aiennul Andriana', phone:'0167737154', email:'', area:'Sibu', branch:'PASTI Al-Fateh Junior Sibu Jaya', password:'demo123', joinedAt:'2026-02-25T00:06:33.000Z' },
-  { code:'AG035', name:'Mazalina binti Jali', phone:'60148991220', email:'', area:'Mukah', branch:'Pasti Al-Wafi 1', password:'demo123', joinedAt:'2026-02-22T05:45:31.000Z' },
-  { code:'AG036', name:'Dayang Shafica', phone:'0193853077', email:'', area:'Kota Samarahan', branch:'PASTI RAUDHAH', password:'demo123', joinedAt:'2026-02-25T14:02:25.000Z' },
-  { code:'AG037', name:'SABTUYAH BINTI BIDIN', phone:'0135683695', email:'', area:'Petra Jaya', branch:'PASTI AN NIDA’', password:'demo123', joinedAt:'2026-02-22T05:55:38.000Z' },
-  { code:'AG038', name:'Nur Siti Quzaimah Binti Osman', phone:'011129633718', email:'', area:'Betong', branch:'PASTI HIDAYAH BETONG', password:'demo123', joinedAt:'2026-02-23T02:54:52.000Z' },
-  { code:'AG039', name:'Nor Farahin binti Mohd daud', phone:'0135718350', email:'', area:'Petra Jaya', branch:'Al Ikhwan', password:'demo123', joinedAt:'2026-02-22T05:40:16.000Z' },
-  { code:'AG040', name:'Nurfahmiera', phone:'60168544914', email:'', area:'Sibu', branch:'PASTi Al FATEH JUNIOR SIBU JAYA', password:'demo123', joinedAt:'2026-02-24T02:14:15.000Z' },
-  { code:'AG041', name:'Normala Bt Affendi', phone:'01131750313', email:'', area:'Saratok', branch:'PASTI AL MAHABBAH SARATOK', password:'demo123', joinedAt:'2026-02-22T04:10:10.000Z' },
-  { code:'AG042', name:'Siti Naza Noorashikin Binti Zepari', phone:'+60128846907', email:'', area:'Sibuti', branch:'Pasti At-Taqwa', password:'demo123', joinedAt:'2026-02-23T02:52:00.000Z' },
-  { code:'AG043', name:'Cikgu Alam', phone:'0168709904', email:'', area:'Petra Jaya', branch:'Pasti Mawaddah', password:'demo123', joinedAt:'2026-02-22T05:08:39.000Z' },
-];
+// Real agent roster now lives in Firestore (sampul-raya project), gated
+// behind Cloud Functions + Firestore rules — see PANDUAN-DEPLOYMENT.md.
+// Nothing sensitive is hardcoded here anymore.
+const defaultAgents = [];
 
 const seedSpecs = [
   {d:1,  agent:'AG001', items:[['P01',2],['P04',1]], status:'Baru',      state:'Sarawak',      name:'Nur Aisyah',        phone:'0111234567'},
@@ -1029,7 +1044,7 @@ async function loadAllData(){
     const sess = await window.storage.get('alhaddad:session', false);
     if(sess){
       const parsed = JSON.parse(sess.value);
-      if(parsed.type==='agent'){ currentAgent = appAgents.find(a=>a.code===parsed.code) || null; }
+      if(parsed.type==='agent'){ currentAgent = parsed.profile || null; }
       if(parsed.type==='admin'){ isAdminIn = true; }
     }
   }catch(e){}
@@ -1044,23 +1059,22 @@ async function persistSession(val){ try{ if(val) await window.storage.set('alhad
 function productTileHTML(p){
   const cat = CATEGORIES[p.category] || CATEGORIES.kurma;
   const stockLabel = p.stock>0 ? `${p.stock} lagi` : 'Stok Habis';
-  const stockClass = p.stock>0 ? 'text-forest bg-leaflight' : 'text-red-500 bg-red-50';
+  const stockClass = p.stock>0 ? 'text-forest' : 'text-red-500';
   return `
-  <div class="group bg-white rounded-3xl border border-sand overflow-hidden card-hover shadow-sm flex flex-col ${p.stock<=0?'opacity-80':''}">
-    <button onclick="window.openQuickView('${p.id}')" class="relative h-28 sm:h-36 w-full flex items-center justify-center overflow-hidden" style="background:linear-gradient(135deg, ${cat.grad[0]}, ${cat.grad[1]})">
-      <i data-lucide="${cat.icon}" class="w-11 h-11 sm:w-12 sm:h-12 text-white/90 transition-transform duration-500 group-hover:scale-110"></i>
-      ${p.popular ? `<span class="absolute top-2 left-2 btn-gold text-ink text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">Popular</span>` : ''}
-      ${p.stock<=0 ? `<span class="absolute top-2 right-2 bg-red-500 text-white text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">Habis</span>` : ''}
+  <div class="bg-white rounded-3xl border border-sand overflow-hidden card-hover shadow-sm flex flex-col">
+    <button onclick="window.openQuickView('${p.id}')" class="relative h-28 sm:h-36 w-full flex items-center justify-center" style="background:linear-gradient(135deg, ${cat.grad[0]}, ${cat.grad[1]})">
+      <i data-lucide="${cat.icon}" class="w-11 h-11 sm:w-12 sm:h-12 text-white/90"></i>
+      ${p.popular ? `<span class="absolute top-2 left-2 bg-honey text-ink text-[9px] font-black px-2 py-1 rounded-full">POPULAR</span>` : ''}
     </button>
     <div class="p-3 flex flex-col flex-1">
       <p class="text-[9px] font-bold text-inksoft uppercase tracking-wide">${escapeHtml(cat.name)}</p>
-      <button onclick="window.openQuickView('${p.id}')" class="text-left font-display font-semibold text-sm text-ink leading-snug mt-0.5 line-clamp-2 group-hover:text-forest transition-colors">${escapeHtml(p.name)}</button>
+      <button onclick="window.openQuickView('${p.id}')" class="text-left font-display font-semibold text-sm text-ink leading-snug mt-0.5 line-clamp-2">${escapeHtml(p.name)}</button>
       <div class="mt-auto pt-2 flex items-end justify-between gap-2">
         <div>
           <p class="font-display font-bold text-forest text-sm sm:text-base">${formatRM(p.price)}</p>
-          <p class="text-[9px] ${stockClass} font-bold mt-0.5 inline-block px-1.5 py-0.5 rounded">${stockLabel}</p>
+          <p class="text-[10px] ${stockClass} font-semibold">${stockLabel}</p>
         </div>
-        <button ${p.stock<=0?'disabled':''} onclick="window.addToCart('${p.id}',1); event.stopPropagation();" class="btn-tactile shrink-0 ${p.stock<=0?'bg-slate-200 text-slate-400':'btn-forest text-white'} rounded-full w-9 h-9 flex items-center justify-center" title="Tambah ke Troli">
+        <button ${p.stock<=0?'disabled':''} onclick="window.addToCart('${p.id}',1); event.stopPropagation();" class="shrink-0 ${p.stock<=0?'bg-slate-200 text-slate-400':'bg-forest hover:bg-forestdark text-white'} rounded-full w-9 h-9 flex items-center justify-center shadow-sm transition-colors" title="Tambah ke Troli">
           <i data-lucide="plus" class="w-4 h-4"></i>
         </button>
       </div>
@@ -1083,9 +1097,9 @@ function renderHomeCatGrid(){
   const el = document.getElementById('home-cat-grid');
   if(!el) return;
   el.innerHTML = Object.entries(CATEGORIES).map(([key,cat])=>`
-    <button onclick="window.setCategory('${key}'); window.showView('catalog');" class="group bg-white border border-sand rounded-2xl p-3 flex flex-col items-center gap-2 card-hover shadow-sm">
-      <div class="w-11 h-11 rounded-xl flex items-center justify-center text-white shadow-sm transition-transform duration-300 group-hover:scale-110" style="background:linear-gradient(135deg, ${cat.grad[0]}, ${cat.grad[1]})"><i data-lucide="${cat.icon}" class="w-5 h-5"></i></div>
-      <span class="text-[10px] sm:text-[11px] font-bold text-ink text-center leading-tight group-hover:text-forest transition-colors">${escapeHtml(cat.name)}</span>
+    <button onclick="window.setCategory('${key}'); window.showView('catalog');" class="bg-white border border-sand rounded-2xl p-3 flex flex-col items-center gap-2 card-hover">
+      <div class="w-11 h-11 rounded-xl flex items-center justify-center text-white" style="background:linear-gradient(135deg, ${cat.grad[0]}, ${cat.grad[1]})"><i data-lucide="${cat.icon}" class="w-5 h-5"></i></div>
+      <span class="text-[10px] sm:text-[11px] font-bold text-ink text-center leading-tight">${escapeHtml(cat.name)}</span>
     </button>`).join('');
   icons();
 }
@@ -1380,16 +1394,23 @@ function statusClass(status){
   return { 'Baru':'baru','Diproses':'diproses','Dihantar':'dihantar','Selesai':'selesai','Dibatalkan':'batal' }[status] || 'baru';
 }
 
-window.loginAgent = function(){
+window.loginAgent = async function(){
   const code = document.getElementById('agent-login-code').value.trim().toUpperCase();
   const pass = document.getElementById('agent-login-pass').value;
-  const agent = appAgents.find(a=>a.code===code);
-  if(!agent){ showToast('Kod ejen tidak dijumpai','alert-circle'); return; }
-  if(agent.password !== pass){ showToast('Kata laluan salah','alert-circle'); return; }
-  currentAgent = agent;
-  persistSession({type:'agent', code:agent.code});
-  renderAgentView();
-  showToast('Selamat kembali, '+agent.name+'!','check-circle-2');
+  if(!code || !pass){ showToast('Sila isi kod & kata laluan','alert-circle'); return; }
+  if(typeof window.fbAgentLogin !== 'function'){ showToast('Sistem log masuk belum sedia, cuba lagi sebentar','alert-circle'); return; }
+  try{
+    const profile = await window.fbAgentLogin(code, pass);
+    currentAgent = profile;
+    persistSession({type:'agent', profile});
+    renderAgentView();
+    showToast('Selamat kembali, '+profile.name+'!','check-circle-2');
+  }catch(err){
+    const msg = (err && err.code==='functions/not-found') ? 'Kod ejen tidak dijumpai'
+      : (err && err.code==='functions/unauthenticated') ? 'Kata laluan salah'
+      : 'Log masuk gagal, cuba lagi';
+    showToast(msg,'alert-circle');
+  }
 }
 window.logoutAgent = function(){
   currentAgent = null;
@@ -1437,21 +1458,25 @@ function renderAgentView(){
 /* ================= ADMIN: LOGIN & TABS ================= */
 window.adminCurrentTab = 'produk';
 
-window.loginAdmin = function(){
+window.loginAdmin = async function(){
   const email = document.getElementById('admin-login-email').value.trim().toLowerCase();
   const pass = document.getElementById('admin-login-pass').value;
-  if(email==='admin@pastisarawak.my' && pass==='admin123'){
+  if(!email || !pass){ showToast('Sila isi emel & kata laluan','alert-circle'); return; }
+  if(typeof window.fbAdminLogin !== 'function'){ showToast('Sistem log masuk belum sedia, cuba lagi sebentar','alert-circle'); return; }
+  try{
+    await window.fbAdminLogin(email, pass);
     isAdminIn = true;
     persistSession({type:'admin'});
     renderAdminView();
     showToast('Selamat datang, Admin!','shield-check');
-  } else {
+  }catch(err){
     showToast('Emel atau kata laluan salah','alert-circle');
   }
 }
-window.logoutAdmin = function(){
+window.logoutAdmin = async function(){
   isAdminIn = false;
   persistSession(null);
+  try{ await window.fbAdminLogout(); }catch(e){}
   renderAdminView();
   showToast('Berjaya log keluar','log-out');
 }
@@ -1468,7 +1493,7 @@ window.setAdminTab = function(tab){
   });
   if(tab==='produk') renderAdminProducts();
   if(tab==='tempahan') renderAdminOrders();
-  if(tab==='ejen') renderAdminAgents();
+  if(tab==='ejen') refreshAndRenderAdminAgents();
   if(tab==='laporan' && typeof renderReports==='function') renderReports();
 }
 function renderAdminView(){
@@ -1602,52 +1627,61 @@ window.deleteOrder = function(orderId){
 }
 
 /* ================= ADMIN: EJEN ================= */
+async function refreshAndRenderAdminAgents(){
+  const tbody = document.getElementById('admin-agent-body');
+  if(tbody) tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-inksoft italic">Memuatkan senarai ejen...</td></tr>`;
+  try{
+    appAgents = await window.fbAdminListAgents();
+  }catch(e){
+    appAgents = [];
+    showToast('Gagal muatkan senarai ejen','alert-circle');
+  }
+  renderAdminAgents();
+}
 window.openAgentModal = function(code){
   const editing = code ? appAgents.find(a=>a.code===code) : null;
   document.getElementById('am-title').innerText = editing ? 'Edit Ejen' : 'Tambah Ejen';
   document.getElementById('am-code-orig').value = editing ? editing.code : '';
-  document.getElementById('am-code').value = editing ? editing.code : '';
+  document.getElementById('am-code').value = editing ? editing.code : '(auto)';
   document.getElementById('am-name').value = editing ? editing.name : '';
   document.getElementById('am-phone').value = editing ? editing.phone : '';
   document.getElementById('am-area').value = editing ? editing.area : '';
-  document.getElementById('am-email').value = editing ? editing.email : '';
+  document.getElementById('am-email').value = editing ? (editing.email||'') : '';
   document.getElementById('am-branch').value = editing ? (editing.branch||'') : '';
   document.getElementById('am-pass').value = editing ? editing.password : 'demo123';
   document.getElementById('modal-admin-agent').classList.remove('hidden');
 }
 window.closeAgentModal = function(){ document.getElementById('modal-admin-agent').classList.add('hidden'); }
-window.saveAgent = function(){
+window.saveAgent = async function(){
   const origCode = document.getElementById('am-code-orig').value;
-  const code = document.getElementById('am-code').value.trim().toUpperCase();
   const name = document.getElementById('am-name').value.trim();
   const phone = document.getElementById('am-phone').value.trim();
   const area = document.getElementById('am-area').value.trim();
-  const email = document.getElementById('am-email').value.trim();
   const branch = document.getElementById('am-branch').value.trim();
   const password = document.getElementById('am-pass').value.trim() || 'demo123';
 
-  if(!code || !name){ showToast('Kod dan nama ejen wajib diisi','alert-circle'); return; }
-  if(!origCode && appAgents.find(a=>a.code===code)){ showToast('Kod ejen sudah wujud','alert-circle'); return; }
+  if(!name){ showToast('Nama ejen wajib diisi','alert-circle'); return; }
 
-  if(origCode){
-    const a = appAgents.find(x=>x.code===origCode);
-    Object.assign(a, {code,name,phone,area,email,branch,password});
-    appOrders.forEach(o=>{ if(o.agentCode===origCode) o.agentCode=code; });
-  } else {
-    appAgents.push({ code,name,phone,area,email,branch,password, joinedAt:new Date().toISOString() });
+  try{
+    await window.fbAdminSaveAgent({ code:origCode||'', name, phone, area, branch, password });
+    window.closeAgentModal();
+    await refreshAndRenderAdminAgents();
+    showToast('Ejen berjaya disimpan','check-circle-2');
+  }catch(e){
+    showToast('Gagal simpan ejen','alert-circle');
   }
-  persistAgents(); persistOrders();
-  window.closeAgentModal();
-  renderAdminAgents();
-  showToast('Ejen berjaya disimpan','check-circle-2');
 }
-window.deleteAgent = function(code){
+window.deleteAgent = async function(code){
   if(!confirm('Padam ejen ini? Tempahan sedia ada akan kekal tanpa ejen dikaitkan.')) return;
-  appAgents = appAgents.filter(a=>a.code!==code);
-  appOrders.forEach(o=>{ if(o.agentCode===code) o.agentCode=null; });
-  persistAgents(); persistOrders();
-  renderAdminAgents();
-  showToast('Ejen dipadam','trash-2');
+  try{
+    await window.fbAdminDeleteAgent(code);
+    appOrders.forEach(o=>{ if(o.agentCode===code) o.agentCode=null; });
+    persistOrders();
+    await refreshAndRenderAdminAgents();
+    showToast('Ejen dipadam','trash-2');
+  }catch(e){
+    showToast('Gagal padam ejen','alert-circle');
+  }
 }
 function renderAdminAgents(){
   const tbody = document.getElementById('admin-agent-body');
