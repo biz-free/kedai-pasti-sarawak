@@ -29,6 +29,7 @@
   const callAdminListAgents = httpsCallable(fbFns, 'adminListAgents');
   const callAdminSaveAgent = httpsCallable(fbFns, 'adminSaveAgent');
   const callAdminDeleteAgent = httpsCallable(fbFns, 'adminDeleteAgent');
+  const callLookupOrders = httpsCallable(fbFns, 'lookupOrders');
 
   let adminSignedIn = false;
   onAuthStateChanged(fbAuth, (user) => {
@@ -38,6 +39,11 @@
   window.fbAgentLogin = async function(code, password) {
     const res = await callAgentLogin({ code, password });
     return res.data;
+  };
+
+  window.fbLookupOrders = async function(phone) {
+    const res = await callLookupOrders({ phone });
+    return res.data.orders;
   };
 
   window.fbAdminLogin = async function(email, password) {
@@ -277,6 +283,7 @@
             <div class="flex flex-col gap-2 text-white/60 text-xs">
               <button onclick="window.showView('catalog')" class="text-left hover:text-honey w-fit">Katalog Produk</button>
               <button onclick="window.showView('agent')" class="text-left hover:text-honey w-fit">Portal Ejen</button>
+              <button onclick="window.showView('semak')" class="text-left hover:text-honey w-fit">Semak Tempahan Sampul Raya</button>
               <button onclick="window.showView('kawasan')" class="text-left hover:text-honey w-fit">Kawasan PASTI</button>
               <button onclick="window.showView('pengurusan')" class="text-left hover:text-honey w-fit">Pengurusan</button>
               <button onclick="window.showView('tentang')" class="text-left hover:text-honey w-fit">Tentang Kami</button>
@@ -798,6 +805,23 @@
       </div>
     </section>
 
+    <!-- ==================== VIEW: SEMAK TEMPAHAN ==================== -->
+    <section id="view-semak" class="hidden">
+      <div class="max-w-2xl mx-auto px-4 sm:px-6 pt-8 pb-16">
+        <button onclick="window.showView('home')" class="text-forest text-xs font-bold flex items-center gap-1 mb-4"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Kembali ke Utama</button>
+        <p class="text-honeydeep text-[11px] font-bold tracking-widest uppercase mb-2">Sampul Raya PASTI</p>
+        <h1 class="font-display font-bold text-2xl sm:text-3xl text-ink mb-2">Semak Tempahan Lama</h1>
+        <p class="text-inksoft text-sm mb-6 max-w-md">Pernah tempah Sampul Raya PASTI? Masukkan nombor telefon yang digunakan semasa tempahan untuk semak status.</p>
+
+        <div class="bg-white border border-sand rounded-3xl p-5 shadow-sm flex gap-3">
+          <input id="semak-phone" type="tel" placeholder="Cth: 0121234567" class="flex-1 bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          <button onclick="window.doLookupOrders()" class="shrink-0 bg-forest hover:bg-forestdark text-white font-bold px-5 rounded-xl flex items-center gap-2"><i data-lucide="search" class="w-4 h-4"></i> Cari</button>
+        </div>
+
+        <div id="semak-results" class="mt-6 space-y-3"></div>
+      </div>
+    </section>
+
   </main>
 
   <!-- BOTTOM NAV (mobile) -->
@@ -906,6 +930,7 @@ const CATEGORIES = {
   kesihatan: { name:'Madu & Kesihatan',   icon:'leaf',       grad:['#3F9D64','#8BC79E'] },
   kudapan:   { name:'Kudapan & Snek',     icon:'cookie',     grad:['#8A5A2B','#C08A4E'] },
   ibadah:    { name:'Solat & Ibadah',     icon:'moon-star',  grad:['#1C2B24','#3F9D64'] },
+  sampul:    { name:'Sampul & Cenderahati', icon:'gift',     grad:['#B3810A','#3F9D64'] },
 };
 
 const STATES = ["Perlis","Kedah","Pulau Pinang","Perak","Selangor","Kuala Lumpur","Putrajaya","Negeri Sembilan","Melaka","Johor","Pahang","Terengganu","Kelantan","Sarawak","Sabah","Labuan"];
@@ -922,6 +947,7 @@ const defaultProducts = [
   { id:'P08', name:'Kopi O PASTI Sarawak 200g', category:'minuman', price:18.90, weight:0.25, stock:90, commissionPct:10, popular:false, sellerName:'Kedai PASTI Sarawak Official', desc:'Kopi O tradisional panggangan kayu, digiling segar khas untuk pencinta kopi kampung.', createdAt:D(1) },
   { id:'P09', name:'Bertih & Kacang Tradisional 300g', category:'kudapan', price:15.00, weight:0.35, stock:65, commissionPct:12, popular:false, sellerName:'Kedai PASTI Sarawak Official', desc:'Campuran bertih dan kacang rangup, snek ringan yang sesuai untuk majlis dan hantaran.', createdAt:D(6) },
   { id:'P10', name:'Sejadah & Set Solat Mini', category:'ibadah', price:55.00, weight:0.60, stock:30, commissionPct:10, popular:false, sellerName:'Kedai PASTI Sarawak Official', desc:'Set sejadah mudah alih dengan beg simpanan, ringan dan sesuai dibawa ke mana-mana.', createdAt:D(4) },
+  { id:'P11', name:'Sampul Raya PASTI', category:'sampul', price:3.50, weight:0.02, stock:5000, commissionPct:14, popular:true, sellerName:'Kedai PASTI Sarawak Official', desc:'Sampul duit raya eksklusif keluaran PASTI Sarawak — reka bentuk cantik untuk Aidilfitri. Setiap keping yang dibeli menyumbang terus kepada dana operasi tadika PASTI di seluruh Sarawak.', createdAt:D(0) },
 ];
 
 // Real agent roster now lives in Firestore (sampul-raya project), gated
@@ -1195,7 +1221,7 @@ function updateCartBadge(){
 }
 
 /* ================= NAV / VIEW SWITCH ================= */
-const VIEW_IDS = ['home','catalog','cart','checkout','agent','admin','kawasan','pengurusan','tentang','faq','terma','privasi'];
+const VIEW_IDS = ['home','catalog','cart','checkout','agent','admin','kawasan','pengurusan','tentang','faq','terma','privasi','semak'];
 window.showView = function(name){
   VIEW_IDS.forEach(v=>{
     const sec = document.getElementById('view-'+v);
@@ -1423,6 +1449,36 @@ window.copyRefLink = function(){
   inp.select(); inp.setSelectionRange(0,999);
   try{ document.execCommand('copy'); showToast('Link disalin!','copy'); }
   catch(e){ showToast('Sila salin secara manual','info'); }
+}
+
+window.doLookupOrders = async function(){
+  const phone = document.getElementById('semak-phone').value.trim();
+  const resultsEl = document.getElementById('semak-results');
+  if(!phone){ showToast('Sila masukkan nombor telefon','alert-circle'); return; }
+  if(typeof window.fbLookupOrders !== 'function'){ showToast('Sistem carian belum sedia, cuba lagi sebentar','alert-circle'); return; }
+
+  resultsEl.innerHTML = `<p class="text-center text-inksoft text-sm italic py-6">Mencari...</p>`;
+  try{
+    const orders = await window.fbLookupOrders(phone);
+    if(!orders.length){
+      resultsEl.innerHTML = `<div class="bg-white border border-sand rounded-2xl p-6 text-center text-inksoft text-sm">Tiada tempahan dijumpai untuk nombor ini.</div>`;
+      return;
+    }
+    resultsEl.innerHTML = orders.map(o => `
+      <div class="bg-white border border-sand rounded-2xl p-4 flex items-center justify-between gap-3">
+        <div class="min-w-0">
+          <p class="font-mono font-bold text-forest text-sm">${escapeHtml(o.orderId)}</p>
+          <p class="text-ink text-sm font-semibold mt-0.5">${escapeHtml(o.cawangan)} · ${escapeHtml(o.kawasan)}</p>
+          <p class="text-inksoft text-xs mt-0.5">${o.qty} keping · RM ${escapeHtml(String(o.total))} ${o.tarikhBayaran ? '· '+escapeHtml(o.tarikhBayaran) : ''}</p>
+        </div>
+        <div class="shrink-0 flex flex-col gap-1 items-end">
+          <span class="px-2 py-1 rounded-full text-[10px] font-bold ${o.isVerified ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}">${o.isVerified ? 'Disahkan' : 'Belum Disahkan'}</span>
+          <span class="px-2 py-1 rounded-full text-[10px] font-bold ${o.isDelivered ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'}">${o.isDelivered ? 'Dihantar' : 'Belum Dihantar'}</span>
+        </div>
+      </div>`).join('');
+  }catch(e){
+    resultsEl.innerHTML = `<div class="bg-white border border-sand rounded-2xl p-6 text-center text-red-500 text-sm">Ralat mencari tempahan, cuba lagi.</div>`;
+  }
 }
 
 function renderAgentView(){
