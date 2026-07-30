@@ -1921,6 +1921,10 @@ function updateCartBadge(){
 
 /* ================= NAV / VIEW SWITCH ================= */
 const VIEW_IDS = ['home','catalog','cart','checkout','agent','admin','kawasan','pengurusan','tentang','faq','terma','privasi','semak','kawasanportal','akaun'];
+// Views excluded from URL hash routing — kept reachable only via their
+// existing in-app trigger (e.g. the disguised footer click for admin),
+// never via a direct/shareable link or browser history.
+const HIDDEN_FROM_ROUTING = ['admin'];
 window.showView = function(name, pushHistory){
   if(!VIEW_IDS.includes(name)) name = 'home';
   VIEW_IDS.forEach(v=>{
@@ -1931,7 +1935,7 @@ window.showView = function(name, pushHistory){
     btn.classList.toggle('bottom-nav-active', btn.getAttribute('data-nav')===name);
   });
   window.scrollTo({top:0, behavior:'instant' in window ? 'instant':'auto'});
-  if(pushHistory!==false){
+  if(pushHistory!==false && !HIDDEN_FROM_ROUTING.includes(name)){
     const hash = '#'+name;
     if(window.location.hash!==hash) history.pushState({view:name}, '', hash);
   }
@@ -1945,8 +1949,13 @@ window.showView = function(name, pushHistory){
   icons();
 }
 window.addEventListener('popstate', (e)=>{
-  const name = (e.state && e.state.view) || (window.location.hash||'').replace('#','') || 'home';
+  let name = (e.state && e.state.view) || (window.location.hash||'').replace('#','') || 'home';
+  if(HIDDEN_FROM_ROUTING.includes(name)) name = 'home';
   window.showView(name, false);
+});
+window.addEventListener('hashchange', ()=>{
+  const name = (window.location.hash||'').replace('#','');
+  if(HIDDEN_FROM_ROUTING.includes(name)) window.showView('home', true);
 });
 
 async function renderKawasanPublicList(){
@@ -3185,7 +3194,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   icons();
 
   const initialHash = (window.location.hash||'').replace('#','');
-  if(initialHash && VIEW_IDS.includes(initialHash)) window.showView(initialHash, false);
+  if(HIDDEN_FROM_ROUTING.includes(initialHash)){
+    history.replaceState({}, '', window.location.pathname + window.location.search);
+  } else if(initialHash && VIEW_IDS.includes(initialHash)){
+    window.showView(initialHash, false);
+  }
 
   const produkId = (new URLSearchParams(window.location.search)).get('produk');
   if(produkId){
