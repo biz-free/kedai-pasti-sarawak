@@ -1868,7 +1868,8 @@ function updateCartBadge(){
 
 /* ================= NAV / VIEW SWITCH ================= */
 const VIEW_IDS = ['home','catalog','cart','checkout','agent','admin','kawasan','pengurusan','tentang','faq','terma','privasi','semak','kawasanportal','akaun'];
-window.showView = function(name){
+window.showView = function(name, pushHistory){
+  if(!VIEW_IDS.includes(name)) name = 'home';
   VIEW_IDS.forEach(v=>{
     const sec = document.getElementById('view-'+v);
     if(sec) sec.classList.toggle('hidden', v!==name);
@@ -1877,6 +1878,10 @@ window.showView = function(name){
     btn.classList.toggle('bottom-nav-active', btn.getAttribute('data-nav')===name);
   });
   window.scrollTo({top:0, behavior:'instant' in window ? 'instant':'auto'});
+  if(pushHistory!==false){
+    const hash = '#'+name;
+    if(window.location.hash!==hash) history.pushState({view:name}, '', hash);
+  }
   if(name==='cart' && typeof renderCart==='function') renderCart();
   if(name==='checkout' && typeof renderCheckoutEnter==='function') renderCheckoutEnter();
   if(name==='agent' && typeof renderAgentView==='function') renderAgentView();
@@ -1886,6 +1891,10 @@ window.showView = function(name){
   if(name==='akaun' && typeof renderAkaunView==='function') renderAkaunView();
   icons();
 }
+window.addEventListener('popstate', (e)=>{
+  const name = (e.state && e.state.view) || (window.location.hash||'').replace('#','') || 'home';
+  window.showView(name, false);
+});
 
 async function renderKawasanPublicList(){
   const el = document.getElementById('kawasan-registered-list');
@@ -3121,6 +3130,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderAdminView();
   renderKawasanPortalView();
   icons();
+
+  const initialHash = (window.location.hash||'').replace('#','');
+  if(initialHash && VIEW_IDS.includes(initialHash)) window.showView(initialHash, false);
 
   const produkId = (new URLSearchParams(window.location.search)).get('produk');
   if(produkId){
