@@ -814,12 +814,13 @@
         <button onclick="window.showView('home')" class="text-forest text-xs font-bold flex items-center gap-1 mb-4"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Kembali ke Utama</button>
         <p class="text-honeydeep text-[11px] font-bold tracking-widest uppercase mb-2">Kedai PASTI Sarawak Official</p>
         <h1 class="font-display font-bold text-2xl sm:text-3xl text-ink mb-2">Semak Tempahan</h1>
-        <p class="text-inksoft text-sm mb-6 max-w-md">Pernah buat tempahan dengan kami? Masukkan nombor telefon yang digunakan semasa tempahan untuk semak status.</p>
+        <p class="text-inksoft text-sm mb-6 max-w-md">Pernah buat tempahan Sampul Raya PASTI dengan kami? Masukkan nombor telefon ATAU nombor tempahan (cth. PASTI-123456) untuk semak status.</p>
 
         <div class="bg-white border border-sand rounded-3xl p-5 shadow-sm flex gap-3">
-          <input id="semak-phone" type="tel" placeholder="Cth: 0121234567" class="flex-1 bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          <input id="semak-phone" type="text" placeholder="No. telefon atau No. Tempahan" class="flex-1 bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
           <button onclick="window.doLookupOrders()" class="shrink-0 bg-forest hover:bg-forestdark text-white font-bold px-5 rounded-xl flex items-center gap-2"><i data-lucide="search" class="w-4 h-4"></i> Cari</button>
         </div>
+        <p class="text-inksoft/70 text-[11px] mt-2">*Ciri ini setakat ini hanya menyemak tempahan <b>Sampul Raya PASTI</b> yang lama. Tempahan produk lain melalui Kedai PASTI akan disokong tidak lama lagi.</p>
 
         <div id="semak-results" class="mt-6 space-y-3"></div>
       </div>
