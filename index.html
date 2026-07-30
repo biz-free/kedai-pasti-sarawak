@@ -6,10 +6,20 @@
 <title>Kedai PASTI Sarawak Official — Produk Komuniti Seluruh Malaysia</title>
 <meta name="description" content="Kedai PASTI Sarawak Official — platform jualan produk komuniti (kurma, madu, kudapan tradisional) dengan sistem ejen & komisen, fokus utama Sarawak.">
 <script src="https://cdn.tailwindcss.com"></script>
+<script>
+  // Simple localStorage-backed KV store matching the {get,set,delete}(key, _global) shape
+  // used throughout this file for cart/session/demo-data persistence.
+  window.storage = {
+    async get(key){ try{ const v = localStorage.getItem(key); return v===null ? null : { value: v }; }catch(e){ return null; } },
+    async set(key, value){ try{ localStorage.setItem(key, value); }catch(e){} },
+    async delete(key){ try{ localStorage.removeItem(key); }catch(e){} },
+  };
+</script>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getAuth, signInAnonymously, signInWithEmailAndPassword, signInWithCustomToken, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import { getAuth, signInAnonymously, signInWithEmailAndPassword, signInWithCustomToken, signOut, onAuthStateChanged, createUserWithEmailAndPassword, sendPasswordResetEmail, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
   import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
+  import { getFirestore, doc, getDoc, setDoc, collection, getDocs, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyCqLlIHujEZDkS0OjsiUVaAnxku_rANFos",
@@ -24,6 +34,10 @@
   const fbApp = initializeApp(firebaseConfig);
   const fbAuth = getAuth(fbApp);
   const fbFns = getFunctions(fbApp);
+  const fbDb = getFirestore(fbApp);
+  const KP_ROOT = ['artifacts','kedai-pasti-sarawak','public','data'];
+  function kpCol(name){ return collection(fbDb, ...KP_ROOT, name); }
+  function kpDoc(name, id){ return doc(fbDb, ...KP_ROOT, name, id); }
 
   const callAgentLogin = httpsCallable(fbFns, 'agentLogin');
   const callAdminListAgents = httpsCallable(fbFns, 'adminListAgents');
@@ -41,6 +55,12 @@
   const callAdminListKawasan = httpsCallable(fbFns, 'adminListKawasan');
   const callAdminSaveKawasan = httpsCallable(fbFns, 'adminSaveKawasan');
   const callAdminDeleteKawasan = httpsCallable(fbFns, 'adminDeleteKawasan');
+  const callSubmitOrder = httpsCallable(fbFns, 'submitOrder');
+  const callAdminListOrders = httpsCallable(fbFns, 'adminListOrders');
+  const callAdminUpdateOrderStatus = httpsCallable(fbFns, 'adminUpdateOrderStatus');
+  const callAdminConfirmPayment = httpsCallable(fbFns, 'adminConfirmPayment');
+  const callAgentOrderStats = httpsCallable(fbFns, 'agentOrderStats');
+  const callAgentSavePayout = httpsCallable(fbFns, 'agentSavePayout');
 
   let adminSignedIn = false;
   onAuthStateChanged(fbAuth, (user) => {
@@ -153,9 +173,127 @@
     return res.data;
   };
 
-  // Anonymous session for regular visitors (agentLogin doesn't require it,
-  // but keeps things consistent if we need authenticated reads later).
-  signInAnonymously(fbAuth).catch(()=>{});
+  window.fbSubmitOrder = async function(order) {
+    const res = await callSubmitOrder(order);
+    return res.data;
+  };
+
+  window.fbAdminListOrders = async function() {
+    const res = await callAdminListOrders();
+    return res.data.orders;
+  };
+
+  window.fbAdminUpdateOrderStatus = async function(orderId, status) {
+    const res = await callAdminUpdateOrderStatus({ orderId, status });
+    return res.data;
+  };
+
+  window.fbAdminConfirmPayment = async function(orderId) {
+    const res = await callAdminConfirmPayment({ orderId });
+    return res.data;
+  };
+
+  window.fbAgentOrderStats = async function(code, password) {
+    const res = await callAgentOrderStats({ code, password });
+    return res.data;
+  };
+
+  window.fbAgentSavePayout = async function(code, password, payout) {
+    const res = await callAgentSavePayout({ code, password, ...payout });
+    return res.data;
+  };
+
+  // --- Direct Firestore access (rules-gated) for products, site content,
+  // and customer accounts — no Cloud Function round-trip needed for these. ---
+
+  window.fbListProductsPublic = async function() {
+    const snap = await getDocs(kpCol('products'));
+    const out = [];
+    snap.forEach(d => out.push({ id: d.id, ...d.data() }));
+    return out;
+  };
+
+  window.fbAdminSaveProduct = async function(product) {
+    const id = product.id || ('P-' + Date.now().toString(36) + Math.random().toString(36).slice(2,6));
+    const { id: _drop, ...data } = product;
+    await setDoc(kpDoc('products', id), data, { merge: true });
+    return { ok: true, id };
+  };
+
+  window.fbAdminDeleteProduct = async function(id) {
+    await deleteDoc(kpDoc('products', id));
+    return { ok: true };
+  };
+
+  window.fbGetSiteContent = async function() {
+    const snap = await getDoc(kpDoc('meta', 'siteContent'));
+    return snap.exists() ? snap.data() : {};
+  };
+
+  window.fbAdminSaveSiteContent = async function(content) {
+    await setDoc(kpDoc('meta', 'siteContent'), content, { merge: true });
+    return { ok: true };
+  };
+
+  // --- Customer accounts (real Firebase Auth: email/password + Google) ---
+  let customerAuthUser = null;
+  let authBootstrapped = false;
+  let resolveAuthReady;
+  window.fbAuthReady = new Promise(res => { resolveAuthReady = res; });
+  onAuthStateChanged(fbAuth, (user) => {
+    customerAuthUser = (user && !user.isAnonymous) ? user : null;
+    if (typeof window.onCustomerAuthChange === 'function') window.onCustomerAuthChange(customerAuthUser);
+    // Only fall back to an anonymous session on the FIRST auth resolution,
+    // and only if nothing (real or anonymous) was already persisted —
+    // otherwise this would clobber a restored admin/customer login on
+    // every page load, signing them out from under themselves.
+    if (!authBootstrapped) {
+      authBootstrapped = true;
+      if (!user) signInAnonymously(fbAuth).catch(()=>{});
+      resolveAuthReady();
+    }
+  });
+
+  window.fbCustomerSignup = async function(email, password) {
+    const cred = await createUserWithEmailAndPassword(fbAuth, email, password);
+    return cred.user.uid;
+  };
+  window.fbCustomerLogin = async function(email, password) {
+    const cred = await signInWithEmailAndPassword(fbAuth, email, password);
+    return cred.user.uid;
+  };
+  window.fbCustomerGoogleLogin = async function() {
+    const provider = new GoogleAuthProvider();
+    const cred = await signInWithPopup(fbAuth, provider);
+    return { uid: cred.user.uid, email: cred.user.email, name: cred.user.displayName || '' };
+  };
+  window.fbCustomerLogout = async function() {
+    await signOut(fbAuth);
+    await signInAnonymously(fbAuth).catch(()=>{});
+  };
+  window.fbCustomerResetPassword = async function(email) {
+    await sendPasswordResetEmail(fbAuth, email);
+  };
+  window.fbCustomerSaveProfile = async function(profile) {
+    if (!customerAuthUser) throw new Error('not-logged-in');
+    await setDoc(kpDoc('customers', customerAuthUser.uid), profile, { merge: true });
+    return { ok: true };
+  };
+  window.fbCustomerGetProfile = async function() {
+    if (!customerAuthUser) throw new Error('not-logged-in');
+    const snap = await getDoc(kpDoc('customers', customerAuthUser.uid));
+    return { uid: customerAuthUser.uid, email: customerAuthUser.email, ...(snap.exists() ? snap.data() : {}) };
+  };
+  window.fbCustomerCurrentUid = function(){ return customerAuthUser ? customerAuthUser.uid : null; };
+  window.fbCustomerGetOrders = async function() {
+    if (!customerAuthUser) throw new Error('not-logged-in');
+    const q = query(kpCol('orders'), where('customerId', '==', customerAuthUser.uid));
+    const snap = await getDocs(q);
+    const out = [];
+    snap.forEach(d => out.push({ id: d.id, ...d.data() }));
+    return out;
+  };
+
 </script>
 <script>
   tailwind.config = {
@@ -241,6 +379,9 @@
       <div class="flex items-center gap-2">
         <button onclick="window.showView('semak')" title="Semak Tempahan" class="w-10 h-10 rounded-full flex items-center justify-center bg-cream text-inksoft hover:bg-forest hover:text-white transition-colors">
           <i data-lucide="package-search" class="w-5 h-5"></i>
+        </button>
+        <button onclick="window.showView('akaun')" title="Akaun Saya" class="w-10 h-10 rounded-full flex items-center justify-center bg-cream text-inksoft hover:bg-forest hover:text-white transition-colors">
+          <i data-lucide="user-circle" class="w-5 h-5"></i>
         </button>
         <button onclick="window.showView('cart')" class="relative w-10 h-10 rounded-full flex items-center justify-center bg-leaflight text-forest hover:bg-forest hover:text-white transition-colors">
           <i data-lucide="shopping-bag" class="w-5 h-5"></i>
@@ -358,9 +499,9 @@
           </div>
           <div>
             <p class="font-bold text-white text-xs uppercase tracking-widest mb-3">Hubungi Kami</p>
-            <p class="text-white/60 text-xs flex items-center gap-2 mb-2"><i data-lucide="phone" class="w-3.5 h-3.5"></i> 012-345 6789 (WhatsApp)</p>
-            <p class="text-white/60 text-xs flex items-center gap-2 mb-2"><i data-lucide="mail" class="w-3.5 h-3.5"></i> hello@pastisarawak.my</p>
-            <p class="text-white/60 text-xs flex items-center gap-2"><i data-lucide="map-pin" class="w-3.5 h-3.5"></i> Kuching, Sarawak</p>
+            <p class="text-white/60 text-xs flex items-center gap-2 mb-2"><i data-lucide="phone" class="w-3.5 h-3.5"></i> <span id="site-contact-phone">012-345 6789 (WhatsApp)</span></p>
+            <p class="text-white/60 text-xs flex items-center gap-2 mb-2"><i data-lucide="mail" class="w-3.5 h-3.5"></i> <span id="site-contact-email">hello@pastisarawak.my</span></p>
+            <p class="text-white/60 text-xs flex items-center gap-2"><i data-lucide="map-pin" class="w-3.5 h-3.5"></i> <span id="site-contact-address">Kuching, Sarawak</span></p>
           </div>
           <div>
             <p class="font-bold text-white text-xs uppercase tracking-widest mb-3">Pautan Pantas</p>
@@ -454,7 +595,7 @@
                   <input id="co-phone" type="tel" placeholder="No. Telefon *" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
                   <input id="co-email" type="email" placeholder="Emel" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
                   <textarea id="co-alamat" placeholder="Alamat Penuh *" rows="2" class="sm:col-span-2 bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium"></textarea>
-                  <input id="co-poskod" type="text" placeholder="Poskod *" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                  <input id="co-poskod" type="text" placeholder="Poskod *" oninput="window.autofillStateFromPostcode(this.value)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
                   <input id="co-bandar" type="text" placeholder="Bandar *" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
                   <select id="co-negeri" class="sm:col-span-2 bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
                     <option value="">-- Pilih Negeri * --</option>
@@ -466,13 +607,36 @@
                 </div>
               </div>
 
-              <div class="bg-white border border-sand rounded-3xl p-5 shadow-sm">
+              <div id="co-ship-easyparcel" class="bg-white border border-sand rounded-3xl p-5 shadow-sm">
                 <h3 class="font-display font-bold text-ink mb-4 flex items-center gap-2"><i data-lucide="truck" class="w-4 h-4 text-forest"></i> Penghantaran</h3>
                 <button onclick="window.calculateShipping()" class="w-full bg-leaflight hover:bg-forest hover:text-white text-forest font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors mb-3">
                   <i data-lucide="calculator" class="w-4 h-4"></i> Kira Kos Penghantaran
                 </button>
                 <div id="shipping-options" class="space-y-2"></div>
                 <p class="text-[10px] text-inksoft italic mt-3 leading-relaxed">* Kadar dianggarkan berdasarkan berat troli &amp; zon penghantaran, menggunakan <code class="bg-cream px-1 rounded">easyparcel-rate.js</code> untuk kadar EasyParcel masa nyata.</p>
+              </div>
+
+              <div id="co-ship-pickup" class="hidden bg-white border border-sand rounded-3xl p-5 shadow-sm">
+                <h3 class="font-display font-bold text-ink mb-4 flex items-center gap-2"><i data-lucide="map-pin" class="w-4 h-4 text-forest"></i> Ambil di PASTI Kawasan</h3>
+                <p class="text-inksoft text-xs mb-3">Penghantaran pos tidak aktif buat masa ini. Pilih PASTI kawasan untuk ambil pesanan anda — kawasan tersebut akan uruskan penyerahan terus.</p>
+                <select id="co-pickup-kawasan" onchange="window.selectPickupKawasan(this.value)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                  <option value="">-- Pilih PASTI Kawasan --</option>
+                </select>
+              </div>
+
+              <div class="bg-white border border-sand rounded-3xl p-5 shadow-sm">
+                <h3 class="font-display font-bold text-ink mb-4 flex items-center gap-2"><i data-lucide="qr-code" class="w-4 h-4 text-forest"></i> Bayaran (QR Sahaja)</h3>
+                <div id="co-qr-wrap" class="bg-cream rounded-2xl p-4 text-center mb-4">
+                  <img id="co-qr-img" src="" alt="QR Pembayaran" class="w-40 h-40 object-contain mx-auto rounded-xl hidden">
+                  <p id="co-qr-empty" class="text-inksoft text-xs italic py-8">QR pembayaran belum dimuat naik oleh admin.</p>
+                </div>
+                <p class="text-inksoft text-xs mb-3">Selepas bayar, sila isi butiran transaksi di bawah supaya admin boleh sahkan tempahan anda.</p>
+                <div class="grid grid-cols-2 gap-3">
+                  <input id="co-pay-date" type="date" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                  <input id="co-pay-time" type="time" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                </div>
+                <input id="co-pay-amount" type="number" step="0.01" placeholder="Jumlah Dibayar (RM) *" class="w-full mt-3 bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                <input id="co-pay-receipt" type="text" placeholder="URL Resit/Screenshot Bayaran *" class="w-full mt-3 bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
               </div>
             </div>
 
@@ -564,6 +728,18 @@
               <button onclick="window.copyRefLink()" class="shrink-0 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 rounded-lg">Salin</button>
             </div>
             <p class="text-[10px] text-inksoft mt-1.5">Kongsikan link ini — kod ejen anda automatik terisi semasa pelanggan checkout.</p>
+          </div>
+
+          <div class="bg-white border border-sand rounded-2xl p-4 mb-6">
+            <p class="font-display font-bold text-ink text-sm mb-3">Butiran Pembayaran Komisen (Bank/QR)</p>
+            <div class="grid sm:grid-cols-2 gap-2.5 mb-2.5">
+              <input id="agent-po-bankname" type="text" placeholder="Nama Bank" class="bg-cream border border-sand rounded-xl px-3 py-2.5 text-sm">
+              <input id="agent-po-bankacc" type="text" placeholder="No. Akaun Bank" class="bg-cream border border-sand rounded-xl px-3 py-2.5 text-sm">
+              <input id="agent-po-bankaccname" type="text" placeholder="Nama Pemilik Akaun" class="bg-cream border border-sand rounded-xl px-3 py-2.5 text-sm">
+              <input id="agent-po-qrurl" type="text" placeholder="URL Gambar QR (jika ada)" class="bg-cream border border-sand rounded-xl px-3 py-2.5 text-sm">
+            </div>
+            <button onclick="window.saveAgentPayout()" class="w-full sm:w-auto bg-forest hover:bg-forestdark text-white text-xs font-bold px-5 py-2.5 rounded-xl">Simpan Butiran Pembayaran</button>
+            <p class="text-[10px] text-inksoft mt-1.5">Butiran ini digunakan oleh admin untuk membayar komisen anda.</p>
           </div>
 
           <h3 class="font-display font-bold text-ink mb-3">Sejarah Tempahan Saya</h3>
@@ -706,6 +882,7 @@
             <button data-tab="ejen" onclick="window.setAdminTab('ejen')" class="admin-tab-btn px-4 py-2.5 rounded-t-xl text-sm font-bold shrink-0 bg-cream text-inksoft">Ejen</button>
             <button data-tab="kawasanadmin" onclick="window.setAdminTab('kawasanadmin')" class="admin-tab-btn px-4 py-2.5 rounded-t-xl text-sm font-bold shrink-0 bg-cream text-inksoft">Kawasan</button>
             <button data-tab="laporan" onclick="window.setAdminTab('laporan')" class="admin-tab-btn px-4 py-2.5 rounded-t-xl text-sm font-bold shrink-0 bg-cream text-inksoft">Laporan</button>
+            <button data-tab="tetapan" onclick="window.setAdminTab('tetapan')" class="admin-tab-btn px-4 py-2.5 rounded-t-xl text-sm font-bold shrink-0 bg-cream text-inksoft">Tetapan</button>
           </div>
 
           <!-- TAB PRODUK -->
@@ -815,6 +992,27 @@
               </div>
             </div>
           </div>
+
+          <!-- TAB TETAPAN -->
+          <div id="admin-tab-tetapan" class="admin-tab-panel hidden">
+            <div class="bg-white border border-sand rounded-3xl p-5 max-w-xl space-y-3 mb-5">
+              <h3 class="font-display font-bold text-ink mb-1">Maklumat Hubungi &amp; Kandungan</h3>
+              <input id="cms-phone" type="text" placeholder="No. Telefon (papar di footer)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              <input id="cms-email" type="email" placeholder="Emel Hubungi" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              <input id="cms-address" type="text" placeholder="Alamat/Lokasi" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              <input id="cms-whatsapp" type="text" placeholder="No. WhatsApp Utama (format 60...)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              <textarea id="cms-hadihuda" rows="2" placeholder="Mesej pembuka HadiHuda (WhatsApp)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium"></textarea>
+              <textarea id="cms-about" rows="3" placeholder="Teks Tentang Kami" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium"></textarea>
+            </div>
+            <div class="bg-white border border-sand rounded-3xl p-5 max-w-xl space-y-3 mb-5">
+              <h3 class="font-display font-bold text-ink mb-1">Bayaran &amp; Penghantaran</h3>
+              <input id="cms-qr" type="text" placeholder="URL Gambar QR Pembayaran" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              <label class="flex items-center gap-2 bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium cursor-pointer">
+                <input id="cms-easyparcel" type="checkbox" checked class="w-4 h-4"> Aktifkan pengiraan penghantaran EasyParcel (nyahtanda untuk guna "Ambil di PASTI Kawasan" sahaja)
+              </label>
+            </div>
+            <button onclick="window.saveSiteContentAdmin()" class="bg-forest hover:bg-forestdark text-white font-bold px-6 py-3 rounded-xl">Simpan Tetapan</button>
+          </div>
         </div>
       </div>
     </section>
@@ -909,8 +1107,10 @@
         <button onclick="window.showView('home')" class="text-forest text-xs font-bold flex items-center gap-1 mb-4"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Kembali ke Utama</button>
         <p class="text-honeydeep text-[11px] font-bold tracking-widest uppercase mb-2">Tentang Kami</p>
         <h1 class="font-display font-bold text-2xl sm:text-3xl text-ink mb-4">Bermula Daripada Komuniti, Untuk Komuniti</h1>
+        <div id="tentang-about-text">
         <p class="text-inksoft text-sm leading-relaxed mb-4">Kedai PASTI Sarawak Official bermula sebagai inisiatif kecil keluarga Al-Haddad bersama ibu bapa dan guru-guru PASTI di Sarawak, bagi menjana dana ekonomi tadika sambil berkongsi produk komuniti pilihan — dari kurma, madu, sehingga kudapan tradisional — kepada seluruh Malaysia.</p>
         <p class="text-inksoft text-sm leading-relaxed mb-8">Setiap tempahan yang dibuat menyumbang terus kepada dana operasi tadika PASTI dan komisen ejen komuniti yang menjualnya, menjadikan setiap pembelian anda satu sokongan langsung kepada pendidikan awal kanak-kanak di Sarawak.</p>
+        </div>
         <div class="grid sm:grid-cols-2 gap-4 mb-8">
           <div class="bg-white border border-sand rounded-3xl p-6">
             <div class="w-11 h-11 rounded-xl bg-leaflight flex items-center justify-center mb-3"><i data-lucide="target" class="w-5 h-5 text-forest"></i></div>
@@ -1018,15 +1218,80 @@
         <button onclick="window.showView('home')" class="text-forest text-xs font-bold flex items-center gap-1 mb-4"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Kembali ke Utama</button>
         <p class="text-honeydeep text-[11px] font-bold tracking-widest uppercase mb-2">Kedai PASTI Sarawak Official</p>
         <h1 class="font-display font-bold text-2xl sm:text-3xl text-ink mb-2">Semak Tempahan</h1>
-        <p class="text-inksoft text-sm mb-6 max-w-md">Pernah buat tempahan Sampul Raya PASTI dengan kami? Masukkan nombor telefon ATAU nombor tempahan (cth. PASTI-123456) untuk semak status.</p>
+        <p class="text-inksoft text-sm mb-6 max-w-md">Pernah buat tempahan dengan kami (Sampul Raya atau produk Kedai PASTI)? Masukkan nombor telefon ATAU nombor tempahan untuk semak status.</p>
 
         <div class="bg-white border border-sand rounded-3xl p-5 shadow-sm flex gap-3">
           <input id="semak-phone" type="text" placeholder="No. telefon atau No. Tempahan" class="flex-1 bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
           <button onclick="window.doLookupOrders()" class="shrink-0 bg-forest hover:bg-forestdark text-white font-bold px-5 rounded-xl flex items-center gap-2"><i data-lucide="search" class="w-4 h-4"></i> Cari</button>
         </div>
-        <p class="text-inksoft/70 text-[11px] mt-2">*Ciri ini setakat ini hanya menyemak tempahan <b>Sampul Raya PASTI</b> yang lama. Tempahan produk lain melalui Kedai PASTI akan disokong tidak lama lagi.</p>
 
         <div id="semak-results" class="mt-6 space-y-3"></div>
+      </div>
+    </section>
+
+    <!-- ==================== VIEW: AKAUN SAYA ==================== -->
+    <section id="view-akaun" class="hidden">
+      <div class="max-w-2xl mx-auto px-4 sm:px-6 pt-8 pb-16">
+        <button onclick="window.showView('home')" class="text-forest text-xs font-bold flex items-center gap-1 mb-4"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Kembali ke Utama</button>
+
+        <div id="akaun-guest-wrap">
+          <div class="text-center mb-6">
+            <div class="w-14 h-14 bg-leaflight rounded-2xl flex items-center justify-center mx-auto mb-3"><i data-lucide="user-circle" class="w-7 h-7 text-forest"></i></div>
+            <h1 class="font-display font-bold text-xl text-ink">Akaun Saya</h1>
+            <p class="text-inksoft text-sm mt-1">Log masuk atau daftar untuk simpan alamat & lihat sejarah tempahan</p>
+          </div>
+
+          <div class="max-w-sm mx-auto bg-white border border-sand rounded-3xl p-6 shadow-sm">
+            <div class="flex bg-cream rounded-xl p-1 mb-4">
+              <button id="akaun-tab-login-btn" onclick="window.setAkaunAuthTab('login')" class="flex-1 py-2 rounded-lg text-xs font-bold bg-forest text-white">Log Masuk</button>
+              <button id="akaun-tab-signup-btn" onclick="window.setAkaunAuthTab('signup')" class="flex-1 py-2 rounded-lg text-xs font-bold text-inksoft">Daftar</button>
+            </div>
+
+            <div id="akaun-tab-login" class="space-y-3">
+              <input id="akaun-login-email" type="email" placeholder="Emel" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm">
+              <input id="akaun-login-pass" type="password" placeholder="Kata Laluan" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm">
+              <button onclick="window.doCustomerLogin()" class="w-full bg-forest hover:bg-forestdark text-white font-bold py-3 rounded-xl transition-colors">Log Masuk</button>
+              <button onclick="window.doCustomerResetPassword()" class="w-full text-center text-xs text-inksoft hover:text-forest hover:underline">Lupa kata laluan?</button>
+            </div>
+
+            <div id="akaun-tab-signup" class="hidden space-y-3">
+              <input id="akaun-signup-email" type="email" placeholder="Emel" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm">
+              <input id="akaun-signup-pass" type="password" placeholder="Kata Laluan (min. 6 aksara)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm">
+              <button onclick="window.doCustomerSignup()" class="w-full bg-forest hover:bg-forestdark text-white font-bold py-3 rounded-xl transition-colors">Daftar Akaun</button>
+            </div>
+
+            <div class="flex items-center gap-3 my-4"><div class="flex-1 h-px bg-sand"></div><span class="text-[10px] text-inksoft uppercase font-bold">atau</span><div class="flex-1 h-px bg-sand"></div></div>
+            <button onclick="window.doCustomerGoogleLogin()" class="w-full bg-white border border-sand hover:bg-cream text-ink font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 text-sm">
+              <i data-lucide="chrome" class="w-4 h-4"></i> Log Masuk dengan Google
+            </button>
+          </div>
+        </div>
+
+        <div id="akaun-dashboard-wrap" class="hidden">
+          <div class="flex items-center justify-between mb-6 gap-3">
+            <div>
+              <p class="text-inksoft text-xs font-bold uppercase tracking-widest">Akaun Saya</p>
+              <h1 id="akaun-dash-email" class="font-display font-bold text-lg sm:text-xl text-ink">-</h1>
+            </div>
+            <button onclick="window.doCustomerLogout()" class="shrink-0 bg-cream hover:bg-sand text-ink text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2"><i data-lucide="log-out" class="w-3.5 h-3.5"></i> Log Keluar</button>
+          </div>
+
+          <div class="bg-white border border-sand rounded-3xl p-5 shadow-sm mb-6">
+            <h3 class="font-display font-bold text-ink mb-3 text-sm">Maklumat Penghantaran Tersimpan</h3>
+            <div class="grid sm:grid-cols-2 gap-2.5">
+              <input id="akaun-nama" type="text" placeholder="Nama Penuh" class="bg-cream border border-sand rounded-xl px-3 py-2.5 text-sm sm:col-span-2">
+              <input id="akaun-phone" type="text" placeholder="No. Telefon" class="bg-cream border border-sand rounded-xl px-3 py-2.5 text-sm">
+              <input id="akaun-poskod" type="text" placeholder="Poskod" maxlength="5" oninput="window.autofillAkaunState(this.value)" class="bg-cream border border-sand rounded-xl px-3 py-2.5 text-sm">
+              <input id="akaun-alamat" type="text" placeholder="Alamat" class="bg-cream border border-sand rounded-xl px-3 py-2.5 text-sm sm:col-span-2">
+              <input id="akaun-bandar" type="text" placeholder="Bandar" class="bg-cream border border-sand rounded-xl px-3 py-2.5 text-sm">
+              <select id="akaun-state" class="bg-cream border border-sand rounded-xl px-3 py-2.5 text-sm"></select>
+            </div>
+            <button onclick="window.saveCustomerProfile()" class="mt-3 bg-forest hover:bg-forestdark text-white text-xs font-bold px-5 py-2.5 rounded-xl">Simpan Profil</button>
+          </div>
+
+          <h3 class="font-display font-bold text-ink mb-3">Sejarah Tempahan Saya</h3>
+          <div id="akaun-orders" class="space-y-3"></div>
+        </div>
       </div>
     </section>
 
@@ -1054,9 +1319,21 @@
   </nav>
 
   <!-- WHATSAPP FAB -->
-  <a href="https://wa.me/60123456789?text=Hai%2C%20saya%20berminat%20dengan%20produk%20Kedai%20PASTI%20Sarawak%20Official" target="_blank" class="fixed right-4 bottom-20 md:bottom-6 z-40 w-14 h-14 bg-[#25D366] hover:bg-[#1DA851] text-white rounded-full shadow-xl flex items-center justify-center transition-colors">
-    <i data-lucide="message-circle" class="w-7 h-7"></i>
-  </a>
+  <div class="fixed right-4 bottom-20 md:bottom-6 z-40">
+    <div id="wa-fab-menu" class="hidden absolute bottom-16 right-0 w-64 bg-white border border-sand rounded-2xl shadow-2xl p-3 space-y-2">
+      <p class="text-[11px] font-bold text-inksoft uppercase tracking-wide px-1 mb-1">Perlukan bantuan?</p>
+      <a id="wa-fab-hadihuda" href="#" target="_blank" class="flex items-center gap-2 bg-leaflight hover:bg-forest hover:text-white text-forest font-bold text-sm px-3 py-2.5 rounded-xl transition-colors">
+        <i data-lucide="bot" class="w-4 h-4"></i> Chat dengan HadiHuda
+      </a>
+      <button onclick="window.toggleWaKawasanPicker()" class="w-full flex items-center gap-2 bg-cream hover:bg-sand text-ink font-bold text-sm px-3 py-2.5 rounded-xl transition-colors">
+        <i data-lucide="map-pin" class="w-4 h-4"></i> Hubungi PASTI Kawasan Saya
+      </button>
+      <div id="wa-fab-kawasan-list" class="hidden max-h-40 overflow-y-auto no-scrollbar space-y-1 border-t border-sand pt-2"></div>
+    </div>
+    <button onclick="window.toggleWaFabMenu()" class="w-14 h-14 bg-[#25D366] hover:bg-[#1DA851] text-white rounded-full shadow-xl flex items-center justify-center transition-colors">
+      <i data-lucide="message-circle" class="w-7 h-7"></i>
+    </button>
+  </div>
 
   <!-- TOAST -->
   <div id="toast" class="hidden fixed bottom-24 md:bottom-8 left-1/2 z-[100] bg-ink text-white text-sm font-semibold px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-2"></div>
@@ -1176,6 +1453,22 @@ const CATEGORIES = {
 const STATES = ["Perlis","Kedah","Pulau Pinang","Perak","Selangor","Kuala Lumpur","Putrajaya","Negeri Sembilan","Melaka","Johor","Pahang","Terengganu","Kelantan","Sarawak","Sabah","Labuan"];
 const EAST_MY = ["Sarawak","Sabah","Labuan"];
 
+// Malaysian postcode prefix (first 2 digits) -> state, for checkout autofill.
+const POSTCODE_STATE_RANGES = [
+  [1,2,'Perlis'], [5,9,'Kedah'], [10,14,'Pulau Pinang'], [15,18,'Kelantan'],
+  [20,24,'Terengganu'], [25,28,'Pahang'], [30,36,'Perak'],
+  [40,48,'Selangor'], [50,60,'Kuala Lumpur'], [62,64,'Putrajaya'],
+  [70,73,'Negeri Sembilan'], [75,78,'Melaka'], [79,86,'Johor'],
+  [87,87,'Labuan'], [88,91,'Sabah'], [93,98,'Sarawak'],
+];
+function postcodeToState(postcode){
+  const digits = String(postcode||'').replace(/\D/g,'');
+  if(digits.length < 2) return '';
+  const prefix = parseInt(digits.slice(0,2), 10);
+  const hit = POSTCODE_STATE_RANGES.find(([lo,hi])=> prefix>=lo && prefix<=hi);
+  return hit ? hit[2] : '';
+}
+
 const defaultProducts = [
   { id:'P01', name:'Tamar Cocoa 450g', category:'minuman', price:29.90, weight:0.45, stock:80, commissionPct:10, popular:true,  sellerName:'Kedai PASTI Sarawak Official', desc:'Serbuk koko premium bercampur perisa tamar pilihan, sedia dinikmati panas atau sejuk. Sumber tenaga semula jadi yang lazat untuk seisi keluarga.', createdAt:D(2) },
   { id:'P02', name:'Tamar Cocoa 900g', category:'minuman', price:49.90, weight:0.90, stock:60, commissionPct:10, popular:false, sellerName:'Kedai PASTI Sarawak Official', desc:'Saiz jimat untuk keluarga — serbuk koko tamar yang sama kualiti premium dalam bekas 900g.', createdAt:D(2) },
@@ -1218,13 +1511,16 @@ let appAgents = [];
 let appOrders = [];
 let cart = [];
 let currentAgent = null;
+let currentKawasan = null;
+let currentCustomer = null;
 let isAdminIn = false;
+let siteContent = {};
 let catalogState = { search:'', cat:'all', sort:'default', kawasan:'all' };
 let qvProduct = null, qvQty = 1;
 
 /* ================= UTIL ================= */
 function formatRM(n){ return 'RM ' + (Number(n)||0).toFixed(2); }
-function formatDate(iso){ try{ return new Date(iso).toLocaleDateString('ms-MY',{day:'2-digit',month:'short',year:'numeric'}); }catch(e){ return '-'; } }
+function formatDate(iso){ try{ const d = (iso && typeof iso.toDate==='function') ? iso.toDate() : new Date(iso); return d.toLocaleDateString('ms-MY',{day:'2-digit',month:'short',year:'numeric'}); }catch(e){ return '-'; } }
 function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 function genId(prefix){ return prefix + '-' + Date.now().toString().slice(-6) + Math.floor(Math.random()*90+10); }
 function icons(){ if(window.lucide) lucide.createIcons(); }
@@ -1238,6 +1534,51 @@ function showToast(msg, icon){
 }
 
 function calcCommission(item){ return item.price * item.qty * ((item.commissionPct||0)/100); }
+
+/* ================= SITE CONTENT (CMS) ================= */
+function applySiteContent(){
+  const phoneEl = document.getElementById('site-contact-phone');
+  const emailEl = document.getElementById('site-contact-email');
+  const addrEl = document.getElementById('site-contact-address');
+  if(phoneEl && siteContent.contactPhone) phoneEl.innerText = siteContent.contactPhone;
+  if(emailEl && siteContent.contactEmail) emailEl.innerText = siteContent.contactEmail;
+  if(addrEl && siteContent.contactAddress) addrEl.innerText = siteContent.contactAddress;
+  const waNum = siteContent.whatsappNumber || '60123456789';
+  const hadiHudaMsg = encodeURIComponent(siteContent.hadiHudaGreeting || 'Hai HadiHuda! Saya ada soalan tentang Kedai PASTI Sarawak Official.');
+  const hadiEl = document.getElementById('wa-fab-hadihuda');
+  if(hadiEl) hadiEl.href = `https://wa.me/${waNum}?text=${hadiHudaMsg}`;
+  const aboutEl = document.getElementById('tentang-about-text');
+  if(aboutEl && siteContent.aboutUsText){
+    aboutEl.innerHTML = siteContent.aboutUsText.split('\n').filter(Boolean).map(p=>`<p class="text-inksoft text-sm leading-relaxed mb-4">${escapeHtml(p)}</p>`).join('');
+  }
+}
+
+window.toggleWaFabMenu = function(){
+  document.getElementById('wa-fab-menu').classList.toggle('hidden');
+}
+window.toggleWaKawasanPicker = async function(){
+  const list = document.getElementById('wa-fab-kawasan-list');
+  list.classList.toggle('hidden');
+  if(list.classList.contains('hidden') || list.dataset.loaded) return;
+  list.innerHTML = '<p class="text-inksoft text-xs italic px-1">Memuatkan...</p>';
+  try{
+    const kawasanList = await window.fbListKawasanPublic();
+    const active = kawasanList.filter(k=>k.active!==false && k.picPhone);
+    list.innerHTML = active.length ? active.map(k=>{
+      const msg = encodeURIComponent(`Assalamualaikum PASTI ${k.namaKawasan}, saya ada soalan tentang produk/tempahan.`);
+      return `<a href="https://wa.me/${escapeHtml(normalizePhoneClient(k.picPhone))}?text=${msg}" target="_blank" class="block text-xs font-bold text-forest hover:underline px-1 py-1">PASTI ${escapeHtml(k.namaKawasan)}</a>`;
+    }).join('') : '<p class="text-inksoft text-xs italic px-1">Tiada kawasan berdaftar lagi.</p>';
+    list.dataset.loaded = '1';
+  }catch(e){
+    list.innerHTML = '<p class="text-inksoft text-xs italic px-1">Gagal muatkan senarai.</p>';
+  }
+}
+function normalizePhoneClient(raw){
+  let p = String(raw||'').replace(/[\s\-]/g,'');
+  if(p.startsWith('0')) p = '60'+p.slice(1);
+  if(p.startsWith('+')) p = p.slice(1);
+  return p;
+}
 
 function calculateShippingOptions(state, weightKg){
   const sameZone = EAST_MY.includes(state);
@@ -1254,10 +1595,10 @@ function calculateShippingOptions(state, weightKg){
 }
 
 function statsForAgent(code){
-  const rel = appOrders.filter(o=>o.agentCode===code && o.status!=='Dibatalkan');
+  const rel = appKPOrders.filter(o=>o.agentCode===code && o.status!=='Dibatalkan');
   const sales = rel.reduce((s,o)=>s+o.total,0);
   const commission = rel.reduce((s,o)=>s+(o.agentCommission||0),0);
-  return { sales:+sales.toFixed(2), commission:+commission.toFixed(2), orderCount:rel.length };
+  return { sales:+sales.toFixed(2), commission:+commission.toFixed(2), orderCount:rel.length, orders:rel };
 }
 
 function generateSeedOrders(){
@@ -1284,10 +1625,13 @@ function generateSeedOrders(){
 /* ================= STORAGE ================= */
 async function loadAllData(){
   try{
-    const p = await window.storage.get('alhaddad:products', true);
-    appProducts = p ? JSON.parse(p.value) : defaultProducts.slice();
-    if(!p) await window.storage.set('alhaddad:products', JSON.stringify(appProducts), true);
+    appProducts = (typeof window.fbListProductsPublic === 'function') ? await window.fbListProductsPublic() : [];
+    if(!appProducts.length) appProducts = defaultProducts.slice();
   }catch(e){ appProducts = defaultProducts.slice(); }
+
+  try{ siteContent = (typeof window.fbGetSiteContent === 'function') ? await window.fbGetSiteContent() : {}; }
+  catch(e){ siteContent = {}; }
+  applySiteContent();
 
   appProducts = appProducts.filter(p => !String(p.id).startsWith('KWP-'));
   try{
@@ -1333,7 +1677,10 @@ async function loadAllData(){
     const sess = await window.storage.get('alhaddad:session', false);
     if(sess){
       const parsed = JSON.parse(sess.value);
-      if(parsed.type==='agent'){ currentAgent = parsed.profile || null; }
+      if(parsed.type==='agent'){
+        currentAgent = parsed.profile || null;
+        try{ agentSessionPass = sessionStorage.getItem('alhaddad:agentpass') || null; }catch(e){ agentSessionPass = null; }
+      }
       if(parsed.type==='admin'){ isAdminIn = true; }
       // Kawasan sessions are intentionally NOT restored across reloads —
       // the credentials needed for kawasan-scoped actions live only in
@@ -1520,8 +1867,7 @@ function updateCartBadge(){
 }
 
 /* ================= NAV / VIEW SWITCH ================= */
-const VIEW_IDS = ['home','catalog','cart','checkout','agent','admin','kawasan','pengurusan','tentang','faq','terma','privasi','semak','kawasanportal'];
-let currentKawasan = null;
+const VIEW_IDS = ['home','catalog','cart','checkout','agent','admin','kawasan','pengurusan','tentang','faq','terma','privasi','semak','kawasanportal','akaun'];
 window.showView = function(name){
   VIEW_IDS.forEach(v=>{
     const sec = document.getElementById('view-'+v);
@@ -1537,6 +1883,7 @@ window.showView = function(name){
   if(name==='admin' && typeof renderAdminView==='function') renderAdminView();
   if(name==='kawasanportal' && typeof renderKawasanPortalView==='function') renderKawasanPortalView();
   if(name==='kawasan' && typeof renderKawasanPublicList==='function') renderKawasanPublicList();
+  if(name==='akaun' && typeof renderAkaunView==='function') renderAkaunView();
   icons();
 }
 
@@ -1614,6 +1961,12 @@ window.goToCheckout = function(){
 /* ================= CHECKOUT VIEW ================= */
 window.selectedShipping = null;
 window._shipOpts = [];
+window.pickupKawasanCode = '';
+
+window.autofillStateFromPostcode = function(val){
+  const state = postcodeToState(val);
+  if(state){ document.getElementById('co-negeri').value = state; }
+};
 
 function populateStateSelect(){
   const sel = document.getElementById('co-negeri');
@@ -1632,16 +1985,58 @@ function renderCheckoutSummary(){
   document.getElementById('co-total').innerText = formatRM(total);
 }
 
+async function populatePickupKawasan(){
+  const sel = document.getElementById('co-pickup-kawasan');
+  if(!sel || typeof window.fbListKawasanPublic !== 'function') return;
+  try{
+    const list = await window.fbListKawasanPublic();
+    sel.innerHTML = '<option value="">-- Pilih PASTI Kawasan --</option>' + list.filter(k=>k.active!==false).map(k=>`<option value="${escapeHtml(k.code)}">PASTI ${escapeHtml(k.namaKawasan)}</option>`).join('');
+  }catch(e){}
+}
+window.selectPickupKawasan = function(code){
+  window.pickupKawasanCode = code;
+  selectedShipping = code ? { price:0, courier:'Ambil di PASTI Kawasan', eta:'Ikut susunan kawasan' } : null;
+  renderCheckoutSummary();
+};
+
 function renderCheckoutEnter(){
   if(cart.length===0){ showToast('Troli anda kosong','alert-circle'); window.showView('catalog'); return; }
   document.getElementById('checkout-form-wrap').classList.remove('hidden');
   document.getElementById('checkout-success').classList.add('hidden');
   selectedShipping = null;
+  window.pickupKawasanCode = '';
   document.getElementById('shipping-options').innerHTML = '';
   populateStateSelect();
   renderCheckoutSummary();
   const ref = (new URLSearchParams(window.location.search)).get('ref');
   if(ref) document.getElementById('co-agentcode').value = ref.toUpperCase();
+
+  const easyParcelOn = siteContent.easyParcelEnabled !== false;
+  document.getElementById('co-ship-easyparcel').classList.toggle('hidden', !easyParcelOn);
+  document.getElementById('co-ship-pickup').classList.toggle('hidden', easyParcelOn);
+  if(!easyParcelOn) populatePickupKawasan();
+
+  const qrImg = document.getElementById('co-qr-img');
+  const qrEmpty = document.getElementById('co-qr-empty');
+  if(siteContent.paymentQrUrl){
+    qrImg.src = siteContent.paymentQrUrl; qrImg.classList.remove('hidden'); qrEmpty.classList.add('hidden');
+  } else {
+    qrImg.classList.add('hidden'); qrEmpty.classList.remove('hidden');
+  }
+  const today = new Date().toISOString().slice(0,10);
+  document.getElementById('co-pay-date').value = today;
+
+  const uid = typeof window.fbCustomerCurrentUid==='function' ? window.fbCustomerCurrentUid() : null;
+  if(uid && typeof window.fbCustomerGetProfile==='function'){
+    window.fbCustomerGetProfile().then(profile=>{
+      if(profile.name) document.getElementById('co-nama').value = profile.name;
+      if(profile.phone) document.getElementById('co-phone').value = profile.phone;
+      if(profile.address) document.getElementById('co-alamat').value = profile.address;
+      if(profile.postcode) document.getElementById('co-poskod').value = profile.postcode;
+      if(profile.city) document.getElementById('co-bandar').value = profile.city;
+      if(profile.state) document.getElementById('co-negeri').value = profile.state;
+    }).catch(()=>{});
+  }
 }
 
 window.calculateShipping = function(){
@@ -1678,7 +2073,7 @@ window.selectShipping = function(i){
   renderCheckoutSummary();
 }
 
-window.submitOrder = function(){
+window.submitOrder = async function(){
   const nama = document.getElementById('co-nama').value.trim();
   const phone = document.getElementById('co-phone').value.trim();
   const email = document.getElementById('co-email').value.trim();
@@ -1687,10 +2082,15 @@ window.submitOrder = function(){
   const bandar = document.getElementById('co-bandar').value.trim();
   const state = document.getElementById('co-negeri').value;
   const agentCodeRaw = document.getElementById('co-agentcode').value.trim().toUpperCase();
+  const payAmount = document.getElementById('co-pay-amount').value.trim();
+  const payReceipt = document.getElementById('co-pay-receipt').value.trim();
+  const payDate = document.getElementById('co-pay-date').value;
+  const payTime = document.getElementById('co-pay-time').value;
 
   if(cart.length===0){ showToast('Troli kosong','alert-circle'); return; }
   if(!nama || !phone || !alamat || !poskod || !bandar || !state){ showToast('Sila lengkapkan semua maklumat wajib (*)','alert-circle'); return; }
-  if(!selectedShipping){ showToast('Sila kira kos penghantaran dahulu','alert-circle'); return; }
+  if(!selectedShipping){ showToast('Sila kira kos penghantaran / pilih PASTI kawasan dahulu','alert-circle'); return; }
+  if(!payAmount || !payReceipt){ showToast('Sila lengkapkan butiran bayaran & URL resit','alert-circle'); return; }
 
   let agentCode = null;
   if(agentCodeRaw){
@@ -1700,35 +2100,36 @@ window.submitOrder = function(){
   }
 
   const items = cart.map(c=>({ productId:c.id, name:c.name, qty:c.qty, price:c.price, weight:c.weight, commissionPct:c.commissionPct }));
-  const subtotal = items.reduce((s,it)=>s+it.price*it.qty,0);
-  const commission = agentCode ? items.reduce((s,it)=>s+it.price*it.qty*(it.commissionPct/100),0) : 0;
-  const total = +(subtotal + selectedShipping.price).toFixed(2);
 
-  const order = {
-    orderId: genId('ORD'), createdAt: new Date().toISOString(),
+  const orderPayload = {
     customerName:nama, phone, email, address:alamat, postcode:poskod, city:bandar, state,
-    items, subtotal:+subtotal.toFixed(2), shippingFee:selectedShipping.price,
-    courier:{ name:selectedShipping.courier, eta:selectedShipping.eta }, total,
-    agentCode, agentCommission:+commission.toFixed(2), status:'Baru'
+    items, shippingFee:selectedShipping.price,
+    courier:{ name:selectedShipping.courier, eta:selectedShipping.eta },
+    pickupKawasanCode: window.pickupKawasanCode || '',
+    agentCode,
+    paymentTxnDate: payDate, paymentTxnTime: payTime, paymentAmount: payAmount, receiptImageUrl: payReceipt,
   };
 
-  items.forEach(it=>{
-    const p = appProducts.find(x=>x.id===it.productId);
-    if(p) p.stock = Math.max(0, p.stock - it.qty);
-  });
+  if(typeof window.fbSubmitOrder !== 'function'){ showToast('Sistem tempahan belum sedia, cuba lagi sebentar','alert-circle'); return; }
+  let result;
+  try{
+    result = await window.fbSubmitOrder(orderPayload);
+  }catch(e){
+    showToast('Gagal hantar tempahan, cuba lagi','alert-circle');
+    return;
+  }
 
-  appOrders.unshift(order);
-  persistOrders(); persistProducts();
+  const total = +(cart.reduce((s,c)=>s+c.price*c.qty,0) + selectedShipping.price).toFixed(2);
   cart = []; persistCart(); updateCartBadge();
 
   document.getElementById('checkout-form-wrap').classList.add('hidden');
   const succ = document.getElementById('checkout-success');
   succ.classList.remove('hidden');
-  document.getElementById('success-orderid').innerText = order.orderId;
-  document.getElementById('success-total').innerText = formatRM(order.total);
-  document.getElementById('success-courier').innerText = order.courier.name+' ('+order.courier.eta+')';
-  const waMsg = encodeURIComponent(`Assalamualaikum, saya ingin sahkan tempahan ${order.orderId} bernilai ${formatRM(order.total)} atas nama ${nama}.`);
-  document.getElementById('success-whatsapp').href = `https://wa.me/60123456789?text=${waMsg}`;
+  document.getElementById('success-orderid').innerText = result.orderId;
+  document.getElementById('success-total').innerText = formatRM(total);
+  document.getElementById('success-courier').innerText = selectedShipping.courier+' ('+selectedShipping.eta+')';
+  const waMsg = encodeURIComponent(`Assalamualaikum, saya ingin sahkan tempahan ${result.orderId} bernilai ${formatRM(total)} atas nama ${nama}.`);
+  document.getElementById('success-whatsapp').href = `https://wa.me/${(siteContent.whatsappNumber||'60123456789')}?text=${waMsg}`;
 
   showToast('Tempahan berjaya dihantar!','check-circle-2');
   window.scrollTo({top:0});
@@ -1739,6 +2140,7 @@ function statusClass(status){
   return { 'Baru':'baru','Diproses':'diproses','Dihantar':'dihantar','Selesai':'selesai','Dibatalkan':'batal' }[status] || 'baru';
 }
 
+let agentSessionPass = null;
 window.loginAgent = async function(){
   const code = document.getElementById('agent-login-code').value.trim().toUpperCase();
   const pass = document.getElementById('agent-login-pass').value;
@@ -1747,6 +2149,8 @@ window.loginAgent = async function(){
   try{
     const profile = await window.fbAgentLogin(code, pass);
     currentAgent = profile;
+    agentSessionPass = pass;
+    try{ sessionStorage.setItem('alhaddad:agentpass', pass); }catch(e){}
     persistSession({type:'agent', profile});
     renderAgentView();
     showToast('Selamat kembali, '+profile.name+'!','check-circle-2');
@@ -1759,6 +2163,8 @@ window.loginAgent = async function(){
 }
 window.logoutAgent = function(){
   currentAgent = null;
+  agentSessionPass = null;
+  try{ sessionStorage.removeItem('alhaddad:agentpass'); }catch(e){}
   persistSession(null);
   renderAgentView();
   showToast('Berjaya log keluar','log-out');
@@ -1768,6 +2174,22 @@ window.copyRefLink = function(){
   inp.select(); inp.setSelectionRange(0,999);
   try{ document.execCommand('copy'); showToast('Link disalin!','copy'); }
   catch(e){ showToast('Sila salin secara manual','info'); }
+}
+window.saveAgentPayout = async function(){
+  if(!currentAgent || !agentSessionPass){ showToast('Sila log masuk semula','alert-circle'); return; }
+  const payout = {
+    bankName: document.getElementById('agent-po-bankname').value.trim(),
+    bankAccountNo: document.getElementById('agent-po-bankacc').value.trim(),
+    bankAccountName: document.getElementById('agent-po-bankaccname').value.trim(),
+    qrImageUrl: document.getElementById('agent-po-qrurl').value.trim(),
+  };
+  try{
+    await window.fbAgentSavePayout(currentAgent.code, agentSessionPass, payout);
+    Object.assign(currentAgent, payout);
+    showToast('Butiran pembayaran disimpan','check-circle-2');
+  }catch(e){
+    showToast('Gagal simpan, cuba lagi','alert-circle');
+  }
 }
 
 window.doLookupOrders = async function(){
@@ -1783,24 +2205,28 @@ window.doLookupOrders = async function(){
       resultsEl.innerHTML = `<div class="bg-white border border-sand rounded-2xl p-6 text-center text-inksoft text-sm">Tiada tempahan dijumpai untuk nombor ini.</div>`;
       return;
     }
-    resultsEl.innerHTML = orders.map(o => `
+    resultsEl.innerHTML = orders.map(o => {
+      const location = [o.cawangan, o.kawasan].filter(Boolean).join(' · ') || (o.source==='kedaipasti' ? 'Kedai PASTI' : '');
+      const unitLabel = o.source==='kedaipasti' ? 'unit' : 'keping';
+      return `
       <div class="bg-white border border-sand rounded-2xl p-4 flex items-center justify-between gap-3">
         <div class="min-w-0">
           <p class="font-mono font-bold text-forest text-sm">${escapeHtml(o.orderId)}</p>
-          <p class="text-ink text-sm font-semibold mt-0.5">${escapeHtml(o.cawangan)} · ${escapeHtml(o.kawasan)}</p>
-          <p class="text-inksoft text-xs mt-0.5">${o.qty} keping · RM ${escapeHtml(String(o.total))} ${o.tarikhBayaran ? '· '+escapeHtml(o.tarikhBayaran) : ''}</p>
+          <p class="text-ink text-sm font-semibold mt-0.5">${escapeHtml(location)}</p>
+          <p class="text-inksoft text-xs mt-0.5">${o.qty} ${unitLabel} · RM ${escapeHtml(String(o.total))} ${o.tarikhBayaran ? '· '+escapeHtml(o.tarikhBayaran) : ''}</p>
         </div>
         <div class="shrink-0 flex flex-col gap-1 items-end">
           <span class="px-2 py-1 rounded-full text-[10px] font-bold ${o.isVerified ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}">${o.isVerified ? 'Disahkan' : 'Belum Disahkan'}</span>
           <span class="px-2 py-1 rounded-full text-[10px] font-bold ${o.isDelivered ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'}">${o.isDelivered ? 'Dihantar' : 'Belum Dihantar'}</span>
         </div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
   }catch(e){
     resultsEl.innerHTML = `<div class="bg-white border border-sand rounded-2xl p-6 text-center text-red-500 text-sm">Ralat mencari tempahan, cuba lagi.</div>`;
   }
 }
 
-function renderAgentView(){
+async function renderAgentView(){
   const loginWrap = document.getElementById('agent-login-wrap');
   const dashWrap = document.getElementById('agent-dashboard-wrap');
   if(!loginWrap) return;
@@ -1809,25 +2235,171 @@ function renderAgentView(){
 
   document.getElementById('agent-dash-name').innerText = currentAgent.name;
   document.getElementById('agent-dash-area').innerHTML = `<i data-lucide="map-pin" class="w-3.5 h-3.5"></i> PASTI ${escapeHtml(currentAgent.area)}${currentAgent.branch ? ' · '+escapeHtml(currentAgent.branch) : ''}`;
+  document.getElementById('agent-ref-link').value = window.location.href.split('?')[0] + '?ref=' + currentAgent.code;
+  document.getElementById('agent-po-bankname').value = currentAgent.bankName || '';
+  document.getElementById('agent-po-bankacc').value = currentAgent.bankAccountNo || '';
+  document.getElementById('agent-po-bankaccname').value = currentAgent.bankAccountName || '';
+  document.getElementById('agent-po-qrurl').value = currentAgent.qrImageUrl || '';
 
-  const stats = statsForAgent(currentAgent.code);
+  const tbody = document.getElementById('agent-orders-body');
+  let stats = { sales:0, commission:0, orderCount:0, orders:[] };
+  if(agentSessionPass){
+    try{
+      const res = await window.fbAgentOrderStats(currentAgent.code, agentSessionPass);
+      stats = { sales:res.sales||0, commission:res.commission||0, orderCount:res.orderCount||0, orders:res.orders||[] };
+    }catch(e){
+      showToast('Gagal muatkan data tempahan terkini','alert-circle');
+    }
+  }else{
+    tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-inksoft italic">Log masuk semula untuk lihat tempahan terkini.</td></tr>`;
+  }
   document.getElementById('agent-stat-sales').innerText = formatRM(stats.sales);
   document.getElementById('agent-stat-comm').innerText = formatRM(stats.commission);
   document.getElementById('agent-stat-orders').innerText = stats.orderCount;
-  document.getElementById('agent-ref-link').value = window.location.href.split('?')[0] + '?ref=' + currentAgent.code;
 
-  const myOrders = appOrders.filter(o=>o.agentCode===currentAgent.code).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
-  const tbody = document.getElementById('agent-orders-body');
-  tbody.innerHTML = myOrders.length ? myOrders.map(o=>`
-    <tr class="border-t border-sand">
-      <td class="p-3 font-bold text-ink">${o.orderId}</td>
-      <td class="p-3 text-inksoft">${formatDate(o.createdAt)}</td>
-      <td class="p-3 text-inksoft">${escapeHtml(o.customerName)}</td>
-      <td class="p-3 font-bold text-ink">${formatRM(o.total)}</td>
-      <td class="p-3 font-bold text-honeydeep">${formatRM(o.agentCommission)}</td>
-      <td class="p-3"><span class="px-2 py-1 rounded-full text-[10px] font-bold status-${statusClass(o.status)}">${escapeHtml(o.status)}</span></td>
-    </tr>`).join('') : `<tr><td colspan="6" class="p-6 text-center text-inksoft italic">Belum ada tempahan lagi.</td></tr>`;
+  if(agentSessionPass){
+    const myOrders = stats.orders.slice().sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+    tbody.innerHTML = myOrders.length ? myOrders.map(o=>`
+      <tr class="border-t border-sand">
+        <td class="p-3 font-bold text-ink">${escapeHtml(o.orderId)}</td>
+        <td class="p-3 text-inksoft">${formatDate(o.createdAt)}</td>
+        <td class="p-3 text-inksoft">${escapeHtml(o.customerName)}</td>
+        <td class="p-3 font-bold text-ink">${formatRM(o.total)}</td>
+        <td class="p-3 font-bold text-honeydeep">${formatRM(o.agentCommission)}</td>
+        <td class="p-3"><span class="px-2 py-1 rounded-full text-[10px] font-bold status-${statusClass(o.status)}">${escapeHtml(o.status)}</span></td>
+      </tr>`).join('') : `<tr><td colspan="6" class="p-6 text-center text-inksoft italic">Belum ada tempahan lagi.</td></tr>`;
+  }
   icons();
+}
+
+/* ================= AKAUN SAYA (CUSTOMER) ================= */
+window.akaunAuthTab = 'login';
+window.setAkaunAuthTab = function(tab){
+  akaunAuthTab = tab;
+  document.getElementById('akaun-tab-login').classList.toggle('hidden', tab!=='login');
+  document.getElementById('akaun-tab-signup').classList.toggle('hidden', tab!=='signup');
+  const loginBtn = document.getElementById('akaun-tab-login-btn');
+  const signupBtn = document.getElementById('akaun-tab-signup-btn');
+  loginBtn.classList.toggle('bg-forest', tab==='login'); loginBtn.classList.toggle('text-white', tab==='login'); loginBtn.classList.toggle('text-inksoft', tab!=='login');
+  signupBtn.classList.toggle('bg-forest', tab==='signup'); signupBtn.classList.toggle('text-white', tab==='signup'); signupBtn.classList.toggle('text-inksoft', tab!=='signup');
+}
+
+function akaunAuthErrorMsg(err){
+  const code = err && err.code;
+  if(code==='auth/email-already-in-use') return 'Emel sudah didaftarkan';
+  if(code==='auth/invalid-email') return 'Format emel tidak sah';
+  if(code==='auth/weak-password') return 'Kata laluan terlalu lemah (min. 6 aksara)';
+  if(code==='auth/invalid-credential' || code==='auth/wrong-password' || code==='auth/user-not-found') return 'Emel atau kata laluan salah';
+  return 'Gagal, sila cuba lagi';
+}
+
+window.doCustomerSignup = async function(){
+  const email = document.getElementById('akaun-signup-email').value.trim();
+  const pass = document.getElementById('akaun-signup-pass').value;
+  if(!email || !pass){ showToast('Sila isi emel & kata laluan','alert-circle'); return; }
+  try{
+    await window.fbCustomerSignup(email, pass);
+    showToast('Akaun berjaya didaftarkan!','check-circle-2');
+    renderAkaunView();
+  }catch(err){ showToast(akaunAuthErrorMsg(err),'alert-circle'); }
+}
+window.doCustomerLogin = async function(){
+  const email = document.getElementById('akaun-login-email').value.trim();
+  const pass = document.getElementById('akaun-login-pass').value;
+  if(!email || !pass){ showToast('Sila isi emel & kata laluan','alert-circle'); return; }
+  try{
+    await window.fbCustomerLogin(email, pass);
+    showToast('Selamat kembali!','check-circle-2');
+    renderAkaunView();
+  }catch(err){ showToast(akaunAuthErrorMsg(err),'alert-circle'); }
+}
+window.doCustomerGoogleLogin = async function(){
+  try{
+    await window.fbCustomerGoogleLogin();
+    showToast('Selamat kembali!','check-circle-2');
+    renderAkaunView();
+  }catch(err){ showToast('Log masuk Google gagal atau dibatalkan','alert-circle'); }
+}
+window.doCustomerResetPassword = async function(){
+  const email = document.getElementById('akaun-login-email').value.trim();
+  if(!email){ showToast('Sila isi emel dahulu','alert-circle'); return; }
+  try{
+    await window.fbCustomerResetPassword(email);
+    showToast('Emel set semula kata laluan telah dihantar','check-circle-2');
+  }catch(err){ showToast(akaunAuthErrorMsg(err),'alert-circle'); }
+}
+window.doCustomerLogout = async function(){
+  try{ await window.fbCustomerLogout(); }catch(e){}
+  renderAkaunView();
+  showToast('Berjaya log keluar','log-out');
+}
+window.autofillAkaunState = function(val){
+  const state = postcodeToState(val);
+  if(state){ document.getElementById('akaun-state').value = state; }
+};
+function populateAkaunStateSelect(){
+  const sel = document.getElementById('akaun-state');
+  if(!sel || sel.options.length>0) return;
+  STATES.forEach(s=>{ const o=document.createElement('option'); o.value=s; o.innerText=s; sel.appendChild(o); });
+}
+window.saveCustomerProfile = async function(){
+  const profile = {
+    name: document.getElementById('akaun-nama').value.trim(),
+    phone: document.getElementById('akaun-phone').value.trim(),
+    postcode: document.getElementById('akaun-poskod').value.trim(),
+    address: document.getElementById('akaun-alamat').value.trim(),
+    city: document.getElementById('akaun-bandar').value.trim(),
+    state: document.getElementById('akaun-state').value,
+  };
+  try{
+    await window.fbCustomerSaveProfile(profile);
+    showToast('Profil disimpan','check-circle-2');
+  }catch(e){ showToast('Gagal simpan profil','alert-circle'); }
+}
+async function renderAkaunView(){
+  const guestWrap = document.getElementById('akaun-guest-wrap');
+  const dashWrap = document.getElementById('akaun-dashboard-wrap');
+  if(!guestWrap) return;
+  populateAkaunStateSelect();
+  if(window.fbAuthReady) await window.fbAuthReady;
+  const uid = typeof window.fbCustomerCurrentUid==='function' ? window.fbCustomerCurrentUid() : null;
+  if(!uid){ guestWrap.classList.remove('hidden'); dashWrap.classList.add('hidden'); icons(); return; }
+  guestWrap.classList.add('hidden'); dashWrap.classList.remove('hidden');
+
+  try{
+    const profile = await window.fbCustomerGetProfile();
+    document.getElementById('akaun-dash-email').innerText = profile.email || '';
+    document.getElementById('akaun-nama').value = profile.name || '';
+    document.getElementById('akaun-phone').value = profile.phone || '';
+    document.getElementById('akaun-poskod').value = profile.postcode || '';
+    document.getElementById('akaun-alamat').value = profile.address || '';
+    document.getElementById('akaun-bandar').value = profile.city || '';
+    if(profile.state) document.getElementById('akaun-state').value = profile.state;
+  }catch(e){}
+
+  const ordersEl = document.getElementById('akaun-orders');
+  ordersEl.innerHTML = `<p class="text-inksoft text-sm italic text-center py-6">Memuatkan...</p>`;
+  try{
+    const toMillis = v => (v && typeof v.toDate==='function') ? v.toDate().getTime() : new Date(v||0).getTime();
+    const orders = (await window.fbCustomerGetOrders()).sort((a,b)=>toMillis(b.createdAt)-toMillis(a.createdAt));
+    ordersEl.innerHTML = orders.length ? orders.map(o=>`
+      <div class="bg-white border border-sand rounded-2xl p-4 flex items-center justify-between gap-3">
+        <div class="min-w-0">
+          <p class="font-mono font-bold text-forest text-sm">${escapeHtml(o.orderId)}</p>
+          <p class="text-inksoft text-xs mt-0.5">${o.items?o.items.length:0} item · RM ${escapeHtml(String(o.total))} ${o.createdAt?'· '+formatDate(o.createdAt):''}</p>
+        </div>
+        <span class="shrink-0 px-2 py-1 rounded-full text-[10px] font-bold status-${statusClass(o.status)}">${escapeHtml(o.status||'Baru')}</span>
+      </div>`).join('') : `<p class="text-inksoft text-sm italic text-center py-6">Belum ada tempahan lagi.</p>`;
+  }catch(e){
+    ordersEl.innerHTML = `<p class="text-red-500 text-sm italic text-center py-6">Gagal muatkan tempahan.</p>`;
+  }
+  icons();
+}
+window.onCustomerAuthChange = function(){
+  const dashWrap = document.getElementById('akaun-dashboard-wrap');
+  if(dashWrap && !dashWrap.classList.contains('hidden')) return;
+  const view = document.getElementById('view-akaun');
+  if(view && !view.classList.contains('hidden')) renderAkaunView();
 }
 
 /* ================= PORTAL KAWASAN ================= */
@@ -1842,6 +2414,7 @@ window.loginKawasan = async function(){
   try{
     const profile = await window.fbKawasanLogin(code, pass);
     currentKawasan = profile;
+    try{ sessionStorage.setItem('alhaddad:kwsession', JSON.stringify({code, pass})); }catch(e){}
     renderKawasanPortalView();
     showToast('Selamat kembali, PASTI '+profile.namaKawasan+'!','check-circle-2');
   }catch(err){
@@ -1854,10 +2427,19 @@ window.loginKawasan = async function(){
 window.logoutKawasan = async function(){
   currentKawasan = null;
   kwProducts = [];
-  persistSession(null);
+  try{ sessionStorage.removeItem('alhaddad:kwsession'); }catch(e){}
   try{ await window.fbKawasanLogout(); }catch(e){}
   renderKawasanPortalView();
   showToast('Berjaya log keluar','log-out');
+}
+async function restoreKawasanSession(){
+  let saved = null;
+  try{ saved = JSON.parse(sessionStorage.getItem('alhaddad:kwsession')||'null'); }catch(e){}
+  if(!saved || !saved.code || !saved.pass) return;
+  try{
+    const profile = await window.fbKawasanLogin(saved.code, saved.pass);
+    currentKawasan = profile;
+  }catch(e){ try{ sessionStorage.removeItem('alhaddad:kwsession'); }catch(e2){} }
 }
 function renderKawasanPortalView(){
   const loginWrap = document.getElementById('kw-login-wrap');
@@ -2025,7 +2607,7 @@ window.logoutAdmin = async function(){
 }
 window.setAdminTab = function(tab){
   adminCurrentTab = tab;
-  ['produk','tempahan','ejen','kawasanadmin','laporan'].forEach(t=>{
+  ['produk','tempahan','ejen','kawasanadmin','laporan','tetapan'].forEach(t=>{
     const panel = document.getElementById('admin-tab-'+t);
     if(panel) panel.classList.toggle('hidden', t!==tab);
   });
@@ -2034,11 +2616,42 @@ window.setAdminTab = function(tab){
     btn.classList.toggle('bg-forest', active); btn.classList.toggle('text-white', active);
     btn.classList.toggle('bg-cream', !active); btn.classList.toggle('text-inksoft', !active);
   });
-  if(tab==='produk') renderAdminProducts();
-  if(tab==='tempahan') renderAdminOrders();
+  if(tab==='produk') refreshAndRenderAdminProducts();
+  if(tab==='tempahan') refreshAndRenderAdminOrders();
   if(tab==='ejen') refreshAndRenderAdminAgents();
   if(tab==='kawasanadmin') refreshAndRenderAdminKawasan();
-  if(tab==='laporan' && typeof renderReports==='function') renderReports();
+  if(tab==='laporan' && typeof renderReports==='function') refreshAndRenderReports();
+  if(tab==='tetapan') loadSiteContentAdminForm();
+}
+function loadSiteContentAdminForm(){
+  document.getElementById('cms-phone').value = siteContent.contactPhone || '';
+  document.getElementById('cms-email').value = siteContent.contactEmail || '';
+  document.getElementById('cms-address').value = siteContent.contactAddress || '';
+  document.getElementById('cms-whatsapp').value = siteContent.whatsappNumber || '60123456789';
+  document.getElementById('cms-hadihuda').value = siteContent.hadiHudaGreeting || '';
+  document.getElementById('cms-about').value = siteContent.aboutUsText || '';
+  document.getElementById('cms-qr').value = siteContent.paymentQrUrl || '';
+  document.getElementById('cms-easyparcel').checked = siteContent.easyParcelEnabled !== false;
+}
+window.saveSiteContentAdmin = async function(){
+  const content = {
+    contactPhone: document.getElementById('cms-phone').value.trim(),
+    contactEmail: document.getElementById('cms-email').value.trim(),
+    contactAddress: document.getElementById('cms-address').value.trim(),
+    whatsappNumber: document.getElementById('cms-whatsapp').value.trim() || '60123456789',
+    hadiHudaGreeting: document.getElementById('cms-hadihuda').value.trim(),
+    aboutUsText: document.getElementById('cms-about').value.trim(),
+    paymentQrUrl: document.getElementById('cms-qr').value.trim(),
+    easyParcelEnabled: document.getElementById('cms-easyparcel').checked,
+  };
+  try{
+    await window.fbAdminSaveSiteContent(content);
+    siteContent = content;
+    applySiteContent();
+    showToast('Tetapan berjaya disimpan','check-circle-2');
+  }catch(e){
+    showToast('Gagal simpan tetapan','alert-circle');
+  }
 }
 
 /* ================= ADMIN: KAWASAN ================= */
@@ -2155,7 +2768,18 @@ window.openProductModal = function(id){
   document.getElementById('modal-admin-product').classList.remove('hidden');
 }
 window.closeProductModal = function(){ document.getElementById('modal-admin-product').classList.add('hidden'); }
-window.saveProduct = function(){
+async function refreshOwnProducts(){
+  try{
+    const own = await window.fbListProductsPublic();
+    const kwp = appProducts.filter(p=>String(p.id).startsWith('KWP-'));
+    appProducts = own.concat(kwp);
+  }catch(e){ /* keep whatever was already loaded */ }
+}
+async function refreshAndRenderAdminProducts(){
+  await refreshOwnProducts();
+  renderAdminProducts();
+}
+window.saveProduct = async function(){
   const id = document.getElementById('pm-id').value;
   const name = document.getElementById('pm-name').value.trim();
   const price = parseFloat(document.getElementById('pm-price').value);
@@ -2173,23 +2797,27 @@ window.saveProduct = function(){
   if(!name || isNaN(price) || isNaN(weight) || isNaN(stock) || isNaN(commissionPct)){
     showToast('Sila lengkapkan semua medan dengan betul','alert-circle'); return;
   }
-  if(id){
-    const p = appProducts.find(x=>x.id===id);
-    Object.assign(p, {name,price,modal,weight,stock,commissionPct,jualan,category,desc,sellerName,popular,images});
-  } else {
-    appProducts.push({ id:genId('P'), name,price,modal,weight,stock,commissionPct,jualan,category,desc,sellerName,popular,images, createdAt:new Date().toISOString() });
+  const product = { id:id||undefined, name,price,modal,weight,stock,commissionPct,jualan,category,desc,sellerName,popular,images, createdAt:new Date().toISOString() };
+  try{
+    await window.fbAdminSaveProduct(product);
+    await refreshOwnProducts();
+    window.closeProductModal();
+    renderAdminProducts(); renderHome(); renderCatalog();
+    showToast('Produk berjaya disimpan','check-circle-2');
+  }catch(e){
+    showToast('Gagal simpan produk','alert-circle');
   }
-  persistProducts();
-  window.closeProductModal();
-  renderAdminProducts(); renderHome(); renderCatalog();
-  showToast('Produk berjaya disimpan','check-circle-2');
 }
-window.deleteProduct = function(id){
+window.deleteProduct = async function(id){
   if(!confirm('Padam produk ini?')) return;
-  appProducts = appProducts.filter(p=>p.id!==id);
-  persistProducts();
-  renderAdminProducts(); renderHome(); renderCatalog();
-  showToast('Produk dipadam','trash-2');
+  try{
+    await window.fbAdminDeleteProduct(id);
+    await refreshOwnProducts();
+    renderAdminProducts(); renderHome(); renderCatalog();
+    showToast('Produk dipadam','trash-2');
+  }catch(e){
+    showToast('Gagal padam produk','alert-circle');
+  }
 }
 function renderAdminProducts(){
   const tbody = document.getElementById('admin-product-body');
@@ -2220,42 +2848,69 @@ function renderAdminProducts(){
 }
 
 /* ================= ADMIN: TEMPAHAN ================= */
+let appKPOrders = [];
+async function refreshAndRenderAdminOrders(){
+  const tbody = document.getElementById('admin-order-body');
+  if(tbody) tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-inksoft italic">Memuatkan tempahan...</td></tr>`;
+  try{
+    appKPOrders = await window.fbAdminListOrders();
+  }catch(e){
+    appKPOrders = [];
+    showToast('Gagal muatkan tempahan','alert-circle');
+  }
+  renderAdminOrders();
+}
 function renderAdminOrders(){
   const tbody = document.getElementById('admin-order-body');
   if(!tbody) return;
   const filter = document.getElementById('admin-order-filter').value;
-  let list = appOrders.slice().sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+  let list = appKPOrders.slice().sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
   if(filter!=='all') list = list.filter(o=>o.status===filter);
   document.getElementById('admin-order-count').innerText = list.length+' tempahan';
   tbody.innerHTML = list.map(o=>`
     <tr class="border-t border-sand">
       <td class="p-3 font-bold text-ink">${o.orderId}<br><span class="text-[10px] text-inksoft font-normal">${formatDate(o.createdAt)}</span></td>
       <td class="p-3 text-inksoft">${escapeHtml(o.customerName)}<br><span class="text-[10px]">${escapeHtml(o.phone)}</span></td>
-      <td class="p-3 text-inksoft">${o.agentCode?escapeHtml(o.agentCode):'<span class="italic">Tiada</span>'}</td>
-      <td class="p-3 font-bold text-ink">${formatRM(o.total)}</td>
+      <td class="p-3 text-inksoft">${o.agentCode?escapeHtml(o.agentCode):'<span class="italic">Tiada</span>'}${o.pickupKawasanCode ? `<br><span class="text-[10px]">Ambil: ${escapeHtml(o.pickupKawasanCode)}</span>` : ''}</td>
+      <td class="p-3 font-bold text-ink">${formatRM(o.total)}<br><span class="text-[10px] ${o.paymentStatus==='Disahkan'?'text-green-600':'text-amber-600'} font-bold">${escapeHtml(o.paymentStatus||'Belum Disahkan')}</span></td>
       <td class="p-3">
         <select onchange="window.updateOrderStatus('${o.orderId}', this.value)" class="text-[10px] font-bold rounded-full px-2 py-1.5 border-0 status-${statusClass(o.status)}">
           ${['Baru','Diproses','Dihantar','Selesai','Dibatalkan'].map(s=>`<option value="${s}" ${o.status===s?'selected':''}>${s}</option>`).join('')}
         </select>
       </td>
-      <td class="p-3"><button onclick="window.deleteOrder('${o.orderId}')" class="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button></td>
+      <td class="p-3">${o.paymentStatus==='Disahkan' ? '<span class="text-[10px] text-green-600 font-bold">✓ Disahkan</span>' : `<button onclick="window.confirmOrderPayment('${o.orderId}')" class="bg-forest hover:bg-forestdark text-white text-[10px] font-bold px-3 py-2 rounded-lg">Sahkan Bayaran</button>`}</td>
     </tr>`).join('') || `<tr><td colspan="6" class="p-6 text-center text-inksoft italic">Tiada tempahan.</td></tr>`;
   icons();
 }
-window.updateOrderStatus = function(orderId, status){
-  const o = appOrders.find(x=>x.orderId===orderId);
-  if(!o) return;
-  o.status = status;
-  persistOrders();
-  showToast('Status tempahan dikemaskini','check-circle-2');
-  renderAdminOrders();
+window.updateOrderStatus = async function(orderId, status){
+  try{
+    await window.fbAdminUpdateOrderStatus(orderId, status);
+    const o = appKPOrders.find(x=>x.orderId===orderId);
+    if(o) o.status = status;
+    showToast('Status tempahan dikemaskini','check-circle-2');
+    renderAdminOrders();
+  }catch(e){
+    showToast('Gagal kemas kini status','alert-circle');
+  }
 }
-window.deleteOrder = function(orderId){
-  if(!confirm('Padam tempahan ini?')) return;
-  appOrders = appOrders.filter(o=>o.orderId!==orderId);
-  persistOrders();
-  renderAdminOrders();
-  showToast('Tempahan dipadam','trash-2');
+window.confirmOrderPayment = async function(orderId){
+  try{
+    const res = await window.fbAdminConfirmPayment(orderId);
+    const o = appKPOrders.find(x=>x.orderId===orderId);
+    if(o) o.paymentStatus = 'Disahkan';
+    renderAdminOrders();
+    if(res.kawasanContact && res.kawasanContact.picPhone){
+      const kc = res.kawasanContact;
+      const msg = encodeURIComponent(`Assalamualaikum PASTI ${kc.namaKawasan}, tempahan ${orderId} telah disahkan bayarannya. Sila uruskan penyerahan produk.`);
+      const waHref = `https://wa.me/${normalizePhoneClient(kc.picPhone)}?text=${msg}`;
+      showToast('Bayaran disahkan — sila maklumkan kawasan via WhatsApp','check-circle-2');
+      window.open(waHref, '_blank');
+    } else {
+      showToast('Bayaran disahkan','check-circle-2');
+    }
+  }catch(e){
+    showToast('Gagal sahkan bayaran','alert-circle');
+  }
 }
 
 /* ================= ADMIN: EJEN ================= */
@@ -2263,7 +2918,7 @@ async function refreshAndRenderAdminAgents(){
   const tbody = document.getElementById('admin-agent-body');
   if(tbody) tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-inksoft italic">Memuatkan senarai ejen...</td></tr>`;
   try{
-    appAgents = await window.fbAdminListAgents();
+    [appAgents, appKPOrders] = await Promise.all([window.fbAdminListAgents(), window.fbAdminListOrders()]);
   }catch(e){
     appAgents = [];
     showToast('Gagal muatkan senarai ejen','alert-circle');
@@ -2343,7 +2998,17 @@ function renderAdminAgents(){
 window.reportPeriod = 'harian';
 window.salesChartInstance = null;
 
-function ordersExcCancelled(){ return appOrders.filter(o=>o.status!=='Dibatalkan'); }
+function ordersExcCancelled(){ return appKPOrders.filter(o=>o.status!=='Dibatalkan'); }
+
+async function refreshAndRenderReports(){
+  try{
+    appKPOrders = await window.fbAdminListOrders();
+  }catch(e){
+    appKPOrders = [];
+    showToast('Gagal muatkan data laporan','alert-circle');
+  }
+  renderReports();
+}
 
 window.setReportPeriod = function(p){
   reportPeriod = p;
@@ -2447,12 +3112,14 @@ function renderAgentRanking(){
 /* ================= INIT ================= */
 document.addEventListener('DOMContentLoaded', async () => {
   await loadAllData();
+  await restoreKawasanSession();
   renderHome();
   renderCatalog();
   renderCart();
   updateCartBadge();
   renderAgentView();
   renderAdminView();
+  renderKawasanPortalView();
   icons();
 
   const produkId = (new URLSearchParams(window.location.search)).get('produk');
