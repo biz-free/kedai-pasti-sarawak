@@ -398,7 +398,8 @@
           <input id="catalog-search" oninput="window.setSearch(this.value)" type="text" placeholder="Cari produk..." class="w-full bg-white border border-sand rounded-2xl pl-11 pr-4 py-3 text-sm font-medium">
         </div>
 
-        <div id="catalog-cat-chips" class="flex gap-2 overflow-x-auto no-scrollbar pb-1 mb-4"></div>
+        <div id="catalog-cat-chips" class="flex gap-2 overflow-x-auto no-scrollbar pb-1 mb-3"></div>
+        <div id="catalog-kawasan-chips" class="hidden flex gap-2 overflow-x-auto no-scrollbar pb-1 mb-4"></div>
 
         <div class="flex items-center justify-between mb-4">
           <p id="catalog-count" class="text-xs font-bold text-inksoft">0 produk</p>
@@ -1080,13 +1081,18 @@
           <input id="pm-name" type="text" placeholder="Nama Produk" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
           <select id="pm-category" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium"></select>
           <div class="grid grid-cols-2 gap-3">
-            <input id="pm-price" type="number" step="0.01" placeholder="Harga (RM)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+            <input id="pm-price" type="number" step="0.01" placeholder="Harga Jualan (RM)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+            <input id="pm-modal" type="number" step="0.01" placeholder="Modal/Kos (RM)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
             <input id="pm-weight" type="number" step="0.01" placeholder="Berat (kg)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
             <input id="pm-stock" type="number" placeholder="Stok" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
             <input id="pm-comm" type="number" step="0.1" placeholder="Komisen (%)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+            <input id="pm-jualan" type="number" placeholder="Jualan Direkod" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
           </div>
           <textarea id="pm-desc" rows="3" placeholder="Deskripsi produk" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium"></textarea>
           <input id="pm-seller" type="text" placeholder="Nama Penjual" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          <input id="pm-img1" type="text" placeholder="URL Gambar 1" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          <input id="pm-img2" type="text" placeholder="URL Gambar 2 (pilihan)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          <input id="pm-img3" type="text" placeholder="URL Gambar 3 (pilihan)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
           <label class="flex items-center gap-2 text-xs font-bold text-inksoft px-1"><input id="pm-popular" type="checkbox" class="w-4 h-4 accent-[#0B5D3B]"> Tandakan sebagai Produk Popular</label>
         </div>
         <div class="flex gap-3 mt-5">
@@ -1213,7 +1219,7 @@ let appOrders = [];
 let cart = [];
 let currentAgent = null;
 let isAdminIn = false;
-let catalogState = { search:'', cat:'all', sort:'default' };
+let catalogState = { search:'', cat:'all', sort:'default', kawasan:'all' };
 let qvProduct = null, qvQty = 1;
 
 /* ================= UTIL ================= */
@@ -1343,16 +1349,29 @@ async function persistCart(){ try{ await window.storage.set('alhaddad:cart', JSO
 async function persistSession(val){ try{ if(val) await window.storage.set('alhaddad:session', JSON.stringify(val), false); else await window.storage.delete('alhaddad:session', false); }catch(e){} }
 
 /* ================= RENDER: SHARED PRODUCT TILE ================= */
+function productMediaHTML(p, heightClass){
+  const cat = CATEGORIES[p.category] || CATEGORIES.kurma;
+  const img = Array.isArray(p.images) && p.images[0];
+  if(img){
+    return `<div class="relative ${heightClass} w-full bg-white overflow-hidden">
+      <img src="${escapeHtml(img)}" alt="${escapeHtml(p.name)}" class="w-full h-full object-contain p-2" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+      <div class="absolute inset-0 hidden items-center justify-center" style="background:linear-gradient(135deg, ${cat.grad[0]}, ${cat.grad[1]})"><i data-lucide="${cat.icon}" class="w-11 h-11 sm:w-12 sm:h-12 text-white/90"></i></div>
+      <span class="absolute bottom-1.5 right-2 text-[8px] sm:text-[9px] font-extrabold uppercase tracking-wider text-ink/20 select-none pointer-events-none">Kedai PASTI Sarawak</span>
+      ${p.popular ? `<span class="absolute top-2 left-2 bg-honey text-ink text-[9px] font-black px-2 py-1 rounded-full">POPULAR</span>` : ''}
+    </div>`;
+  }
+  return `<div class="relative ${heightClass} w-full flex items-center justify-center" style="background:linear-gradient(135deg, ${cat.grad[0]}, ${cat.grad[1]})">
+    <i data-lucide="${cat.icon}" class="w-11 h-11 sm:w-12 sm:h-12 text-white/90"></i>
+    ${p.popular ? `<span class="absolute top-2 left-2 bg-honey text-ink text-[9px] font-black px-2 py-1 rounded-full">POPULAR</span>` : ''}
+  </div>`;
+}
 function productTileHTML(p){
   const cat = CATEGORIES[p.category] || CATEGORIES.kurma;
   const stockLabel = p.stock>0 ? `${p.stock} lagi` : 'Stok Habis';
   const stockClass = p.stock>0 ? 'text-forest' : 'text-red-500';
   return `
   <div class="bg-white rounded-3xl border border-sand overflow-hidden card-hover shadow-sm flex flex-col">
-    <button onclick="window.openQuickView('${p.id}')" class="relative h-28 sm:h-36 w-full flex items-center justify-center" style="background:linear-gradient(135deg, ${cat.grad[0]}, ${cat.grad[1]})">
-      <i data-lucide="${cat.icon}" class="w-11 h-11 sm:w-12 sm:h-12 text-white/90"></i>
-      ${p.popular ? `<span class="absolute top-2 left-2 bg-honey text-ink text-[9px] font-black px-2 py-1 rounded-full">POPULAR</span>` : ''}
-    </button>
+    <button onclick="window.openQuickView('${p.id}')" class="block w-full">${productMediaHTML(p, 'h-28 sm:h-36')}</button>
     <div class="p-3 flex flex-col flex-1">
       <p class="text-[9px] font-bold text-inksoft uppercase tracking-wide">${escapeHtml(cat.name)}</p>
       <button onclick="window.openQuickView('${p.id}')" class="text-left font-display font-semibold text-sm text-ink leading-snug mt-0.5 line-clamp-2">${escapeHtml(p.name)}</button>
@@ -1404,11 +1423,27 @@ function renderHome(){
 window.setCategory = function(key){ catalogState.cat = key; renderCatalog(); };
 window.setSort = function(val){ catalogState.sort = val; renderCatalog(); };
 window.setSearch = function(val){ catalogState.search = val.toLowerCase(); renderCatalog(); };
+window.setKawasanFilter = function(val){ catalogState.kawasan = val; renderCatalog(); };
+function renderKawasanChips(){
+  const el = document.getElementById('catalog-kawasan-chips');
+  if(!el) return;
+  const kawasanNames = Array.from(new Set(appProducts.filter(p=>p.pickupKawasan).map(p=>p.pickupKawasan)));
+  if(kawasanNames.length===0){ el.classList.add('hidden'); return; }
+  el.classList.remove('hidden');
+  const active = catalogState.kawasan;
+  let html = `<button onclick="window.setKawasanFilter('all')" class="shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border transition-colors ${active==='all'?'bg-honeydeep text-white border-honeydeep':'bg-white text-inksoft border-sand'}">Semua Kawasan</button>`;
+  kawasanNames.forEach(kw=>{
+    html += `<button onclick="window.setKawasanFilter('${kw}')" class="shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border transition-colors ${active===kw?'bg-honeydeep text-white border-honeydeep':'bg-white text-inksoft border-sand'}"><i data-lucide="map-pin" class="w-3 h-3 inline"></i> PASTI ${escapeHtml(kw)}</button>`;
+  });
+  el.innerHTML = html; icons();
+}
 
 function renderCatalog(){
   renderCategoryChips('catalog-cat-chips');
+  renderKawasanChips();
   let list = appProducts.slice();
   if(catalogState.cat !== 'all') list = list.filter(p=>p.category===catalogState.cat);
+  if(catalogState.kawasan !== 'all') list = list.filter(p=>p.pickupKawasan===catalogState.kawasan);
   if(catalogState.search) list = list.filter(p=>p.name.toLowerCase().includes(catalogState.search));
   if(catalogState.sort==='price-asc') list.sort((a,b)=>a.price-b.price);
   else if(catalogState.sort==='price-desc') list.sort((a,b)=>b.price-a.price);
@@ -1425,13 +1460,15 @@ function renderCatalog(){
 /* ================= QUICK VIEW ================= */
 window.openQuickView = function(id){
   qvProduct = appProducts.find(p=>p.id===id);
-  if(!qvProduct) return;
+  if(!qvProduct){ showToast('Produk tidak dijumpai','alert-circle'); return; }
   qvQty = 1;
   const cat = CATEGORIES[qvProduct.category] || CATEGORIES.kurma;
+  const shareUrl = window.location.href.split('?')[0] + '?produk=' + encodeURIComponent(qvProduct.id);
+  const waText = encodeURIComponent(`${qvProduct.name} — ${formatRM(qvProduct.price)}\n${shareUrl}`);
   document.getElementById('qv-content').innerHTML = `
-    <div class="relative h-48 flex items-center justify-center" style="background:linear-gradient(135deg, ${cat.grad[0]}, ${cat.grad[1]})">
-      <i data-lucide="${cat.icon}" class="w-16 h-16 text-white/90"></i>
-      <button onclick="window.closeQuickView()" class="absolute top-3 right-3 w-9 h-9 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+    <div class="relative">
+      ${productMediaHTML(qvProduct, 'h-48')}
+      <button onclick="window.closeQuickView()" class="absolute top-3 right-3 w-9 h-9 bg-white/70 hover:bg-white rounded-full flex items-center justify-center text-ink shadow"><i data-lucide="x" class="w-5 h-5"></i></button>
     </div>
     <div class="p-5 sm:p-6">
       <p class="text-[10px] font-bold text-honeydeep uppercase tracking-widest">${escapeHtml(cat.name)}</p>
@@ -1453,6 +1490,7 @@ window.openQuickView = function(id){
           <i data-lucide="shopping-bag" class="w-4 h-4"></i> ${qvProduct.stock<=0?'Stok Habis':'Tambah ke Troli'}
         </button>
       </div>
+      <a href="https://wa.me/?text=${waText}" target="_blank" class="mt-3 w-full bg-[#25D366] hover:bg-[#1DA851] text-white font-bold py-2.5 rounded-2xl flex items-center justify-center gap-2 transition-colors text-sm"><i data-lucide="share-2" class="w-4 h-4"></i> Kongsi Produk ke WhatsApp</a>
     </div>`;
   document.getElementById('modal-quickview').classList.remove('hidden');
   icons();
@@ -2097,11 +2135,17 @@ window.openProductModal = function(id){
   document.getElementById('pm-id').value = editing ? editing.id : '';
   document.getElementById('pm-name').value = editing ? editing.name : '';
   document.getElementById('pm-price').value = editing ? editing.price : '';
+  document.getElementById('pm-modal').value = editing ? (editing.modal||'') : '';
   document.getElementById('pm-weight').value = editing ? editing.weight : '';
   document.getElementById('pm-stock').value = editing ? editing.stock : '';
   document.getElementById('pm-comm').value = editing ? editing.commissionPct : 10;
+  document.getElementById('pm-jualan').value = editing ? (editing.jualan||0) : 0;
   document.getElementById('pm-desc').value = editing ? (editing.desc||'') : '';
   document.getElementById('pm-seller').value = editing ? editing.sellerName : 'Kedai PASTI Sarawak Official';
+  const imgs = editing && Array.isArray(editing.images) ? editing.images : [];
+  document.getElementById('pm-img1').value = imgs[0] || '';
+  document.getElementById('pm-img2').value = imgs[1] || '';
+  document.getElementById('pm-img3').value = imgs[2] || '';
   document.getElementById('pm-popular').checked = editing ? !!editing.popular : false;
   const catSel = document.getElementById('pm-category');
   if(catSel.options.length===0){
@@ -2115,22 +2159,25 @@ window.saveProduct = function(){
   const id = document.getElementById('pm-id').value;
   const name = document.getElementById('pm-name').value.trim();
   const price = parseFloat(document.getElementById('pm-price').value);
+  const modal = parseFloat(document.getElementById('pm-modal').value) || 0;
   const weight = parseFloat(document.getElementById('pm-weight').value);
   const stock = parseInt(document.getElementById('pm-stock').value);
   const commissionPct = parseFloat(document.getElementById('pm-comm').value);
+  const jualan = parseInt(document.getElementById('pm-jualan').value) || 0;
   const category = document.getElementById('pm-category').value;
   const desc = document.getElementById('pm-desc').value.trim();
   const sellerName = document.getElementById('pm-seller').value.trim() || 'Kedai PASTI Sarawak Official';
   const popular = document.getElementById('pm-popular').checked;
+  const images = [document.getElementById('pm-img1').value.trim(), document.getElementById('pm-img2').value.trim(), document.getElementById('pm-img3').value.trim()].filter(Boolean);
 
   if(!name || isNaN(price) || isNaN(weight) || isNaN(stock) || isNaN(commissionPct)){
     showToast('Sila lengkapkan semua medan dengan betul','alert-circle'); return;
   }
   if(id){
     const p = appProducts.find(x=>x.id===id);
-    Object.assign(p, {name,price,weight,stock,commissionPct,category,desc,sellerName,popular});
+    Object.assign(p, {name,price,modal,weight,stock,commissionPct,jualan,category,desc,sellerName,popular,images});
   } else {
-    appProducts.push({ id:genId('P'), name,price,weight,stock,commissionPct,category,desc,sellerName,popular, createdAt:new Date().toISOString() });
+    appProducts.push({ id:genId('P'), name,price,modal,weight,stock,commissionPct,jualan,category,desc,sellerName,popular,images, createdAt:new Date().toISOString() });
   }
   persistProducts();
   window.closeProductModal();
@@ -2407,6 +2454,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderAgentView();
   renderAdminView();
   icons();
+
+  const produkId = (new URLSearchParams(window.location.search)).get('produk');
+  if(produkId){
+    window.showView('catalog');
+    window.openQuickView(produkId);
+  }
 });
 </script>
 </body>
