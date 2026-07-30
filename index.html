@@ -50,6 +50,7 @@
   };
 
   const callAgentLogin = httpsCallable(fbFns, 'agentLogin');
+  const callListAgentsPublic = httpsCallable(fbFns, 'listAgentsPublic');
   const callAdminListAgents = httpsCallable(fbFns, 'adminListAgents');
   const callAdminSaveAgent = httpsCallable(fbFns, 'adminSaveAgent');
   const callAdminDeleteAgent = httpsCallable(fbFns, 'adminDeleteAgent');
@@ -100,6 +101,11 @@
 
   window.fbAdminListAgents = async function() {
     const res = await callAdminListAgents();
+    return res.data.agents;
+  };
+
+  window.fbListAgentsPublic = async function() {
+    const res = await callListAgentsPublic();
     return res.data.agents;
   };
 
@@ -610,9 +616,20 @@
                   <select id="co-negeri" class="sm:col-span-2 bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
                     <option value="">-- Pilih Negeri * --</option>
                   </select>
-                  <div class="sm:col-span-2 relative">
-                    <input id="co-agentcode" type="text" placeholder="Kod Ejen (Pilihan)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium uppercase">
-                    <i data-lucide="tag" class="w-4 h-4 text-inksoft absolute right-4 top-3.5"></i>
+                  <div class="sm:col-span-2">
+                    <p class="text-xs font-bold text-inksoft mb-1.5">Ejen Pilihan Anda (Pilihan)</p>
+                    <div id="co-agent-selected" class="hidden items-center justify-between bg-leaflight border border-forest/20 rounded-xl px-4 py-3 mb-2">
+                      <div>
+                        <p class="font-bold text-sm text-ink" id="co-agent-selected-name"></p>
+                        <p class="text-[11px] text-inksoft" id="co-agent-selected-area"></p>
+                      </div>
+                      <button type="button" onclick="window.clearSelectedAgent()" class="text-xs font-bold text-red-500 shrink-0">Buang</button>
+                    </div>
+                    <button type="button" id="co-agent-picker-toggle" onclick="window.toggleAgentPicker()" class="w-full bg-cream hover:bg-sand border border-sand rounded-xl px-4 py-3 text-sm font-bold text-forest flex items-center justify-center gap-2 transition-colors">
+                      <i data-lucide="users" class="w-4 h-4"></i> Pilih Ejen dari Senarai
+                    </button>
+                    <div id="co-agent-picker-list" class="hidden mt-2 max-h-56 overflow-y-auto space-y-1 border border-sand rounded-xl p-2 bg-white"></div>
+                    <input id="co-agentcode" type="hidden">
                   </div>
                 </div>
               </div>
@@ -629,9 +646,7 @@
               <div id="co-ship-pickup" class="hidden bg-white border border-sand rounded-3xl p-5 shadow-sm">
                 <h3 class="font-display font-bold text-ink mb-4 flex items-center gap-2"><i data-lucide="map-pin" class="w-4 h-4 text-forest"></i> Ambil di PASTI Kawasan</h3>
                 <p class="text-inksoft text-xs mb-3">Penghantaran pos tidak aktif buat masa ini. Pilih PASTI kawasan untuk ambil pesanan anda — kawasan tersebut akan uruskan penyerahan terus.</p>
-                <select id="co-pickup-kawasan" onchange="window.selectPickupKawasan(this.value)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-                  <option value="">-- Pilih PASTI Kawasan --</option>
-                </select>
+                <div id="co-pickup-kawasan-list" class="space-y-2"></div>
               </div>
 
               <div class="bg-white border border-sand rounded-3xl p-5 shadow-sm">
@@ -1176,7 +1191,7 @@
           </details>
           <details class="bg-white border border-sand rounded-2xl p-4 group">
             <summary class="font-display font-bold text-sm text-ink cursor-pointer list-none flex items-center justify-between">Apakah kaedah pembayaran yang diterima?<i data-lucide="chevron-down" class="w-4 h-4 text-inksoft group-open:rotate-180 transition-transform"></i></summary>
-            <p class="text-inksoft text-sm mt-3 leading-relaxed">Pembayaran disahkan secara manual melalui WhatsApp selepas tempahan dibuat — pelanggan boleh memilih pindahan bank atau e-wallet mengikut arahan yang diberikan oleh ejen/kedai.</p>
+            <p class="text-inksoft text-sm mt-3 leading-relaxed">Kami hanya terima bayaran melalui QR (DuitNow/bank/e-wallet). Imbas QR yang dipaparkan semasa checkout, buat bayaran, kemudian isi tarikh/masa/jumlah & lampirkan resit — admin akan sahkan bayaran anda selepas itu.</p>
           </details>
           <details class="bg-white border border-sand rounded-2xl p-4 group">
             <summary class="font-display font-bold text-sm text-ink cursor-pointer list-none flex items-center justify-between">Berapa lama tempoh penghantaran?<i data-lucide="chevron-down" class="w-4 h-4 text-inksoft group-open:rotate-180 transition-transform"></i></summary>
@@ -1345,9 +1360,9 @@
   <div class="fixed right-4 bottom-20 md:bottom-6 z-40">
     <div id="wa-fab-menu" class="hidden absolute bottom-16 right-0 w-64 bg-white border border-sand rounded-2xl shadow-2xl p-3 space-y-2">
       <p class="text-[11px] font-bold text-inksoft uppercase tracking-wide px-1 mb-1">Perlukan bantuan?</p>
-      <a id="wa-fab-hadihuda" href="#" target="_blank" class="flex items-center gap-2 bg-leaflight hover:bg-forest hover:text-white text-forest font-bold text-sm px-3 py-2.5 rounded-xl transition-colors">
+      <button onclick="window.openHadiHudaChat()" class="w-full flex items-center gap-2 bg-leaflight hover:bg-forest hover:text-white text-forest font-bold text-sm px-3 py-2.5 rounded-xl transition-colors">
         <i data-lucide="bot" class="w-4 h-4"></i> Chat dengan HadiHuda
-      </a>
+      </button>
       <button onclick="window.toggleWaKawasanPicker()" class="w-full flex items-center gap-2 bg-cream hover:bg-sand text-ink font-bold text-sm px-3 py-2.5 rounded-xl transition-colors">
         <i data-lucide="map-pin" class="w-4 h-4"></i> Hubungi PASTI Kawasan Saya
       </button>
@@ -1365,6 +1380,24 @@
   <div id="modal-quickview" class="hidden fixed inset-0 z-[90] flex items-end sm:items-center justify-center p-0 sm:p-4 modal-mask">
     <div class="bg-white rounded-t-[2rem] sm:rounded-[2rem] w-full sm:max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
       <div id="qv-content"></div>
+    </div>
+  </div>
+
+  <!-- MODAL: HADIHUDA CHAT -->
+  <div id="modal-hadihuda" class="hidden fixed inset-0 z-[92] flex items-end sm:items-center justify-center p-0 sm:p-4 modal-mask">
+    <div class="bg-cream rounded-t-[2rem] sm:rounded-[2rem] w-full sm:max-w-md h-[85vh] sm:h-[36rem] max-h-[90vh] shadow-2xl flex flex-col overflow-hidden">
+      <div class="bg-forest px-5 py-4 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-white/15 flex items-center justify-center"><i data-lucide="bot" class="w-5 h-5 text-white"></i></div>
+          <div>
+            <p class="font-display font-bold text-white text-sm">HadiHuda</p>
+            <p class="text-white/60 text-[11px]">Pembantu Kedai PASTI Sarawak Official</p>
+          </div>
+        </div>
+        <button onclick="window.closeHadiHudaChat()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <div id="hadihuda-messages" class="flex-1 overflow-y-auto p-4 space-y-3"></div>
+      <div id="hadihuda-quickreplies" class="border-t border-sand bg-white p-3 shrink-0 max-h-40 overflow-y-auto space-y-1.5"></div>
     </div>
   </div>
 
@@ -1596,10 +1629,6 @@ function applySiteContent(){
   if(phoneEl && siteContent.contactPhone) phoneEl.innerText = siteContent.contactPhone;
   if(emailEl && siteContent.contactEmail) emailEl.innerText = siteContent.contactEmail;
   if(addrEl && siteContent.contactAddress) addrEl.innerText = siteContent.contactAddress;
-  const waNum = siteContent.whatsappNumber || '60123456789';
-  const hadiHudaMsg = encodeURIComponent(siteContent.hadiHudaGreeting || 'Hai HadiHuda! Saya ada soalan tentang Kedai PASTI Sarawak Official.');
-  const hadiEl = document.getElementById('wa-fab-hadihuda');
-  if(hadiEl) hadiEl.href = `https://wa.me/${waNum}?text=${hadiHudaMsg}`;
   const aboutEl = document.getElementById('tentang-about-text');
   if(aboutEl && siteContent.aboutUsText){
     aboutEl.innerHTML = siteContent.aboutUsText.split('\n').filter(Boolean).map(p=>`<p class="text-inksoft text-sm leading-relaxed mb-4">${escapeHtml(p)}</p>`).join('');
@@ -1631,6 +1660,119 @@ function normalizePhoneClient(raw){
   if(p.startsWith('0')) p = '60'+p.slice(1);
   if(p.startsWith('+')) p = p.slice(1);
   return p;
+}
+
+/* ================= HADIHUDA CHAT ================= */
+const HADIHUDA_TOPICS = [
+  { id:'cara-tempahan', icon:'shopping-bag', q:'Bagaimana cara membuat tempahan?',
+    a:'Pilih produk di Katalog, tambah ke troli, isi maklumat penghantaran semasa checkout, dan hantar tempahan. Anda akan terima nombor pesanan (contoh: KP-12345678) untuk rujukan.' },
+  { id:'kaedah-bayaran', icon:'qr-code', q:'Apakah kaedah pembayaran yang diterima?',
+    a:'Kami hanya terima bayaran melalui QR (DuitNow/bank/e-wallet). Semasa checkout, imbas QR yang dipaparkan, buat bayaran, kemudian isi tarikh/masa/jumlah & lampirkan resit — admin akan sahkan bayaran anda selepas itu.' },
+  { id:'tempoh-hantar', icon:'truck', q:'Berapa lama tempoh penghantaran?',
+    a:'Purata 2-4 hari bekerja bagi kawasan Sarawak, dan 3-6 hari bekerja bagi Semenanjung/Sabah, bergantung kurier yang dipilih semasa checkout. Jika anda pilih "Ambil di PASTI Kawasan", tempoh bergantung susunan kawasan tersebut.' },
+  { id:'jadi-ejen', icon:'users', q:'Bagaimana untuk menjadi ejen?',
+    a:'Klik "Jadi Ejen Kami" di halaman Utama atau pergi ke Portal Ejen, kemudian hubungi kami via WhatsApp untuk pendaftaran. Ejen mendapat komisen telus bagi setiap jualan melalui link rujukan sendiri.' },
+  { id:'batal-pulang', icon:'rotate-ccw', q:'Bolehkah saya batalkan/pulangkan pesanan?',
+    a:'Pembatalan dibenarkan sebelum status pesanan bertukar kepada "Diproses". Untuk produk rosak/tidak sepadan, hubungi kami dalam masa 3 hari selepas terima untuk pemulangan/penggantian.' },
+  { id:'untung-kemana', icon:'heart-handshake', q:'Ke mana perginya keuntungan jualan?',
+    a:'Sebahagian hasil jualan menyumbang kepada dana operasi tadika PASTI Sarawak, manakala ejen komuniti menerima komisen telus bagi setiap produk yang berjaya dijual.' },
+  { id:'pilih-kawasan-ejen', icon:'map-pin', q:'Macam mana nak pilih PASTI Kawasan / Ejen semasa checkout?',
+    a:'Semasa checkout, jika penghantaran pos tidak aktif anda boleh pilih "Ambil di PASTI Kawasan" dan lihat senarai penuh kawasan berserta PIC masing-masing. Anda juga boleh klik "Pilih Ejen dari Senarai" untuk sokong ejen komuniti pilihan anda — kedua-duanya pilihan, bukan wajib.' },
+  { id:'semak-tempahan', icon:'package-search', q:'Semak status tempahan saya', special:'lookup' },
+  { id:'hubungi-manusia', icon:'headset', q:'Saya nak cakap dengan orang sebenar', special:'human' },
+];
+
+let hadihudaOpened = false;
+window.openHadiHudaChat = function(){
+  document.getElementById('modal-hadihuda').classList.remove('hidden');
+  document.getElementById('wa-fab-menu').classList.add('hidden');
+  if(!hadihudaOpened){
+    hadihudaOpened = true;
+    hadihudaBotSay('Assalamualaikum! Saya HadiHuda 🤖, pembantu maya Kedai PASTI Sarawak Official. Pilih soalan di bawah — saya boleh bantu jawab soal tempahan, pembayaran, penghantaran, ejen, dan juga semak status tempahan anda secara terus.');
+    window.hadihudaShowMenu();
+  }
+  icons();
+}
+window.closeHadiHudaChat = function(){
+  document.getElementById('modal-hadihuda').classList.add('hidden');
+}
+function hadihudaScrollDown(){
+  const wrap = document.getElementById('hadihuda-messages');
+  if(wrap) wrap.scrollTop = wrap.scrollHeight;
+}
+function hadihudaUserSay(text){
+  const wrap = document.getElementById('hadihuda-messages');
+  wrap.insertAdjacentHTML('beforeend', `<div class="flex justify-end"><div class="bg-forest text-white text-sm rounded-2xl rounded-br-md px-4 py-2.5 max-w-[80%]">${escapeHtml(text)}</div></div>`);
+  hadihudaScrollDown();
+}
+function hadihudaBotSay(html){
+  const wrap = document.getElementById('hadihuda-messages');
+  wrap.insertAdjacentHTML('beforeend', `<div class="flex justify-start gap-2"><div class="w-7 h-7 rounded-full bg-leaflight flex items-center justify-center shrink-0 mt-0.5"><i data-lucide="bot" class="w-3.5 h-3.5 text-forest"></i></div><div class="bg-white border border-sand text-ink text-sm rounded-2xl rounded-bl-md px-4 py-2.5 max-w-[80%] leading-relaxed">${html}</div></div>`);
+  hadihudaScrollDown();
+  icons();
+}
+window.hadihudaShowMenu = function(){
+  const qr = document.getElementById('hadihuda-quickreplies');
+  qr.innerHTML = `<p class="text-[10px] font-bold text-inksoft uppercase px-1 mb-1">Soalan Popular</p>` + HADIHUDA_TOPICS.map(t=>`
+    <button onclick="window.hadihudaAsk('${t.id}')" class="w-full text-left flex items-center gap-2 bg-cream hover:bg-sand text-ink text-xs font-bold px-3 py-2 rounded-xl transition-colors">
+      <i data-lucide="${t.icon}" class="w-3.5 h-3.5 text-forest shrink-0"></i> ${escapeHtml(t.q)}
+    </button>`).join('');
+  icons();
+}
+window.hadihudaAsk = function(topicId){
+  const topic = HADIHUDA_TOPICS.find(t=>t.id===topicId);
+  if(!topic) return;
+  hadihudaUserSay(topic.q);
+  if(topic.special==='lookup'){ hadihudaShowLookupPrompt(); return; }
+  if(topic.special==='human'){ hadihudaShowHumanEscalation(); return; }
+  setTimeout(()=>{ hadihudaBotSay(escapeHtml(topic.a)); window.hadihudaShowMenu(); }, 350);
+}
+function hadihudaShowLookupPrompt(){
+  document.getElementById('hadihuda-quickreplies').innerHTML = `<p class="text-inksoft text-xs italic px-1 py-1">HadiHuda sedang menaip...</p>`;
+  setTimeout(()=>{
+    hadihudaBotSay('Baik! Sila masukkan nombor telefon ATAU nombor tempahan anda (cth. KP-12345678):');
+    const qr = document.getElementById('hadihuda-quickreplies');
+    qr.innerHTML = `
+      <div class="flex gap-2">
+        <input id="hadihuda-lookup-input" type="text" placeholder="No. telefon / No. tempahan" class="flex-1 bg-cream border border-sand rounded-xl px-3 py-2 text-sm">
+        <button onclick="window.hadihudaSubmitLookup()" class="bg-forest hover:bg-forestdark text-white font-bold px-4 rounded-xl text-sm">Hantar</button>
+      </div>
+      <button onclick="window.hadihudaShowMenu()" class="w-full text-center text-[11px] text-inksoft hover:underline mt-1">Batal, kembali ke menu</button>`;
+  }, 350);
+}
+window.hadihudaSubmitLookup = async function(){
+  const input = document.getElementById('hadihuda-lookup-input');
+  const val = input ? input.value.trim() : '';
+  if(!val){ showToast('Sila masukkan no. telefon atau no. tempahan','alert-circle'); return; }
+  hadihudaUserSay(val);
+  document.getElementById('hadihuda-quickreplies').innerHTML = `<p class="text-inksoft text-xs italic px-1 py-1">Mencari tempahan anda...</p>`;
+  try{
+    const orders = await window.fbLookupOrders(val);
+    if(!orders.length){
+      hadihudaBotSay('Maaf, tiada tempahan dijumpai untuk maklumat tersebut. Sila semak semula no. telefon/no. tempahan anda, atau pilih "Saya nak cakap dengan orang sebenar" untuk bantuan lanjut.');
+    }else{
+      const summary = orders.slice(0,5).map(o=>{
+        const location = [o.cawangan, o.kawasan].filter(Boolean).join(' · ') || (o.source==='kedaipasti' ? 'Kedai PASTI' : '');
+        return `<div class="border border-sand rounded-xl p-2.5 mt-2 bg-cream"><p class="font-mono font-bold text-forest text-xs">${escapeHtml(o.orderId)}</p><p class="text-[11px] text-ink">${escapeHtml(location)}</p><p class="text-[11px] text-inksoft">${o.qty} ${o.source==='kedaipasti'?'unit':'keping'} · RM ${escapeHtml(String(o.total))} · ${o.isVerified?'Bayaran Disahkan':'Belum Disahkan'} · ${o.isDelivered?'Dihantar':'Belum Dihantar'}</p></div>`;
+      }).join('');
+      hadihudaBotSay(`Saya jumpa ${orders.length} tempahan untuk anda:${summary}`);
+    }
+  }catch(e){
+    hadihudaBotSay('Maaf, ralat berlaku semasa mencari tempahan. Sila cuba lagi sebentar.');
+  }
+  window.hadihudaShowMenu();
+}
+function hadihudaShowHumanEscalation(){
+  document.getElementById('hadihuda-quickreplies').innerHTML = `<p class="text-inksoft text-xs italic px-1 py-1">HadiHuda sedang menaip...</p>`;
+  setTimeout(()=>{
+    const waNum = siteContent.whatsappNumber || '60123456789';
+    const msg = encodeURIComponent(siteContent.hadiHudaGreeting || 'Hai, saya ada soalan tentang Kedai PASTI Sarawak Official.');
+    hadihudaBotSay('Baik, saya sambungkan anda dengan admin kami melalui WhatsApp untuk bantuan lanjut.');
+    const qr = document.getElementById('hadihuda-quickreplies');
+    qr.innerHTML = `<a href="https://wa.me/${waNum}?text=${msg}" target="_blank" class="w-full flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#1DA851] text-white font-bold text-sm px-3 py-2.5 rounded-xl transition-colors"><i data-lucide="message-circle" class="w-4 h-4"></i> Buka WhatsApp</a>
+      <button onclick="window.hadihudaShowMenu()" class="w-full text-center text-[11px] text-inksoft hover:underline mt-1">Kembali ke menu</button>`;
+    icons();
+  }, 350);
 }
 
 function calculateShippingOptions(state, weightKg){
@@ -1710,9 +1852,7 @@ async function loadAllData(){
   }catch(e){ /* kawasan products optional, ignore failures */ }
 
   try{
-    const a = await window.storage.get('alhaddad:agents', true);
-    appAgents = a ? JSON.parse(a.value) : defaultAgents.slice();
-    if(!a) await window.storage.set('alhaddad:agents', JSON.stringify(appAgents), true);
+    appAgents = (typeof window.fbListAgentsPublic === 'function') ? await window.fbListAgentsPublic() : [];
   }catch(e){ appAgents = defaultAgents.slice(); }
 
   try{
@@ -2057,18 +2197,78 @@ function renderCheckoutSummary(){
 }
 
 async function populatePickupKawasan(){
-  const sel = document.getElementById('co-pickup-kawasan');
-  if(!sel || typeof window.fbListKawasanPublic !== 'function') return;
+  const wrap = document.getElementById('co-pickup-kawasan-list');
+  if(!wrap || typeof window.fbListKawasanPublic !== 'function') return;
+  wrap.innerHTML = `<p class="text-inksoft text-xs italic">Memuatkan senarai kawasan...</p>`;
   try{
-    const list = await window.fbListKawasanPublic();
-    sel.innerHTML = '<option value="">-- Pilih PASTI Kawasan --</option>' + list.filter(k=>k.active!==false).map(k=>`<option value="${escapeHtml(k.code)}">PASTI ${escapeHtml(k.namaKawasan)}</option>`).join('');
-  }catch(e){}
+    const list = (await window.fbListKawasanPublic()).filter(k=>k.active!==false);
+    wrap.innerHTML = list.length ? list.map(k=>`
+      <label onclick="window.selectPickupKawasan('${escapeHtml(k.code)}')" data-kw-code="${escapeHtml(k.code)}" class="flex items-center justify-between gap-3 border-2 border-sand rounded-xl px-4 py-3 cursor-pointer transition-colors">
+        <div class="flex items-center gap-3">
+          <input type="radio" name="pickup-kw-opt" class="accent-[#0B5D3B] w-4 h-4">
+          <div>
+            <p class="font-bold text-sm text-ink">PASTI ${escapeHtml(k.namaKawasan)}</p>
+            <p class="text-[11px] text-inksoft">${escapeHtml(k.picName||'PIC belum ditetapkan')}${k.picPhone ? ' · '+escapeHtml(k.picPhone) : ''}</p>
+          </div>
+        </div>
+      </label>`).join('') : `<p class="text-inksoft text-xs italic">Belum ada PASTI Kawasan aktif buat masa ini.</p>`;
+  }catch(e){
+    wrap.innerHTML = `<p class="text-red-500 text-xs italic">Gagal muatkan senarai kawasan.</p>`;
+  }
 }
 window.selectPickupKawasan = function(code){
   window.pickupKawasanCode = code;
   selectedShipping = code ? { price:0, courier:'Ambil di PASTI Kawasan', eta:'Ikut susunan kawasan' } : null;
+  document.querySelectorAll('#co-pickup-kawasan-list label').forEach(el=>{
+    const active = el.getAttribute('data-kw-code')===code;
+    el.classList.toggle('border-forest', active);
+    el.classList.toggle('bg-leaflight', active);
+    el.classList.toggle('border-sand', !active);
+    const radio = el.querySelector('input'); if(radio) radio.checked = active;
+  });
   renderCheckoutSummary();
 };
+
+window.toggleAgentPicker = async function(){
+  const list = document.getElementById('co-agent-picker-list');
+  const willShow = list.classList.contains('hidden');
+  list.classList.toggle('hidden');
+  if(!willShow) return;
+  if(!list.dataset.loaded){
+    list.innerHTML = `<p class="text-inksoft text-xs italic p-2">Memuatkan...</p>`;
+    try{
+      if(!appAgents.length && typeof window.fbListAgentsPublic==='function') appAgents = await window.fbListAgentsPublic();
+      list.innerHTML = appAgents.length ? appAgents.map(a=>`
+        <button type="button" onclick="window.selectAgentForOrder('${escapeHtml(a.code)}')" class="w-full text-left px-3 py-2 rounded-lg hover:bg-cream flex items-center justify-between gap-2">
+          <div class="min-w-0">
+            <p class="text-sm font-bold text-ink truncate">${escapeHtml(a.name)}</p>
+            <p class="text-[11px] text-inksoft truncate">PASTI ${escapeHtml(a.area)}${a.branch ? ' · '+escapeHtml(a.branch) : ''}</p>
+          </div>
+          <span class="text-[10px] font-mono font-bold text-forest shrink-0">${escapeHtml(a.code)}</span>
+        </button>`).join('') : `<p class="text-inksoft text-xs italic p-2">Tiada ejen berdaftar lagi.</p>`;
+      list.dataset.loaded = '1';
+    }catch(e){
+      list.innerHTML = `<p class="text-red-500 text-xs italic p-2">Gagal muatkan senarai ejen.</p>`;
+    }
+  }
+}
+window.selectAgentForOrder = function(code){
+  const a = appAgents.find(x=>x.code===code);
+  if(!a) return;
+  document.getElementById('co-agentcode').value = a.code;
+  document.getElementById('co-agent-selected-name').innerText = a.name;
+  document.getElementById('co-agent-selected-area').innerText = `PASTI ${a.area}${a.branch ? ' · '+a.branch : ''} · ${a.code}`;
+  document.getElementById('co-agent-selected').classList.remove('hidden');
+  document.getElementById('co-agent-selected').classList.add('flex');
+  document.getElementById('co-agent-picker-list').classList.add('hidden');
+  document.getElementById('co-agent-picker-toggle').classList.add('hidden');
+}
+window.clearSelectedAgent = function(){
+  document.getElementById('co-agentcode').value = '';
+  document.getElementById('co-agent-selected').classList.add('hidden');
+  document.getElementById('co-agent-selected').classList.remove('flex');
+  document.getElementById('co-agent-picker-toggle').classList.remove('hidden');
+}
 
 function renderCheckoutEnter(){
   if(cart.length===0){ showToast('Troli anda kosong','alert-circle'); window.showView('catalog'); return; }
@@ -2079,8 +2279,17 @@ function renderCheckoutEnter(){
   document.getElementById('shipping-options').innerHTML = '';
   populateStateSelect();
   renderCheckoutSummary();
+  document.getElementById('co-agent-selected').classList.add('hidden');
+  document.getElementById('co-agent-selected').classList.remove('flex');
+  document.getElementById('co-agent-picker-toggle').classList.remove('hidden');
+  document.getElementById('co-agent-picker-list').classList.add('hidden');
+  document.getElementById('co-agentcode').value = '';
   const ref = (new URLSearchParams(window.location.search)).get('ref');
-  if(ref) document.getElementById('co-agentcode').value = ref.toUpperCase();
+  if(ref){
+    const refCode = ref.toUpperCase();
+    if(appAgents.find(a=>a.code===refCode)) window.selectAgentForOrder(refCode);
+    else document.getElementById('co-agentcode').value = refCode;
+  }
 
   const easyParcelOn = siteContent.easyParcelEnabled !== false;
   document.getElementById('co-ship-easyparcel').classList.toggle('hidden', !easyParcelOn);
