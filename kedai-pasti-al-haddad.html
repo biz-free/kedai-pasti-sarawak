@@ -3261,7 +3261,8 @@ window.saveSiteContentAdmin = async function(){
     applySiteContent();
     showToast('Tetapan berjaya disimpan','check-circle-2');
   }catch(e){
-    showToast('Gagal simpan tetapan','alert-circle');
+    console.error('saveSiteContentAdmin failed:', e);
+    showToast('Gagal simpan tetapan: ' + (e && (e.code || e.message) || 'ralat tidak diketahui'), 'alert-circle');
   }
 }
 
