@@ -767,6 +767,7 @@
                 <input id="agent-signup-phone" type="tel" placeholder="No. Telefon" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
                 <input id="agent-signup-area" type="text" placeholder="PASTI Kawasan (Cth: MUKAH)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium uppercase">
                 <input id="agent-signup-branch" type="text" placeholder="Nama Tadika/Cabang (Pilihan)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                <input id="agent-signup-email" type="email" placeholder="Emel (untuk notifikasi tempahan)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
                 <input id="agent-signup-pass" type="password" placeholder="Kata Laluan (min. 6 aksara)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
                 <button onclick="window.doAgentSignup()" class="w-full bg-forest hover:bg-forestdark text-white font-bold py-3 rounded-xl transition-colors">Daftar Jadi Ejen</button>
               </div>
@@ -2621,12 +2622,13 @@ window.doAgentSignup = async function(){
   const phone = document.getElementById('agent-signup-phone').value.trim();
   const area = document.getElementById('agent-signup-area').value.trim().toUpperCase();
   const branch = document.getElementById('agent-signup-branch').value.trim();
+  const email = document.getElementById('agent-signup-email').value.trim();
   const pass = document.getElementById('agent-signup-pass').value;
   if(!name || !phone || !area || !pass){ showToast('Sila lengkapkan semua medan wajib','alert-circle'); return; }
   if(pass.length < 6){ showToast('Kata laluan mesti sekurang-kurangnya 6 aksara','alert-circle'); return; }
   if(typeof window.fbAgentSelfRegister !== 'function'){ showToast('Sistem belum sedia, cuba lagi sebentar','alert-circle'); return; }
   try{
-    const res = await window.fbAgentSelfRegister({ name, phone, area, branch, password:pass });
+    const res = await window.fbAgentSelfRegister({ name, phone, email, area, branch, password:pass });
     const profile = await window.fbAgentLogin(res.code, pass);
     currentAgent = profile;
     agentSessionPass = pass;
@@ -3534,6 +3536,7 @@ window.saveAgent = async function(){
   const origCode = document.getElementById('am-code-orig').value;
   const name = document.getElementById('am-name').value.trim();
   const phone = document.getElementById('am-phone').value.trim();
+  const email = document.getElementById('am-email').value.trim();
   const area = document.getElementById('am-area').value.trim();
   const branch = document.getElementById('am-branch').value.trim();
   const password = document.getElementById('am-pass').value.trim() || 'demo123';
@@ -3541,7 +3544,7 @@ window.saveAgent = async function(){
   if(!name){ showToast('Nama ejen wajib diisi','alert-circle'); return; }
 
   try{
-    await window.fbAdminSaveAgent({ code:origCode||'', name, phone, area, branch, password });
+    await window.fbAdminSaveAgent({ code:origCode||'', name, phone, email, area, branch, password });
     window.closeAgentModal();
     await refreshAndRenderAdminAgents();
     showToast('Ejen berjaya disimpan','check-circle-2');
