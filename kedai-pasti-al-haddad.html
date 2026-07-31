@@ -50,12 +50,14 @@
   };
 
   const callAgentLogin = httpsCallable(fbFns, 'agentLogin');
+  const callAgentSelfRegister = httpsCallable(fbFns, 'agentSelfRegister');
   const callListAgentsPublic = httpsCallable(fbFns, 'listAgentsPublic');
   const callAdminListAgents = httpsCallable(fbFns, 'adminListAgents');
   const callAdminSaveAgent = httpsCallable(fbFns, 'adminSaveAgent');
   const callAdminDeleteAgent = httpsCallable(fbFns, 'adminDeleteAgent');
   const callLookupOrders = httpsCallable(fbFns, 'lookupOrders');
   const callKawasanLogin = httpsCallable(fbFns, 'kawasanLogin');
+  const callKawasanSelfRegister = httpsCallable(fbFns, 'kawasanSelfRegister');
   const callListKawasanPublic = httpsCallable(fbFns, 'listKawasanPublic');
   const callListKawasanProductsPublic = httpsCallable(fbFns, 'listKawasanProductsPublic');
   const callKawasanListMyProducts = httpsCallable(fbFns, 'kawasanListMyProducts');
@@ -80,6 +82,11 @@
 
   window.fbAgentLogin = async function(code, password) {
     const res = await callAgentLogin({ code, password });
+    return res.data;
+  };
+
+  window.fbAgentSelfRegister = async function(profile) {
+    const res = await callAgentSelfRegister(profile);
     return res.data;
   };
 
@@ -128,6 +135,11 @@
     const res = await callKawasanLogin({ code, password });
     kwSession = { code, password };
     return res.data.profile;
+  };
+
+  window.fbKawasanSelfRegister = async function(profile) {
+    const res = await callKawasanSelfRegister(profile);
+    return res.data;
   };
 
   window.fbKawasanLogout = async function() {
@@ -386,8 +398,8 @@
       <nav class="hidden lg:flex items-center gap-1 text-sm font-bold text-inksoft">
         <button onclick="window.showView('home')" class="px-3 py-2 rounded-xl hover:bg-leaflight hover:text-forest transition-colors">Utama</button>
         <button onclick="window.showView('catalog')" class="px-3 py-2 rounded-xl hover:bg-leaflight hover:text-forest transition-colors">Produk</button>
-        <button onclick="window.showView('agent')" class="px-3 py-2 rounded-xl hover:bg-leaflight hover:text-forest transition-colors">Ejen</button>
-        <button onclick="window.showView('kawasan')" class="px-3 py-2 rounded-xl hover:bg-leaflight hover:text-forest transition-colors">Kawasan PASTI</button>
+        <button onclick="window.showView('senaraiejen')" class="px-3 py-2 rounded-xl hover:bg-leaflight hover:text-forest transition-colors">Ejen</button>
+        <button onclick="window.showView('kawasan')" class="px-3 py-2 rounded-xl hover:bg-leaflight hover:text-forest transition-colors">PASTI Kawasan</button>
         <button onclick="window.showView('pengurusan')" class="px-3 py-2 rounded-xl hover:bg-leaflight hover:text-forest transition-colors">Pengurusan</button>
         <button onclick="window.showView('tentang')" class="px-3 py-2 rounded-xl hover:bg-leaflight hover:text-forest transition-colors">Tentang Kami</button>
       </nav>
@@ -523,10 +535,10 @@
             <p class="font-bold text-white text-xs uppercase tracking-widest mb-3">Pautan Pantas</p>
             <div class="flex flex-col gap-2 text-white/60 text-xs">
               <button onclick="window.showView('catalog')" class="text-left hover:text-honey w-fit">Katalog Produk</button>
-              <button onclick="window.showView('agent')" class="text-left hover:text-honey w-fit">Portal Ejen</button>
+              <button onclick="window.showView('senaraiejen')" class="text-left hover:text-honey w-fit">Senarai Ejen</button>
               <button onclick="window.showView('kawasanportal')" class="text-left hover:text-honey w-fit">Portal PASTI Kawasan</button>
               <button onclick="window.showView('semak')" class="text-left hover:text-honey w-fit">Semak Tempahan</button>
-              <button onclick="window.showView('kawasan')" class="text-left hover:text-honey w-fit">Kawasan PASTI</button>
+              <button onclick="window.showView('kawasan')" class="text-left hover:text-honey w-fit">PASTI Kawasan</button>
               <button onclick="window.showView('pengurusan')" class="text-left hover:text-honey w-fit">Pengurusan</button>
               <button onclick="window.showView('tentang')" class="text-left hover:text-honey w-fit">Tentang Kami</button>
             </div>
@@ -645,7 +657,8 @@
 
               <div id="co-ship-pickup" class="hidden bg-white border border-sand rounded-3xl p-5 shadow-sm">
                 <h3 class="font-display font-bold text-ink mb-4 flex items-center gap-2"><i data-lucide="map-pin" class="w-4 h-4 text-forest"></i> Ambil di PASTI Kawasan</h3>
-                <p class="text-inksoft text-xs mb-3">Penghantaran pos tidak aktif buat masa ini. Pilih PASTI kawasan untuk ambil pesanan anda — kawasan tersebut akan uruskan penyerahan terus.</p>
+                <p class="text-inksoft text-xs mb-3">Penghantaran pos tidak aktif buat masa ini. Pilih ejen di atas dan PASTI kawasan akan dipilih automatik — atau pilih PASTI kawasan terus di bawah untuk ambil pesanan anda.</p>
+                <p id="co-pickup-auto-note" class="hidden bg-leaflight text-forest text-xs font-bold rounded-xl px-3 py-2 mb-2 flex items-center gap-1.5"><i data-lucide="check-circle-2" class="w-3.5 h-3.5 shrink-0"></i> <span></span></p>
                 <div id="co-pickup-kawasan-list" class="space-y-2"></div>
               </div>
 
@@ -711,14 +724,30 @@
             <div class="text-center mb-6">
               <div class="w-14 h-14 bg-leaflight rounded-2xl flex items-center justify-center mx-auto mb-3"><i data-lucide="user-round" class="w-7 h-7 text-forest"></i></div>
               <h1 class="font-display font-bold text-xl text-ink">Portal Ejen</h1>
-              <p class="text-inksoft text-sm mt-1">Log masuk untuk lihat jualan &amp; komisen anda</p>
+              <p class="text-inksoft text-sm mt-1">Log masuk atau daftar untuk mula jual &amp; dapat komisen</p>
             </div>
-            <div class="bg-white border border-sand rounded-3xl p-6 shadow-sm space-y-3">
-              <input id="agent-login-code" type="text" placeholder="Kod Ejen (Cth: AG001)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-bold uppercase">
-              <input id="agent-login-pass" type="password" placeholder="Kata Laluan" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-              <button onclick="window.loginAgent()" class="w-full bg-forest hover:bg-forestdark text-white font-bold py-3 rounded-xl transition-colors">Log Masuk</button>
+            <div class="bg-white border border-sand rounded-3xl p-6 shadow-sm">
+              <div class="flex bg-cream rounded-xl p-1 mb-4">
+                <button id="agent-tab-login-btn" onclick="window.setAgentAuthTab('login')" class="flex-1 py-2 rounded-lg text-xs font-bold bg-forest text-white">Log Masuk</button>
+                <button id="agent-tab-signup-btn" onclick="window.setAgentAuthTab('signup')" class="flex-1 py-2 rounded-lg text-xs font-bold text-inksoft">Daftar</button>
+              </div>
+
+              <div id="agent-tab-login" class="space-y-3">
+                <input id="agent-login-code" type="text" placeholder="Kod Ejen (Cth: AG001)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-bold uppercase">
+                <input id="agent-login-pass" type="password" placeholder="Kata Laluan" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                <button onclick="window.loginAgent()" class="w-full bg-forest hover:bg-forestdark text-white font-bold py-3 rounded-xl transition-colors">Log Masuk</button>
+              </div>
+
+              <div id="agent-tab-signup" class="hidden space-y-3">
+                <input id="agent-signup-name" type="text" placeholder="Nama Penuh" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                <input id="agent-signup-phone" type="tel" placeholder="No. Telefon" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                <input id="agent-signup-area" type="text" placeholder="PASTI Kawasan (Cth: MUKAH)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium uppercase">
+                <input id="agent-signup-branch" type="text" placeholder="Nama Tadika/Cabang (Pilihan)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                <input id="agent-signup-pass" type="password" placeholder="Kata Laluan (min. 6 aksara)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                <button onclick="window.doAgentSignup()" class="w-full bg-forest hover:bg-forestdark text-white font-bold py-3 rounded-xl transition-colors">Daftar Jadi Ejen</button>
+              </div>
             </div>
-            <p class="text-center text-xs text-inksoft mt-4">Belum jadi ejen? <a href="https://wa.me/60123456789?text=Saya%20berminat%20menjadi%20ejen%20Kedai%20PASTI%20Sarawak%20Official" target="_blank" class="text-forest font-bold hover:underline">Hubungi kami via WhatsApp</a></p>
+            <p class="text-center text-xs text-inksoft mt-4">Perlu bantuan? <a href="https://wa.me/60123456789?text=Saya%20berminat%20menjadi%20ejen%20Kedai%20PASTI%20Sarawak%20Official" target="_blank" class="text-forest font-bold hover:underline">Hubungi kami via WhatsApp</a></p>
           </div>
         </div>
 
@@ -789,14 +818,30 @@
             <div class="text-center mb-6">
               <div class="w-14 h-14 bg-leaflight rounded-2xl flex items-center justify-center mx-auto mb-3"><i data-lucide="store" class="w-7 h-7 text-forest"></i></div>
               <h1 class="font-display font-bold text-xl text-ink">Portal PASTI Kawasan</h1>
-              <p class="text-inksoft text-sm mt-1">Log masuk untuk urus produk kawasan anda</p>
+              <p class="text-inksoft text-sm mt-1">Log masuk atau daftar untuk urus produk kawasan anda</p>
             </div>
-            <div class="bg-white border border-sand rounded-3xl p-6 shadow-sm space-y-3">
-              <input id="kw-login-code" type="text" placeholder="Kod Kawasan (Cth: KW001)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-bold uppercase">
-              <input id="kw-login-pass" type="password" placeholder="Kata Laluan" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-              <button onclick="window.loginKawasan()" class="w-full bg-forest hover:bg-forestdark text-white font-bold py-3 rounded-xl transition-colors">Log Masuk</button>
+            <div class="bg-white border border-sand rounded-3xl p-6 shadow-sm">
+              <div class="flex bg-cream rounded-xl p-1 mb-4">
+                <button id="kw-tab-login-btn" onclick="window.setKawasanAuthTab('login')" class="flex-1 py-2 rounded-lg text-xs font-bold bg-forest text-white">Log Masuk</button>
+                <button id="kw-tab-signup-btn" onclick="window.setKawasanAuthTab('signup')" class="flex-1 py-2 rounded-lg text-xs font-bold text-inksoft">Daftar</button>
+              </div>
+
+              <div id="kw-tab-login" class="space-y-3">
+                <input id="kw-login-code" type="text" placeholder="Kod Kawasan (Cth: KW001)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-bold uppercase">
+                <input id="kw-login-pass" type="password" placeholder="Kata Laluan" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                <button onclick="window.loginKawasan()" class="w-full bg-forest hover:bg-forestdark text-white font-bold py-3 rounded-xl transition-colors">Log Masuk</button>
+              </div>
+
+              <div id="kw-tab-signup" class="hidden space-y-3">
+                <input id="kw-signup-nama" type="text" placeholder="Nama PASTI Kawasan (Cth: MUKAH)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium uppercase">
+                <input id="kw-signup-pic-name" type="text" placeholder="Nama PIC/Penyelaras" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                <input id="kw-signup-pic-phone" type="tel" placeholder="No. Telefon PIC" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                <input id="kw-signup-pic-email" type="email" placeholder="Emel PIC (Pilihan)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                <input id="kw-signup-pass" type="password" placeholder="Kata Laluan (min. 6 aksara)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                <button onclick="window.doKawasanSignup()" class="w-full bg-forest hover:bg-forestdark text-white font-bold py-3 rounded-xl transition-colors">Daftar PASTI Kawasan</button>
+              </div>
             </div>
-            <p class="text-center text-xs text-inksoft mt-4">Belum berdaftar? <a href="https://wa.me/60123456789?text=Saya%20mahu%20daftarkan%20PASTI%20Kawasan%20saya" target="_blank" class="text-forest font-bold hover:underline">Hubungi kami via WhatsApp</a></p>
+            <p class="text-center text-xs text-inksoft mt-4">Perlu bantuan? <a href="https://wa.me/60123456789?text=Saya%20mahu%20daftarkan%20PASTI%20Kawasan%20saya" target="_blank" class="text-forest font-bold hover:underline">Hubungi kami via WhatsApp</a></p>
           </div>
         </div>
 
@@ -1056,43 +1101,42 @@
     </section>
 
     <!-- ==================== VIEW: KAWASAN PASTI ==================== -->
+    <section id="view-senaraiejen" class="hidden">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-16">
+        <button onclick="window.showView('home')" class="text-forest text-xs font-bold flex items-center gap-1 mb-4"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Kembali ke Utama</button>
+        <p class="text-honeydeep text-[11px] font-bold tracking-widest uppercase mb-2">Komuniti Kami</p>
+        <h1 class="font-display font-bold text-2xl sm:text-3xl text-ink mb-2">Senarai Ejen</h1>
+        <p id="senaraiejen-subtitle" class="text-inksoft text-sm mb-6 max-w-2xl">Ejen komuniti berdaftar yang menjual produk Kedai PASTI Sarawak Official di kawasan masing-masing.</p>
+        <div id="senaraiejen-list" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <p class="text-inksoft text-sm italic col-span-full">Memuatkan...</p>
+        </div>
+        <div class="mt-8 bg-leaflight rounded-3xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div>
+            <p class="font-display font-bold text-ink mb-1">Nak jadi ejen kami?</p>
+            <p class="text-inksoft text-sm">Daftar percuma dan mula dapat komisen bagi setiap jualan.</p>
+          </div>
+          <button onclick="window.showView('agent')" class="shrink-0 bg-forest hover:bg-forestdark text-white font-bold px-6 py-3 rounded-2xl flex items-center gap-2 transition-colors"><i data-lucide="log-in" class="w-4 h-4"></i> Log Masuk / Daftar Ejen</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== VIEW: PASTI KAWASAN (PUBLIC) ==================== -->
     <section id="view-kawasan" class="hidden">
       <div class="max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-16">
         <button onclick="window.showView('home')" class="text-forest text-xs font-bold flex items-center gap-1 mb-4"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Kembali ke Utama</button>
         <p class="text-honeydeep text-[11px] font-bold tracking-widest uppercase mb-2">Liputan Komuniti</p>
-        <h1 class="font-display font-bold text-2xl sm:text-3xl text-ink mb-2">Kawasan PASTI Sarawak</h1>
-        <p class="text-inksoft text-sm mb-8 max-w-2xl">Ejen komuniti kami beroperasi merentasi 15 kawasan di seluruh Sarawak, membolehkan tempahan dihantar dengan lebih pantas dan menyokong ekonomi tadika PASTI setempat.</p>
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          <div class="bg-white border border-sand rounded-2xl p-4 text-center card-hover"><i data-lucide="map-pin" class="w-5 h-5 text-forest mx-auto mb-2"></i><p class="font-display font-bold text-sm text-ink">Kuching</p></div>
-          <div class="bg-white border border-sand rounded-2xl p-4 text-center card-hover"><i data-lucide="map-pin" class="w-5 h-5 text-forest mx-auto mb-2"></i><p class="font-display font-bold text-sm text-ink">Padawan</p></div>
-          <div class="bg-white border border-sand rounded-2xl p-4 text-center card-hover"><i data-lucide="map-pin" class="w-5 h-5 text-forest mx-auto mb-2"></i><p class="font-display font-bold text-sm text-ink">Bau</p></div>
-          <div class="bg-white border border-sand rounded-2xl p-4 text-center card-hover"><i data-lucide="map-pin" class="w-5 h-5 text-forest mx-auto mb-2"></i><p class="font-display font-bold text-sm text-ink">Samarahan</p></div>
-          <div class="bg-white border border-sand rounded-2xl p-4 text-center card-hover"><i data-lucide="map-pin" class="w-5 h-5 text-forest mx-auto mb-2"></i><p class="font-display font-bold text-sm text-ink">Serian</p></div>
-          <div class="bg-white border border-sand rounded-2xl p-4 text-center card-hover"><i data-lucide="map-pin" class="w-5 h-5 text-forest mx-auto mb-2"></i><p class="font-display font-bold text-sm text-ink">Sri Aman</p></div>
-          <div class="bg-white border border-sand rounded-2xl p-4 text-center card-hover"><i data-lucide="map-pin" class="w-5 h-5 text-forest mx-auto mb-2"></i><p class="font-display font-bold text-sm text-ink">Betong</p></div>
-          <div class="bg-white border border-sand rounded-2xl p-4 text-center card-hover"><i data-lucide="map-pin" class="w-5 h-5 text-forest mx-auto mb-2"></i><p class="font-display font-bold text-sm text-ink">Saratok</p></div>
-          <div class="bg-white border border-sand rounded-2xl p-4 text-center card-hover"><i data-lucide="map-pin" class="w-5 h-5 text-forest mx-auto mb-2"></i><p class="font-display font-bold text-sm text-ink">Sarikei</p></div>
-          <div class="bg-white border border-sand rounded-2xl p-4 text-center card-hover"><i data-lucide="map-pin" class="w-5 h-5 text-forest mx-auto mb-2"></i><p class="font-display font-bold text-sm text-ink">Sibu</p></div>
-          <div class="bg-white border border-sand rounded-2xl p-4 text-center card-hover"><i data-lucide="map-pin" class="w-5 h-5 text-forest mx-auto mb-2"></i><p class="font-display font-bold text-sm text-ink">Mukah</p></div>
-          <div class="bg-white border border-sand rounded-2xl p-4 text-center card-hover"><i data-lucide="map-pin" class="w-5 h-5 text-forest mx-auto mb-2"></i><p class="font-display font-bold text-sm text-ink">Bintulu</p></div>
-          <div class="bg-white border border-sand rounded-2xl p-4 text-center card-hover"><i data-lucide="map-pin" class="w-5 h-5 text-forest mx-auto mb-2"></i><p class="font-display font-bold text-sm text-ink">Miri</p></div>
-          <div class="bg-white border border-sand rounded-2xl p-4 text-center card-hover"><i data-lucide="map-pin" class="w-5 h-5 text-forest mx-auto mb-2"></i><p class="font-display font-bold text-sm text-ink">Limbang</p></div>
-          <div class="bg-white border border-sand rounded-2xl p-4 text-center card-hover"><i data-lucide="map-pin" class="w-5 h-5 text-forest mx-auto mb-2"></i><p class="font-display font-bold text-sm text-ink">Lawas</p></div>
-        </div>
-        <div class="mt-10">
-          <h2 class="font-display font-bold text-lg text-ink mb-1">PASTI Kawasan Berdaftar</h2>
-          <p class="text-inksoft text-sm mb-4">Kawasan yang telah mendaftar Portal PASTI Kawasan dan menjual produk sendiri di Kedai PASTI Sarawak Official.</p>
-          <div id="kawasan-registered-list" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <p class="text-inksoft text-sm italic col-span-full">Memuatkan...</p>
-          </div>
+        <h1 class="font-display font-bold text-2xl sm:text-3xl text-ink mb-2">PASTI Kawasan</h1>
+        <p id="kawasan-subtitle" class="text-inksoft text-sm mb-8 max-w-2xl">PASTI kawasan berdaftar yang menguruskan penyerahan pesanan dan menjual produk sendiri di Kedai PASTI Sarawak Official.</p>
+        <div id="kawasan-registered-list" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <p class="text-inksoft text-sm italic col-span-full">Memuatkan...</p>
         </div>
 
         <div class="mt-8 bg-leaflight rounded-3xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div>
             <p class="font-display font-bold text-ink mb-1">Kawasan anda belum disenaraikan?</p>
-            <p class="text-inksoft text-sm">Jadi ejen kami dan bawa Kedai PASTI Sarawak Official ke kawasan anda.</p>
+            <p class="text-inksoft text-sm">Daftarkan PASTI kawasan anda dan mula jual produk sendiri.</p>
           </div>
-          <button onclick="window.showView('agent')" class="shrink-0 bg-forest hover:bg-forestdark text-white font-bold px-6 py-3 rounded-2xl flex items-center gap-2 transition-colors"><i data-lucide="users" class="w-4 h-4"></i> Jadi Ejen Kami</button>
+          <button onclick="window.showView('kawasanportal')" class="shrink-0 bg-forest hover:bg-forestdark text-white font-bold px-6 py-3 rounded-2xl flex items-center gap-2 transition-colors"><i data-lucide="store" class="w-4 h-4"></i> Daftar PASTI Kawasan</button>
         </div>
       </div>
     </section>
@@ -1350,7 +1394,7 @@
           <span id="cart-badge-bottom" class="hidden absolute -top-0.5 right-0.5 bg-honey text-ink text-[9px] font-black w-4 h-4 rounded-full items-center justify-center border-2 border-white">0</span>
         </span>Troli
       </button>
-      <button data-nav="agent" onclick="window.showView('agent')" class="flex flex-col items-center gap-1 py-2.5 text-inksoft text-[10px] font-bold">
+      <button data-nav="senaraiejen" onclick="window.showView('senaraiejen')" class="flex flex-col items-center gap-1 py-2.5 text-inksoft text-[10px] font-bold">
         <span class="nav-ic w-9 h-9 rounded-full flex items-center justify-center"><i data-lucide="user-round" class="w-5 h-5"></i></span>Ejen
       </button>
     </div>
@@ -2060,7 +2104,7 @@ function updateCartBadge(){
 }
 
 /* ================= NAV / VIEW SWITCH ================= */
-const VIEW_IDS = ['home','catalog','cart','checkout','agent','admin','kawasan','pengurusan','tentang','faq','terma','privasi','semak','kawasanportal','akaun'];
+const VIEW_IDS = ['home','catalog','cart','checkout','agent','admin','kawasan','senaraiejen','pengurusan','tentang','faq','terma','privasi','semak','kawasanportal','akaun'];
 // Views excluded from URL hash routing — kept reachable only via their
 // existing in-app trigger (e.g. the disguised footer click for admin),
 // never via a direct/shareable link or browser history.
@@ -2085,6 +2129,7 @@ window.showView = function(name, pushHistory){
   if(name==='admin' && typeof renderAdminView==='function') renderAdminView();
   if(name==='kawasanportal' && typeof renderKawasanPortalView==='function') renderKawasanPortalView();
   if(name==='kawasan' && typeof renderKawasanPublicList==='function') renderKawasanPublicList();
+  if(name==='senaraiejen' && typeof renderSenaraiEjen==='function') renderSenaraiEjen();
   if(name==='akaun' && typeof renderAkaunView==='function') renderAkaunView();
   icons();
 }
@@ -2100,10 +2145,13 @@ window.addEventListener('hashchange', ()=>{
 
 async function renderKawasanPublicList(){
   const el = document.getElementById('kawasan-registered-list');
+  const sub = document.getElementById('kawasan-subtitle');
   if(!el) return;
+  el.innerHTML = `<p class="text-inksoft text-sm italic col-span-full">Memuatkan...</p>`;
   try{
     const list = await window.fbListKawasanPublic();
     const activeList = list.filter(k=>k.active!==false);
+    if(sub) sub.innerText = `${activeList.length} PASTI Kawasan berdaftar yang menguruskan penyerahan pesanan dan menjual produk sendiri di Kedai PASTI Sarawak Official.`;
     el.innerHTML = activeList.length ? activeList.map(k=>`
       <div class="bg-white border border-sand rounded-2xl p-4">
         <p class="font-display font-bold text-ink">PASTI ${escapeHtml(k.namaKawasan)}</p>
@@ -2112,6 +2160,28 @@ async function renderKawasanPublicList(){
       </div>`).join('') : `<p class="text-inksoft text-sm italic col-span-full">Belum ada kawasan berdaftar melalui Portal PASTI Kawasan lagi.</p>`;
   }catch(e){
     el.innerHTML = `<p class="text-inksoft text-sm italic col-span-full">Gagal muatkan senarai kawasan.</p>`;
+  }
+}
+async function renderSenaraiEjen(){
+  const el = document.getElementById('senaraiejen-list');
+  const sub = document.getElementById('senaraiejen-subtitle');
+  if(!el) return;
+  el.innerHTML = `<p class="text-inksoft text-sm italic col-span-full">Memuatkan...</p>`;
+  try{
+    const agents = await window.fbListAgentsPublic();
+    appAgents = agents;
+    if(sub) sub.innerText = `${agents.length} ejen komuniti berdaftar yang menjual produk Kedai PASTI Sarawak Official di kawasan masing-masing.`;
+    el.innerHTML = agents.length ? agents.map(a=>{
+      const msg = encodeURIComponent(`Assalamualaikum ${a.name}, saya berminat dengan produk Kedai PASTI Sarawak Official.`);
+      return `<div class="bg-white border border-sand rounded-2xl p-4">
+        <p class="font-display font-bold text-ink">${escapeHtml(a.name)}</p>
+        <p class="text-inksoft text-xs mt-1">PASTI ${escapeHtml(a.area)}${a.branch ? ' · '+escapeHtml(a.branch) : ''}</p>
+        ${a.phone ? `<a href="https://wa.me/${escapeHtml(normalizePhoneClient(a.phone))}?text=${msg}" target="_blank" class="mt-2 inline-flex items-center gap-1.5 text-[11px] font-bold text-forest hover:underline"><i data-lucide="message-circle" class="w-3 h-3"></i> WhatsApp</a>` : ''}
+      </div>`;
+    }).join('') : `<p class="text-inksoft text-sm italic col-span-full">Belum ada ejen berdaftar lagi.</p>`;
+    icons();
+  }catch(e){
+    el.innerHTML = `<p class="text-red-500 text-sm italic col-span-full">Gagal muatkan senarai ejen.</p>`;
   }
 }
 
@@ -2196,12 +2266,14 @@ function renderCheckoutSummary(){
   document.getElementById('co-total').innerText = formatRM(total);
 }
 
+window._kawasanListCache = [];
 async function populatePickupKawasan(){
   const wrap = document.getElementById('co-pickup-kawasan-list');
   if(!wrap || typeof window.fbListKawasanPublic !== 'function') return;
   wrap.innerHTML = `<p class="text-inksoft text-xs italic">Memuatkan senarai kawasan...</p>`;
   try{
     const list = (await window.fbListKawasanPublic()).filter(k=>k.active!==false);
+    window._kawasanListCache = list;
     wrap.innerHTML = list.length ? list.map(k=>`
       <label onclick="window.selectPickupKawasan('${escapeHtml(k.code)}')" data-kw-code="${escapeHtml(k.code)}" class="flex items-center justify-between gap-3 border-2 border-sand rounded-xl px-4 py-3 cursor-pointer transition-colors">
         <div class="flex items-center gap-3">
@@ -2262,12 +2334,29 @@ window.selectAgentForOrder = function(code){
   document.getElementById('co-agent-selected').classList.add('flex');
   document.getElementById('co-agent-picker-list').classList.add('hidden');
   document.getElementById('co-agent-picker-toggle').classList.add('hidden');
+  autoSelectKawasanForAgent(a.area);
 }
 window.clearSelectedAgent = function(){
   document.getElementById('co-agentcode').value = '';
   document.getElementById('co-agent-selected').classList.add('hidden');
   document.getElementById('co-agent-selected').classList.remove('flex');
   document.getElementById('co-agent-picker-toggle').classList.remove('hidden');
+  const note = document.getElementById('co-pickup-auto-note');
+  if(note){ note.classList.add('hidden'); note.classList.remove('flex'); }
+  if(!document.getElementById('co-ship-pickup').classList.contains('hidden')) window.selectPickupKawasan('');
+}
+async function autoSelectKawasanForAgent(agentArea){
+  const note = document.getElementById('co-pickup-auto-note');
+  const pickupVisible = !document.getElementById('co-ship-pickup').classList.contains('hidden');
+  if(!pickupVisible) return;
+  if(!window._kawasanListCache.length) await populatePickupKawasan();
+  const match = window._kawasanListCache.find(k=>k.namaKawasan.toUpperCase()===String(agentArea||'').toUpperCase());
+  if(match){
+    window.selectPickupKawasan(match.code);
+    if(note){ note.classList.remove('hidden'); note.classList.add('flex'); note.querySelector('span').innerText = `PASTI Kawasan dipilih automatik: PASTI ${match.namaKawasan} (berdasarkan ejen anda)`; }
+  } else if(note){
+    note.classList.add('hidden'); note.classList.remove('flex');
+  }
 }
 
 function renderCheckoutEnter(){
@@ -2284,17 +2373,21 @@ function renderCheckoutEnter(){
   document.getElementById('co-agent-picker-toggle').classList.remove('hidden');
   document.getElementById('co-agent-picker-list').classList.add('hidden');
   document.getElementById('co-agentcode').value = '';
+  const pickupNote = document.getElementById('co-pickup-auto-note');
+  if(pickupNote){ pickupNote.classList.add('hidden'); pickupNote.classList.remove('flex'); }
+  window._kawasanListCache = [];
+
+  const easyParcelOn = siteContent.easyParcelEnabled !== false;
+  document.getElementById('co-ship-easyparcel').classList.toggle('hidden', !easyParcelOn);
+  document.getElementById('co-ship-pickup').classList.toggle('hidden', easyParcelOn);
+  if(!easyParcelOn) populatePickupKawasan();
+
   const ref = (new URLSearchParams(window.location.search)).get('ref');
   if(ref){
     const refCode = ref.toUpperCase();
     if(appAgents.find(a=>a.code===refCode)) window.selectAgentForOrder(refCode);
     else document.getElementById('co-agentcode').value = refCode;
   }
-
-  const easyParcelOn = siteContent.easyParcelEnabled !== false;
-  document.getElementById('co-ship-easyparcel').classList.toggle('hidden', !easyParcelOn);
-  document.getElementById('co-ship-pickup').classList.toggle('hidden', easyParcelOn);
-  if(!easyParcelOn) populatePickupKawasan();
 
   const qrImg = document.getElementById('co-qr-img');
   const qrEmpty = document.getElementById('co-qr-empty');
@@ -2420,6 +2513,38 @@ function statusClass(status){
   return { 'Baru':'baru','Diproses':'diproses','Dihantar':'dihantar','Selesai':'selesai','Dibatalkan':'batal' }[status] || 'baru';
 }
 
+window.agentAuthTab = 'login';
+window.setAgentAuthTab = function(tab){
+  agentAuthTab = tab;
+  document.getElementById('agent-tab-login').classList.toggle('hidden', tab!=='login');
+  document.getElementById('agent-tab-signup').classList.toggle('hidden', tab!=='signup');
+  const loginBtn = document.getElementById('agent-tab-login-btn');
+  const signupBtn = document.getElementById('agent-tab-signup-btn');
+  loginBtn.classList.toggle('bg-forest', tab==='login'); loginBtn.classList.toggle('text-white', tab==='login'); loginBtn.classList.toggle('text-inksoft', tab!=='login');
+  signupBtn.classList.toggle('bg-forest', tab==='signup'); signupBtn.classList.toggle('text-white', tab==='signup'); signupBtn.classList.toggle('text-inksoft', tab!=='signup');
+}
+window.doAgentSignup = async function(){
+  const name = document.getElementById('agent-signup-name').value.trim();
+  const phone = document.getElementById('agent-signup-phone').value.trim();
+  const area = document.getElementById('agent-signup-area').value.trim().toUpperCase();
+  const branch = document.getElementById('agent-signup-branch').value.trim();
+  const pass = document.getElementById('agent-signup-pass').value;
+  if(!name || !phone || !area || !pass){ showToast('Sila lengkapkan semua medan wajib','alert-circle'); return; }
+  if(pass.length < 6){ showToast('Kata laluan mesti sekurang-kurangnya 6 aksara','alert-circle'); return; }
+  if(typeof window.fbAgentSelfRegister !== 'function'){ showToast('Sistem belum sedia, cuba lagi sebentar','alert-circle'); return; }
+  try{
+    const res = await window.fbAgentSelfRegister({ name, phone, area, branch, password:pass });
+    const profile = await window.fbAgentLogin(res.code, pass);
+    currentAgent = profile;
+    agentSessionPass = pass;
+    try{ sessionStorage.setItem('alhaddad:agentpass', pass); }catch(e){}
+    persistSession({type:'agent', profile});
+    renderAgentView();
+    showToast('Pendaftaran berjaya! Kod ejen anda: '+res.code,'check-circle-2');
+  }catch(err){
+    showToast('Pendaftaran gagal, cuba lagi','alert-circle');
+  }
+}
 let agentSessionPass = null;
 window.loginAgent = async function(){
   const code = document.getElementById('agent-login-code').value.trim().toUpperCase();
@@ -2686,6 +2811,36 @@ window.onCustomerAuthChange = function(){
 window.kwCurrentTab = 'produk';
 let kwProducts = [];
 
+window.kawasanAuthTab = 'login';
+window.setKawasanAuthTab = function(tab){
+  kawasanAuthTab = tab;
+  document.getElementById('kw-tab-login').classList.toggle('hidden', tab!=='login');
+  document.getElementById('kw-tab-signup').classList.toggle('hidden', tab!=='signup');
+  const loginBtn = document.getElementById('kw-tab-login-btn');
+  const signupBtn = document.getElementById('kw-tab-signup-btn');
+  loginBtn.classList.toggle('bg-forest', tab==='login'); loginBtn.classList.toggle('text-white', tab==='login'); loginBtn.classList.toggle('text-inksoft', tab!=='login');
+  signupBtn.classList.toggle('bg-forest', tab==='signup'); signupBtn.classList.toggle('text-white', tab==='signup'); signupBtn.classList.toggle('text-inksoft', tab!=='signup');
+}
+window.doKawasanSignup = async function(){
+  const namaKawasan = document.getElementById('kw-signup-nama').value.trim().toUpperCase();
+  const picName = document.getElementById('kw-signup-pic-name').value.trim();
+  const picPhone = document.getElementById('kw-signup-pic-phone').value.trim();
+  const picEmail = document.getElementById('kw-signup-pic-email').value.trim();
+  const pass = document.getElementById('kw-signup-pass').value;
+  if(!namaKawasan || !picName || !picPhone || !pass){ showToast('Sila lengkapkan semua medan wajib','alert-circle'); return; }
+  if(pass.length < 6){ showToast('Kata laluan mesti sekurang-kurangnya 6 aksara','alert-circle'); return; }
+  if(typeof window.fbKawasanSelfRegister !== 'function'){ showToast('Sistem belum sedia, cuba lagi sebentar','alert-circle'); return; }
+  try{
+    const res = await window.fbKawasanSelfRegister({ namaKawasan, picName, picPhone, picEmail, password:pass });
+    const profile = await window.fbKawasanLogin(res.code, pass);
+    currentKawasan = profile;
+    try{ sessionStorage.setItem('alhaddad:kwsession', JSON.stringify({code:res.code, pass})); }catch(e){}
+    renderKawasanPortalView();
+    showToast('Pendaftaran berjaya! Kod kawasan anda: '+res.code,'check-circle-2');
+  }catch(err){
+    showToast('Pendaftaran gagal, cuba lagi','alert-circle');
+  }
+}
 window.loginKawasan = async function(){
   const code = document.getElementById('kw-login-code').value.trim().toUpperCase();
   const pass = document.getElementById('kw-login-pass').value;
