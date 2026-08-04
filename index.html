@@ -188,16 +188,16 @@
     return res.data;
   };
 
-  window.fbKawasanUpdateHandoverStatus = async function(orderId, status) {
+  window.fbKawasanUpdateHandoverStatus = async function(orderId, status, busInfo) {
     if(!kwSession) throw new Error('not-logged-in');
-    const res = await callKawasanUpdateHandoverStatus({ ...kwSession, orderId, status });
+    const res = await callKawasanUpdateHandoverStatus({ ...kwSession, orderId, status, ...(busInfo||{}) });
     return res.data;
   };
 
   window.fbKawasanListMyOrders = async function() {
     if(!kwSession) throw new Error('not-logged-in');
     const res = await callKawasanListMyOrders(kwSession);
-    return res.data.orders;
+    return res.data;
   };
 
   window.fbAdminListKawasan = async function() {
@@ -881,6 +881,7 @@
           <div class="flex gap-2 overflow-x-auto no-scrollbar mb-6 border-b border-sand pb-px">
             <button data-kwtab="produk" onclick="window.setKawasanTab('produk')" class="kw-tab-btn px-4 py-2.5 rounded-t-xl text-sm font-bold shrink-0 bg-forest text-white">Produk Saya</button>
             <button data-kwtab="tempahan" onclick="window.setKawasanTab('tempahan')" class="kw-tab-btn px-4 py-2.5 rounded-t-xl text-sm font-bold shrink-0 bg-cream text-inksoft">Tempahan Masuk</button>
+            <button data-kwtab="bekalan" onclick="window.setKawasanTab('bekalan')" class="kw-tab-btn px-4 py-2.5 rounded-t-xl text-sm font-bold shrink-0 bg-cream text-inksoft">Bekalan Keluar</button>
             <button data-kwtab="butiran" onclick="window.setKawasanTab('butiran')" class="kw-tab-btn px-4 py-2.5 rounded-t-xl text-sm font-bold shrink-0 bg-cream text-inksoft">Butiran &amp; Bayaran</button>
           </div>
 
@@ -893,8 +894,13 @@
           </div>
 
           <div id="kw-tab-tempahan" class="kw-tab-panel hidden">
-            <p class="text-inksoft text-xs mb-4">Tempahan yang pelanggan pilih untuk diambil di kawasan anda. Kemaskini status penghantaran supaya pelanggan tahu perkembangan pesanan mereka.</p>
+            <p class="text-inksoft text-xs mb-4">Tempahan yang pelanggan pilih untuk diambil di kawasan anda. Kemaskini status ketibaan &amp; penyerahan supaya pelanggan tahu perkembangan pesanan mereka.</p>
             <div id="kw-orders-list" class="space-y-3"><p class="text-inksoft text-sm italic">Memuatkan...</p></div>
+          </div>
+
+          <div id="kw-tab-bekalan" class="kw-tab-panel hidden">
+            <p class="text-inksoft text-xs mb-4">Tempahan yang menggunakan produk stok kawasan anda, tetapi diambil pelanggan di kawasan lain. Sediakan barang &amp; hantar melalui bas, kemudian catatkan syarikat bas &amp; no. konsainan di sini.</p>
+            <div id="kw-bekalan-list" class="space-y-3"><p class="text-inksoft text-sm italic">Memuatkan...</p></div>
           </div>
 
           <div id="kw-tab-butiran" class="kw-tab-panel hidden">
@@ -2154,7 +2160,7 @@ window.addToCart = function(productId, qty){
   const existing = cart.find(c=>c.id===productId);
   const addQty = qty||1;
   if(existing){ existing.qty = Math.min(existing.qty+addQty, p.stock); }
-  else { cart.push({ id:p.id, name:p.name, price:p.price, weight:p.weight, commissionPct:p.commissionPct, qty:Math.min(addQty,p.stock) }); }
+  else { cart.push({ id:p.id, name:p.name, price:p.price, weight:p.weight, commissionPct:p.commissionPct, bekalKawasan:p.pickupKawasan||'', qty:Math.min(addQty,p.stock) }); }
   persistCart(); updateCartBadge(); showToast(p.name+' ditambah ke troli', 'shopping-bag');
   if(typeof renderCart==='function') renderCart();
 }
@@ -2741,6 +2747,7 @@ window.doLookupOrders = async function(){
           </div>
         </div>
         ${o.kawasanHandoverStatus ? `<p class="text-[11px] text-forest font-bold mt-2 flex items-center gap-1.5"><i data-lucide="truck" class="w-3.5 h-3.5"></i> Status Penghantaran ke PASTI Kawasan: ${escapeHtml(o.kawasanHandoverStatus)}</p>` : ''}
+        ${o.busCompany ? `<p class="text-[11px] text-inksoft mt-1">Bas: ${escapeHtml(o.busCompany)} · No. Konsainan: ${escapeHtml(o.busConsignmentNo||'-')}</p>` : ''}
       </div>`;
     }).join('');
     icons();
@@ -2929,6 +2936,7 @@ async function renderAkaunView(){
           <span class="shrink-0 px-2 py-1 rounded-full text-[10px] font-bold status-${statusClass(o.status)}">${escapeHtml(o.status||'Baru')}</span>
         </div>
         ${o.kawasanHandoverStatus ? `<p class="text-[11px] text-forest font-bold mt-2 flex items-center gap-1.5"><i data-lucide="truck" class="w-3.5 h-3.5"></i> Status Penghantaran ke PASTI Kawasan: ${escapeHtml(o.kawasanHandoverStatus)}</p>` : ''}
+        ${o.busCompany ? `<p class="text-[11px] text-inksoft mt-1">Bas: ${escapeHtml(o.busCompany)} · No. Konsainan: ${escapeHtml(o.busConsignmentNo||'-')}</p>` : ''}
       </div>`).join('') : `<p class="text-inksoft text-sm italic text-center py-6">Belum ada tempahan lagi.</p>`;
     icons();
   }catch(e){
@@ -3026,7 +3034,7 @@ function renderKawasanPortalView(){
 }
 window.setKawasanTab = function(tab){
   kwCurrentTab = tab;
-  ['produk','tempahan','butiran'].forEach(t=>{
+  ['produk','tempahan','bekalan','butiran'].forEach(t=>{
     const panel = document.getElementById('kw-tab-'+t);
     if(panel) panel.classList.toggle('hidden', t!==tab);
   });
@@ -3037,17 +3045,31 @@ window.setKawasanTab = function(tab){
   });
   if(tab==='produk') refreshKwProducts();
   if(tab==='tempahan') refreshKwOrders();
+  if(tab==='bekalan') refreshKwBekalan();
 }
 const KW_HANDOVER_STAGES = ["Belum Dihantar", "Dalam Perjalanan", "Sampai di Kawasan", "Diserahkan kepada Pelanggan"];
+let kwOrdersCache = { incomingOrders: [], outgoingOrders: [] };
 async function refreshKwOrders(){
   const wrap = document.getElementById('kw-orders-list');
   if(!wrap) return;
   wrap.innerHTML = `<p class="text-inksoft text-sm italic">Memuatkan...</p>`;
   try{
-    const orders = await window.fbKawasanListMyOrders();
+    kwOrdersCache = await window.fbKawasanListMyOrders();
+    const orders = kwOrdersCache.incomingOrders || [];
     wrap.innerHTML = orders.length ? orders.map(o=>{
+      const isBusOrder = !!o.bekalKawasanCode;
       const stageIdx = KW_HANDOVER_STAGES.indexOf(o.kawasanHandoverStatus);
       const nextStage = stageIdx>=0 && stageIdx<KW_HANDOVER_STAGES.length-1 ? KW_HANDOVER_STAGES[stageIdx+1] : null;
+      const jualCanAct = !isBusOrder || stageIdx >= KW_HANDOVER_STAGES.indexOf('Sampai di Kawasan');
+      const busNote = isBusOrder ? `<p class="text-[11px] text-inksoft mt-1">Dibekalkan dari PASTI ${escapeHtml(o.bekalKawasanCode)}${o.busCompany?` · Bas: ${escapeHtml(o.busCompany)} (No: ${escapeHtml(o.busConsignmentNo||'-')})`:''}</p>` : '';
+      let actionHtml;
+      if(!nextStage){
+        actionHtml = `<p class="text-[11px] text-green-600 font-bold mt-2 flex items-center gap-1"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> Selesai diserahkan</p>`;
+      } else if(!jualCanAct){
+        actionHtml = `<p class="text-[11px] text-amber-600 font-semibold mt-2">Menunggu bas tiba dari PASTI ${escapeHtml(o.bekalKawasanCode)}...</p>`;
+      } else {
+        actionHtml = `<button onclick="window.advanceKwHandover('${escapeHtml(o.orderId)}','${nextStage}')" class="mt-3 bg-forest hover:bg-forestdark text-white text-xs font-bold px-4 py-2 rounded-lg">Tandakan: ${escapeHtml(nextStage)}</button>`;
+      }
       return `
       <div class="bg-white border border-sand rounded-2xl p-4">
         <div class="flex items-center justify-between gap-3 mb-2">
@@ -3056,12 +3078,46 @@ async function refreshKwOrders(){
         </div>
         <p class="text-ink text-sm font-semibold">${escapeHtml(o.customerName)}</p>
         <p class="text-inksoft text-xs mt-0.5">${o.items?o.items.length:0} item · ${formatRM(o.total)} ${o.agentCode ? '· Ejen: '+escapeHtml(o.agentCode) : '· Tiada ejen'}</p>
-        ${nextStage ? `<button onclick="window.advanceKwHandover('${escapeHtml(o.orderId)}','${nextStage}')" class="mt-3 bg-forest hover:bg-forestdark text-white text-xs font-bold px-4 py-2 rounded-lg">Tandakan: ${escapeHtml(nextStage)}</button>` : `<p class="text-[11px] text-green-600 font-bold mt-2 flex items-center gap-1"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> Selesai diserahkan</p>`}
+        ${busNote}
+        ${actionHtml}
       </div>`;
     }).join('') : `<p class="text-inksoft text-sm italic">Tiada tempahan untuk kawasan anda buat masa ini.</p>`;
     icons();
   }catch(e){
     wrap.innerHTML = `<p class="text-red-500 text-sm italic">Gagal muatkan tempahan.</p>`;
+  }
+}
+async function refreshKwBekalan(){
+  const wrap = document.getElementById('kw-bekalan-list');
+  if(!wrap) return;
+  wrap.innerHTML = `<p class="text-inksoft text-sm italic">Memuatkan...</p>`;
+  try{
+    kwOrdersCache = await window.fbKawasanListMyOrders();
+    const orders = kwOrdersCache.outgoingOrders || [];
+    wrap.innerHTML = orders.length ? orders.map(o=>{
+      const stage = o.kawasanHandoverStatus;
+      const shipped = stage && stage !== 'Belum Dihantar';
+      const actionHtml = shipped
+        ? `<p class="text-[11px] text-green-600 font-bold mt-2 flex items-center gap-1"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> Telah dihantar${o.busCompany?` (${escapeHtml(o.busCompany)} · No: ${escapeHtml(o.busConsignmentNo||'-')})`:''}</p>`
+        : `<div class="mt-3 space-y-2">
+            <input id="kw-bus-company-${escapeHtml(o.orderId)}" type="text" placeholder="Syarikat Bas" class="w-full bg-cream border border-sand rounded-lg px-3 py-2 text-xs font-medium">
+            <input id="kw-bus-consign-${escapeHtml(o.orderId)}" type="text" placeholder="No. Konsainan" class="w-full bg-cream border border-sand rounded-lg px-3 py-2 text-xs font-medium">
+            <button onclick="window.advanceKwBekalan('${escapeHtml(o.orderId)}')" class="w-full bg-forest hover:bg-forestdark text-white text-xs font-bold px-4 py-2 rounded-lg">Tandakan: Dalam Perjalanan</button>
+          </div>`;
+      return `
+      <div class="bg-white border border-sand rounded-2xl p-4">
+        <div class="flex items-center justify-between gap-3 mb-2">
+          <p class="font-mono font-bold text-forest text-sm">${escapeHtml(o.orderId)}</p>
+          <span class="px-2 py-1 rounded-full text-[10px] font-bold bg-cream text-ink">${escapeHtml(stage||'-')}</span>
+        </div>
+        <p class="text-ink text-sm font-semibold">Hantar ke PASTI ${escapeHtml(o.pickupKawasanCode)}</p>
+        <p class="text-inksoft text-xs mt-0.5">${o.items?o.items.length:0} item · ${formatRM(o.total)}</p>
+        ${actionHtml}
+      </div>`;
+    }).join('') : `<p class="text-inksoft text-sm italic">Tiada bekalan diperlukan buat masa ini.</p>`;
+    icons();
+  }catch(e){
+    wrap.innerHTML = `<p class="text-red-500 text-sm italic">Gagal muatkan bekalan.</p>`;
   }
 }
 window.advanceKwHandover = async function(orderId, status){
@@ -3070,7 +3126,19 @@ window.advanceKwHandover = async function(orderId, status){
     showToast('Status dikemaskini','check-circle-2');
     refreshKwOrders();
   }catch(e){
-    showToast('Gagal kemas kini status','alert-circle');
+    showToast('Gagal kemas kini status: ' + (e && (e.message||e.code) || ''),'alert-circle');
+  }
+}
+window.advanceKwBekalan = async function(orderId){
+  const busCompany = document.getElementById('kw-bus-company-'+orderId).value.trim();
+  const busConsignmentNo = document.getElementById('kw-bus-consign-'+orderId).value.trim();
+  if(!busCompany || !busConsignmentNo){ showToast('Sila isi syarikat bas & no. konsainan','alert-circle'); return; }
+  try{
+    await window.fbKawasanUpdateHandoverStatus(orderId, 'Dalam Perjalanan', {busCompany, busConsignmentNo});
+    showToast('Status dikemaskini: Dalam Perjalanan','check-circle-2');
+    refreshKwBekalan();
+  }catch(e){
+    showToast('Gagal kemas kini status: ' + (e && (e.message||e.code) || ''),'alert-circle');
   }
 }
 async function refreshKwProducts(){
@@ -3483,7 +3551,7 @@ function renderAdminOrders(){
     <tr class="border-t border-sand">
       <td class="p-3 font-bold text-ink">${o.orderId}<br><span class="text-[10px] text-inksoft font-normal">${formatDate(o.createdAt)}</span></td>
       <td class="p-3 text-inksoft">${escapeHtml(o.customerName)}<br><span class="text-[10px]">${escapeHtml(o.phone)}</span></td>
-      <td class="p-3 text-inksoft">${o.agentCode?escapeHtml(o.agentCode):'<span class="italic">Tiada</span>'}${o.pickupKawasanCode ? `<br><span class="text-[10px]">Ambil: ${escapeHtml(o.pickupKawasanCode)}</span>` : ''}</td>
+      <td class="p-3 text-inksoft">${o.agentCode?escapeHtml(o.agentCode):'<span class="italic">Tiada</span>'}${o.pickupKawasanCode ? `<br><span class="text-[10px]">Ambil: ${escapeHtml(o.pickupKawasanCode)}</span>` : ''}${o.bekalKawasanCode ? `<br><span class="text-[10px]">Bekal: ${escapeHtml(o.bekalKawasanCode)}</span>` : ''}</td>
       <td class="p-3 font-bold text-ink">${formatRM(o.total)}<br><span class="text-[10px] ${o.paymentStatus==='Disahkan'?'text-green-600':'text-amber-600'} font-bold">${escapeHtml(o.paymentStatus||'Belum Disahkan')}</span></td>
       <td class="p-3">
         <select onchange="window.updateOrderStatus('${o.orderId}', this.value)" class="text-[10px] font-bold rounded-full px-2 py-1.5 border-0 status-${statusClass(o.status)}">
@@ -3491,7 +3559,7 @@ function renderAdminOrders(){
         </select>
       </td>
       <td class="p-3">${o.paymentStatus==='Disahkan' ? '<span class="text-[10px] text-green-600 font-bold">✓ Disahkan</span>' : `<button onclick="window.confirmOrderPayment('${o.orderId}')" class="bg-forest hover:bg-forestdark text-white text-[10px] font-bold px-3 py-2 rounded-lg">Sahkan Bayaran</button>`}</td>
-      <td class="p-3 text-inksoft text-[10px]">${o.pickupKawasanCode ? escapeHtml(o.kawasanHandoverStatus||'-') : '<span class="italic">-</span>'}</td>
+      <td class="p-3 text-inksoft text-[10px]">${o.pickupKawasanCode ? escapeHtml(o.kawasanHandoverStatus||'-') + (o.busCompany ? `<br>${escapeHtml(o.busCompany)} · ${escapeHtml(o.busConsignmentNo||'-')}` : '') : '<span class="italic">-</span>'}</td>
     </tr>`).join('') || `<tr><td colspan="7" class="p-6 text-center text-inksoft italic">Tiada tempahan.</td></tr>`;
   icons();
 }
