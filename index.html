@@ -288,6 +288,24 @@
     return { ok: true };
   };
 
+  window.fbListCategoriesPublic = async function() {
+    const snap = await getDocs(kpCol('categories'));
+    const out = [];
+    snap.forEach(d => out.push({ id: d.id, ...d.data() }));
+    return out;
+  };
+
+  window.fbAdminSaveCategory = async function(category) {
+    const { key, ...data } = category;
+    await setDoc(kpDoc('categories', key), data, { merge: true });
+    return { ok: true, key };
+  };
+
+  window.fbAdminDeleteCategory = async function(key) {
+    await deleteDoc(kpDoc('categories', key));
+    return { ok: true };
+  };
+
   window.fbGetSiteContent = async function() {
     const snap = await getDoc(kpDoc('meta', 'siteContent'));
     return snap.exists() ? snap.data() : {};
@@ -1027,6 +1045,7 @@
 
           <div class="flex gap-2 overflow-x-auto no-scrollbar mb-6 border-b border-sand pb-px">
             <button data-tab="produk" onclick="window.setAdminTab('produk')" class="admin-tab-btn px-4 py-2.5 rounded-t-xl text-sm font-bold shrink-0 bg-forest text-white">Produk</button>
+            <button data-tab="kategori" onclick="window.setAdminTab('kategori')" class="admin-tab-btn px-4 py-2.5 rounded-t-xl text-sm font-bold shrink-0 bg-cream text-inksoft">Kategori</button>
             <button data-tab="tempahan" onclick="window.setAdminTab('tempahan')" class="admin-tab-btn px-4 py-2.5 rounded-t-xl text-sm font-bold shrink-0 bg-cream text-inksoft">Tempahan</button>
             <button data-tab="ejen" onclick="window.setAdminTab('ejen')" class="admin-tab-btn px-4 py-2.5 rounded-t-xl text-sm font-bold shrink-0 bg-cream text-inksoft">Ejen</button>
             <button data-tab="kawasanadmin" onclick="window.setAdminTab('kawasanadmin')" class="admin-tab-btn px-4 py-2.5 rounded-t-xl text-sm font-bold shrink-0 bg-cream text-inksoft">Kawasan</button>
@@ -1046,6 +1065,19 @@
                 <tbody id="admin-product-body"></tbody>
               </table>
             </div>
+          </div>
+
+          <!-- TAB KATEGORI -->
+          <div id="admin-tab-kategori" class="admin-tab-panel hidden">
+            <div id="admin-kategori-seed-banner" class="hidden bg-honey/10 border border-honey text-ink text-xs rounded-2xl px-4 py-3 mb-4 flex items-center justify-between gap-3">
+              <span>Kategori belum disimpan ke pangkalan data lagi — laman guna kategori asal sementara. Klik untuk simpan kategori asal supaya boleh diedit.</span>
+              <button onclick="window.seedDefaultCategories()" class="shrink-0 bg-forest hover:bg-forestdark text-white text-xs font-bold px-3 py-2 rounded-lg">Guna Kategori Asal</button>
+            </div>
+            <div class="flex justify-between items-center mb-4">
+              <p class="text-xs font-bold text-inksoft" id="admin-kategori-count">0 kategori</p>
+              <button onclick="window.openCategoryModal()" class="bg-forest hover:bg-forestdark text-white text-sm font-bold px-4 py-2.5 rounded-xl flex items-center gap-2"><i data-lucide="plus-circle" class="w-4 h-4"></i> Tambah Kategori</button>
+            </div>
+            <div id="admin-category-grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
           </div>
 
           <!-- TAB TEMPAHAN -->
@@ -1576,6 +1608,48 @@
     </div>
   </div>
 
+  <!-- MODAL: TAMBAH/EDIT KATEGORI (Admin) -->
+  <div id="modal-admin-category" class="hidden fixed inset-0 z-[95] flex items-end sm:items-center justify-center p-0 sm:p-4 modal-mask">
+    <div class="bg-white rounded-t-[2rem] sm:rounded-[2rem] w-full sm:max-w-md max-h-[92vh] overflow-y-auto shadow-2xl">
+      <div class="p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h3 id="catm-title" class="font-display font-bold text-lg text-ink">Tambah Kategori</h3>
+          <button onclick="window.closeCategoryModal()" class="w-8 h-8 rounded-full bg-cream flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        <div class="space-y-3">
+          <input type="hidden" id="catm-key-orig">
+          <div>
+            <input id="catm-key" type="text" placeholder="Kod Kategori (cth: pakaian)" oninput="window.updateCategoryPreview()" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+            <p class="text-[10px] text-inksoft mt-1">Kod ringkas huruf/nombor sahaja, tidak boleh ditukar selepas disimpan.</p>
+          </div>
+          <input id="catm-name" type="text" placeholder="Nama Kategori (cth: Pakaian &amp; Fesyen)" oninput="window.updateCategoryPreview()" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          <div>
+            <input id="catm-icon" type="text" placeholder="Nama Ikon (cth: shirt)" oninput="window.updateCategoryPreview()" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+            <p class="text-[10px] text-inksoft mt-1">Lihat senarai ikon di <a href="https://lucide.dev/icons" target="_blank" class="text-forest font-bold underline">lucide.dev/icons</a></p>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-[10px] font-bold text-inksoft block mb-1">Warna Mula</label>
+              <input id="catm-grad-from" type="color" value="#0B5D3B" oninput="window.updateCategoryPreview()" class="w-full h-11 bg-cream border border-sand rounded-xl cursor-pointer">
+            </div>
+            <div>
+              <label class="text-[10px] font-bold text-inksoft block mb-1">Warna Akhir</label>
+              <input id="catm-grad-to" type="color" value="#3F9D64" oninput="window.updateCategoryPreview()" class="w-full h-11 bg-cream border border-sand rounded-xl cursor-pointer">
+            </div>
+          </div>
+          <div class="flex items-center gap-3 bg-cream rounded-xl p-3">
+            <div id="catm-preview-icon" class="w-11 h-11 rounded-xl flex items-center justify-center text-white shrink-0"><i data-lucide="tag" class="w-5 h-5"></i></div>
+            <p class="text-xs text-inksoft">Pratonton</p>
+          </div>
+        </div>
+        <div class="flex gap-3 mt-5">
+          <button onclick="window.closeCategoryModal()" class="flex-1 bg-cream text-ink font-bold py-3 rounded-xl">Batal</button>
+          <button onclick="window.saveCategory()" class="flex-1 bg-forest hover:bg-forestdark text-white font-bold py-3 rounded-xl">Simpan</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL: TAMBAH/EDIT EJEN (Admin) -->
   <div id="modal-admin-agent" class="hidden fixed inset-0 z-[95] flex items-end sm:items-center justify-center p-0 sm:p-4 modal-mask">
     <div class="bg-white rounded-t-[2rem] sm:rounded-[2rem] w-full sm:max-w-md max-h-[92vh] overflow-y-auto shadow-2xl">
@@ -1637,7 +1711,10 @@
 /* ================= DATA ================= */
 const D = (n)=> new Date(Date.now() - n*86400000).toISOString();
 
-const CATEGORIES = {
+// Fallback used until admin-managed categories load from Firestore (or
+// forever, if admin never opens Kategori management) — keeps the site
+// working exactly as before with zero migration required.
+const DEFAULT_CATEGORIES = {
   kurma:     { name:'Kurma & Tamar',      icon:'wheat',      grad:['#B3810A','#D4A017'] },
   minuman:   { name:'Minuman & Serbuk',   icon:'coffee',     grad:['#0B5D3B','#3F9D64'] },
   kesihatan: { name:'Madu & Kesihatan',   icon:'leaf',       grad:['#3F9D64','#8BC79E'] },
@@ -1645,6 +1722,9 @@ const CATEGORIES = {
   ibadah:    { name:'Solat & Ibadah',     icon:'moon-star',  grad:['#1C2B24','#3F9D64'] },
   sampul:    { name:'Sampul & Cenderahati', icon:'gift',     grad:['#B3810A','#3F9D64'] },
 };
+let CATEGORIES = { ...DEFAULT_CATEGORIES };
+let categoriesSeeded = false;
+function fallbackCategory(){ return Object.values(CATEGORIES)[0] || DEFAULT_CATEGORIES.kurma; }
 
 const STATES = ["Perlis","Kedah","Pulau Pinang","Perak","Selangor","Kuala Lumpur","Putrajaya","Negeri Sembilan","Melaka","Johor","Pahang","Terengganu","Kelantan","Sarawak","Sabah","Labuan"];
 const EAST_MY = ["Sarawak","Sabah","Labuan"];
@@ -1968,6 +2048,16 @@ function generateSeedOrders(){
 /* ================= STORAGE ================= */
 async function loadAllData(){
   try{
+    const cats = (typeof window.fbListCategoriesPublic === 'function') ? await window.fbListCategoriesPublic() : [];
+    if(cats.length){
+      const built = {};
+      cats.forEach(c=>{ built[c.id] = { name:c.name, icon:c.icon, grad:[c.gradFrom, c.gradTo] }; });
+      CATEGORIES = built;
+      categoriesSeeded = true;
+    }
+  }catch(e){ /* keep DEFAULT_CATEGORIES fallback already in CATEGORIES */ }
+
+  try{
     appProducts = (typeof window.fbListProductsPublic === 'function') ? await window.fbListProductsPublic() : [];
     if(!appProducts.length) appProducts = defaultProducts.slice();
   }catch(e){ appProducts = defaultProducts.slice(); }
@@ -1983,7 +2073,7 @@ async function loadAllData(){
       const mapped = kwProds.map(kp => ({
         id: 'KWP-'+kp.id,
         name: kp.name,
-        category: CATEGORIES[kp.category] ? kp.category : 'kurma',
+        category: CATEGORIES[kp.category] ? kp.category : Object.keys(CATEGORIES)[0],
         price: kp.price,
         weight: kp.weight,
         stock: kp.stockStatus==='ready' ? 999 : 0,
@@ -2038,7 +2128,7 @@ async function persistSession(val){ try{ if(val) await window.storage.set('alhad
 
 /* ================= RENDER: SHARED PRODUCT TILE ================= */
 function productMediaHTML(p, heightClass){
-  const cat = CATEGORIES[p.category] || CATEGORIES.kurma;
+  const cat = CATEGORIES[p.category] || fallbackCategory();
   const img = Array.isArray(p.images) && p.images[0];
   if(img){
     return `<div class="relative ${heightClass} w-full bg-white overflow-hidden">
@@ -2054,7 +2144,7 @@ function productMediaHTML(p, heightClass){
   </div>`;
 }
 function productTileHTML(p){
-  const cat = CATEGORIES[p.category] || CATEGORIES.kurma;
+  const cat = CATEGORIES[p.category] || fallbackCategory();
   const hasSizes = Array.isArray(p.sizes) && p.sizes.length > 0;
   const stockLabel = p.stock>0 ? `${p.stock} lagi` : 'Stok Habis';
   const stockClass = p.stock>0 ? 'text-forest' : 'text-red-500';
@@ -2155,7 +2245,7 @@ window.openQuickView = function(id){
   if(!qvProduct){ showToast('Produk tidak dijumpai','alert-circle'); return; }
   qvQty = 1;
   qvSelectedSize = null;
-  const cat = CATEGORIES[qvProduct.category] || CATEGORIES.kurma;
+  const cat = CATEGORIES[qvProduct.category] || fallbackCategory();
   const shareUrl = window.location.href.split('?')[0] + '?produk=' + encodeURIComponent(qvProduct.id);
   const waText = encodeURIComponent(`${qvProduct.name} — ${formatRM(qvProduct.price)}\n${shareUrl}`);
   const hasSizes = Array.isArray(qvProduct.sizes) && qvProduct.sizes.length > 0;
@@ -2334,7 +2424,7 @@ async function renderSenaraiEjen(){
 /* ================= CART VIEW ================= */
 function cartItemHTML(item){
   const prod = appProducts.find(p=>p.id===item.id);
-  const cat = CATEGORIES[prod?prod.category:'kurma'] || CATEGORIES.kurma;
+  const cat = CATEGORIES[prod?prod.category:'kurma'] || fallbackCategory();
   const sizeAttr = escapeHtml(item.size||'');
   return `
   <div class="bg-white border border-sand rounded-2xl p-3 flex items-center gap-3">
@@ -3299,7 +3389,7 @@ window.openKwProductModal = function(id){
   document.getElementById('kwpm-name').value = editing ? editing.name : '';
   const catSel = document.getElementById('kwpm-category');
   catSel.innerHTML = Object.keys(CATEGORIES).map(k=>`<option value="${k}">${escapeHtml(CATEGORIES[k].name)}</option>`).join('');
-  catSel.value = editing ? editing.category : 'kurma';
+  catSel.value = editing ? editing.category : Object.keys(CATEGORIES)[0];
   document.getElementById('kwpm-price').value = editing ? editing.price : '';
   document.getElementById('kwpm-modal').value = editing ? (editing.modal||'') : '';
   document.getElementById('kwpm-weight').value = editing ? editing.weight : '';
@@ -3407,7 +3497,7 @@ window.logoutAdmin = async function(){
 }
 window.setAdminTab = function(tab){
   adminCurrentTab = tab;
-  ['produk','tempahan','ejen','kawasanadmin','laporan','tetapan'].forEach(t=>{
+  ['produk','kategori','tempahan','ejen','kawasanadmin','laporan','tetapan'].forEach(t=>{
     const panel = document.getElementById('admin-tab-'+t);
     if(panel) panel.classList.toggle('hidden', t!==tab);
   });
@@ -3417,6 +3507,7 @@ window.setAdminTab = function(tab){
     btn.classList.toggle('bg-cream', !active); btn.classList.toggle('text-inksoft', !active);
   });
   if(tab==='produk') refreshAndRenderAdminProducts();
+  if(tab==='kategori') renderAdminCategories();
   if(tab==='tempahan') refreshAndRenderAdminOrders();
   if(tab==='ejen') refreshAndRenderAdminAgents();
   if(tab==='kawasanadmin') refreshAndRenderAdminKawasan();
@@ -3600,9 +3691,7 @@ window.openProductModal = function(id){
   document.getElementById('pm-sizes-wrap').classList.toggle('hidden', existingSizes.length === 0);
   renderProductSizesGrid(existingSizes);
   const catSel = document.getElementById('pm-category');
-  if(catSel.options.length===0){
-    Object.entries(CATEGORIES).forEach(([key,cat])=>{ const o=document.createElement('option'); o.value=key; o.innerText=cat.name; catSel.appendChild(o); });
-  }
+  catSel.innerHTML = Object.entries(CATEGORIES).map(([key,cat])=>`<option value="${escapeHtml(key)}">${escapeHtml(cat.name)}</option>`).join('');
   catSel.value = editing ? editing.category : Object.keys(CATEGORIES)[0];
   document.getElementById('modal-admin-product').classList.remove('hidden');
 }
@@ -3617,6 +3706,106 @@ async function refreshOwnProducts(){
 async function refreshAndRenderAdminProducts(){
   await refreshOwnProducts();
   renderAdminProducts();
+}
+
+/* ================= ADMIN: KATEGORI ================= */
+function renderAdminCategories(){
+  document.getElementById('admin-kategori-seed-banner').classList.toggle('hidden', categoriesSeeded);
+  const grid = document.getElementById('admin-category-grid');
+  const keys = Object.keys(CATEGORIES);
+  document.getElementById('admin-kategori-count').innerText = keys.length + ' kategori';
+  grid.innerHTML = keys.map(key=>{
+    const cat = CATEGORIES[key];
+    const productCount = appProducts.filter(p=>p.category===key).length;
+    return `<div class="bg-white border border-sand rounded-2xl p-4 flex items-center gap-3">
+      <div class="w-11 h-11 rounded-xl flex items-center justify-center text-white shrink-0" style="background:linear-gradient(135deg, ${cat.grad[0]}, ${cat.grad[1]})"><i data-lucide="${escapeHtml(cat.icon)}" class="w-5 h-5"></i></div>
+      <div class="flex-1 min-w-0">
+        <p class="font-bold text-sm text-ink truncate">${escapeHtml(cat.name)}</p>
+        <p class="text-[10px] text-inksoft">${escapeHtml(key)} · ${productCount} produk</p>
+      </div>
+      <div class="flex gap-1.5 shrink-0">
+        <button onclick="window.openCategoryModal('${escapeHtml(key)}')" class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+        <button onclick="window.deleteCategory('${escapeHtml(key)}')" class="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+      </div>
+    </div>`;
+  }).join('') || `<p class="text-inksoft text-sm italic col-span-full text-center py-6">Tiada kategori.</p>`;
+  icons();
+}
+window.openCategoryModal = function(key){
+  const editing = key ? CATEGORIES[key] : null;
+  document.getElementById('catm-title').innerText = editing ? 'Edit Kategori' : 'Tambah Kategori';
+  document.getElementById('catm-key-orig').value = key || '';
+  const keyInput = document.getElementById('catm-key');
+  keyInput.value = key || '';
+  keyInput.disabled = !!editing;
+  document.getElementById('catm-name').value = editing ? editing.name : '';
+  document.getElementById('catm-icon').value = editing ? editing.icon : 'tag';
+  document.getElementById('catm-grad-from').value = editing ? editing.grad[0] : '#0B5D3B';
+  document.getElementById('catm-grad-to').value = editing ? editing.grad[1] : '#3F9D64';
+  window.updateCategoryPreview();
+  document.getElementById('modal-admin-category').classList.remove('hidden');
+}
+window.closeCategoryModal = function(){ document.getElementById('modal-admin-category').classList.add('hidden'); }
+window.updateCategoryPreview = function(){
+  const icon = document.getElementById('catm-icon').value.trim() || 'tag';
+  const from = document.getElementById('catm-grad-from').value;
+  const to = document.getElementById('catm-grad-to').value;
+  const el = document.getElementById('catm-preview-icon');
+  el.style.background = `linear-gradient(135deg, ${from}, ${to})`;
+  el.innerHTML = `<i data-lucide="${escapeHtml(icon)}" class="w-5 h-5"></i>`;
+  icons();
+}
+window.saveCategory = async function(){
+  const origKey = document.getElementById('catm-key-orig').value;
+  const key = document.getElementById('catm-key').value.trim().toLowerCase().replace(/[^a-z0-9]/g,'');
+  const name = document.getElementById('catm-name').value.trim();
+  const icon = document.getElementById('catm-icon').value.trim() || 'tag';
+  const gradFrom = document.getElementById('catm-grad-from').value;
+  const gradTo = document.getElementById('catm-grad-to').value;
+  if(!key || !name){ showToast('Sila isi kod & nama kategori','alert-circle'); return; }
+  if(!origKey && CATEGORIES[key]){ showToast('Kod kategori ini sudah wujud','alert-circle'); return; }
+  try{
+    await window.fbAdminSaveCategory({ key, name, icon, gradFrom, gradTo });
+    CATEGORIES[key] = { name, icon, grad:[gradFrom, gradTo] };
+    categoriesSeeded = true;
+    window.closeCategoryModal();
+    renderAdminCategories();
+    renderCatalog(); renderHome();
+    showToast('Kategori berjaya disimpan','check-circle-2');
+  }catch(e){
+    console.error('saveCategory failed:', e);
+    showToast('Gagal simpan kategori: ' + (e && (e.code || e.message) || 'ralat tidak diketahui'), 'alert-circle');
+  }
+}
+window.deleteCategory = async function(key){
+  if(Object.keys(CATEGORIES).length <= 1){ showToast('Perlu sekurang-kurangnya satu kategori','alert-circle'); return; }
+  const inUse = appProducts.filter(p=>p.category===key).length;
+  const msg = inUse ? `Kategori ini masih digunakan oleh ${inUse} produk. Padam juga?` : 'Padam kategori ini?';
+  if(!confirm(msg)) return;
+  try{
+    await window.fbAdminDeleteCategory(key);
+    delete CATEGORIES[key];
+    renderAdminCategories();
+    renderCatalog(); renderHome();
+    showToast('Kategori dipadam','trash-2');
+  }catch(e){
+    console.error('deleteCategory failed:', e);
+    showToast('Gagal padam kategori: ' + (e && (e.code || e.message) || 'ralat tidak diketahui'), 'alert-circle');
+  }
+}
+window.seedDefaultCategories = async function(){
+  try{
+    for(const [key, cat] of Object.entries(DEFAULT_CATEGORIES)){
+      await window.fbAdminSaveCategory({ key, name:cat.name, icon:cat.icon, gradFrom:cat.grad[0], gradTo:cat.grad[1] });
+    }
+    CATEGORIES = { ...DEFAULT_CATEGORIES };
+    categoriesSeeded = true;
+    renderAdminCategories();
+    showToast('Kategori asal berjaya disimpan','check-circle-2');
+  }catch(e){
+    console.error('seedDefaultCategories failed:', e);
+    showToast('Gagal muatkan kategori asal: ' + (e && (e.code || e.message) || 'ralat tidak diketahui'), 'alert-circle');
+  }
 }
 window.saveProduct = async function(){
   const id = document.getElementById('pm-id').value;
@@ -3689,7 +3878,7 @@ function renderAdminProducts(){
   if(!tbody) return;
   document.getElementById('admin-produk-count').innerText = appProducts.length+' produk';
   tbody.innerHTML = appProducts.map(p=>{
-    const cat = CATEGORIES[p.category]||CATEGORIES.kurma;
+    const cat = CATEGORIES[p.category]||fallbackCategory();
     const active = p.active !== false;
     return `<tr class="border-t border-sand ${active?'':'opacity-50'}">
       <td class="p-3">
