@@ -665,24 +665,31 @@
                 </div>
               </div>
 
-              <div id="co-ship-easyparcel" class="bg-white border border-sand rounded-3xl p-5 shadow-sm">
+              <div class="bg-white border border-sand rounded-3xl p-5 shadow-sm">
                 <h3 class="font-display font-bold text-ink mb-4 flex items-center gap-2"><i data-lucide="truck" class="w-4 h-4 text-forest"></i> Penghantaran</h3>
-                <button onclick="window.calculateShipping()" class="w-full bg-leaflight hover:bg-forest hover:text-white text-forest font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors mb-3">
-                  <i data-lucide="calculator" class="w-4 h-4"></i> Kira Kos Penghantaran
-                </button>
-                <div id="shipping-options" class="space-y-2"></div>
-                <p class="text-[10px] text-inksoft italic mt-3 leading-relaxed">* Kadar dianggarkan berdasarkan berat troli &amp; zon penghantaran, menggunakan <code class="bg-cream px-1 rounded">easyparcel-rate.js</code> untuk kadar EasyParcel masa nyata.</p>
-              </div>
-
-              <div id="co-ship-pickup" class="hidden bg-white border border-sand rounded-3xl p-5 shadow-sm">
-                <h3 class="font-display font-bold text-ink mb-4 flex items-center gap-2"><i data-lucide="map-pin" class="w-4 h-4 text-forest"></i> Ambil di PASTI Kawasan</h3>
-                <p class="text-inksoft text-xs mb-3">Penghantaran pos tidak aktif buat masa ini. Pilih ejen di atas dan PASTI kawasan akan dipilih automatik — atau pilih PASTI kawasan terus di bawah untuk ambil pesanan anda.</p>
-                <p id="co-pickup-auto-note" class="hidden bg-leaflight text-forest text-xs font-bold rounded-xl px-3 py-2 mb-2 flex items-center gap-1.5"><i data-lucide="check-circle-2" class="w-3.5 h-3.5 shrink-0"></i> <span></span></p>
-                <div id="co-pickup-suggest" class="hidden bg-honey/10 border border-honey text-ink text-xs font-bold rounded-xl px-3 py-2 mb-2 items-center justify-between gap-2">
-                  <span class="flex items-center gap-1.5"><i data-lucide="sparkles" class="w-3.5 h-3.5 text-honeydeep shrink-0"></i> <span id="co-pickup-suggest-text"></span></span>
-                  <button type="button" onclick="window.acceptPickupSuggestion()" class="bg-forest text-white text-[10px] font-bold px-3 py-1.5 rounded-lg shrink-0">Pilih</button>
+                <div id="co-ship-mode-tabs" class="grid grid-cols-2 gap-2 mb-4">
+                  <button type="button" data-shipmode="pickup" onclick="window.setShipMode('pickup')" class="co-shipmode-btn bg-forest text-white text-xs font-bold px-3 py-2.5 rounded-xl transition-colors">Ambil di PASTI Kawasan</button>
+                  <button type="button" data-shipmode="courier" onclick="window.setShipMode('courier')" class="co-shipmode-btn bg-cream text-inksoft text-xs font-bold px-3 py-2.5 rounded-xl transition-colors">Pos / Kurier</button>
                 </div>
-                <div id="co-pickup-kawasan-list" class="space-y-2"></div>
+
+                <div id="co-ship-pickup">
+                  <p class="text-inksoft text-xs mb-3">Sokong ejen &amp; PASTI Kawasan komuniti kami — pilih ejen di atas dan PASTI kawasan akan dipilih automatik, atau pilih PASTI kawasan terus di bawah untuk ambil pesanan anda.</p>
+                  <p id="co-pickup-auto-note" class="hidden bg-leaflight text-forest text-xs font-bold rounded-xl px-3 py-2 mb-2 flex items-center gap-1.5"><i data-lucide="check-circle-2" class="w-3.5 h-3.5 shrink-0"></i> <span></span></p>
+                  <div id="co-pickup-suggest" class="hidden bg-honey/10 border border-honey text-ink text-xs font-bold rounded-xl px-3 py-2 mb-2 items-center justify-between gap-2">
+                    <span class="flex items-center gap-1.5"><i data-lucide="sparkles" class="w-3.5 h-3.5 text-honeydeep shrink-0"></i> <span id="co-pickup-suggest-text"></span></span>
+                    <button type="button" onclick="window.acceptPickupSuggestion()" class="bg-forest text-white text-[10px] font-bold px-3 py-1.5 rounded-lg shrink-0">Pilih</button>
+                  </div>
+                  <div id="co-pickup-kawasan-list" class="space-y-2"></div>
+                </div>
+
+                <div id="co-ship-easyparcel" class="hidden">
+                  <p class="text-inksoft text-xs mb-3">Nak stok cepat? Seller hantar terus parcel anda guna kurier pilihan anda, terus ke alamat anda (door-to-door).</p>
+                  <button onclick="window.calculateShipping()" class="w-full bg-leaflight hover:bg-forest hover:text-white text-forest font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors mb-3">
+                    <i data-lucide="calculator" class="w-4 h-4"></i> Kira Kos Penghantaran
+                  </button>
+                  <div id="shipping-options" class="space-y-2"></div>
+                  <p class="text-[10px] text-inksoft italic mt-3 leading-relaxed">* Kadar dianggarkan berdasarkan berat troli &amp; zon penghantaran, menggunakan <code class="bg-cream px-1 rounded">easyparcel-rate.js</code> untuk kadar EasyParcel masa nyata.</p>
+                </div>
               </div>
 
               <div class="bg-white border border-sand rounded-3xl p-5 shadow-sm">
@@ -2497,9 +2504,9 @@ function renderCheckoutEnter(){
   window._kawasanListCache = [];
 
   const easyParcelOn = siteContent.easyParcelEnabled !== false;
-  document.getElementById('co-ship-easyparcel').classList.toggle('hidden', !easyParcelOn);
-  document.getElementById('co-ship-pickup').classList.toggle('hidden', easyParcelOn);
-  if(!easyParcelOn) populatePickupKawasan();
+  document.getElementById('co-ship-mode-tabs').classList.toggle('hidden', !easyParcelOn);
+  window.setShipMode('pickup');
+  populatePickupKawasan();
 
   const ref = (new URLSearchParams(window.location.search)).get('ref');
   if(ref){
@@ -2529,6 +2536,24 @@ function renderCheckoutEnter(){
       if(profile.state) document.getElementById('co-negeri').value = profile.state;
     }).catch(()=>{});
   }
+}
+window.shipMode = 'pickup';
+window.setShipMode = function(mode){
+  window.shipMode = mode;
+  document.getElementById('co-ship-pickup').classList.toggle('hidden', mode!=='pickup');
+  document.getElementById('co-ship-easyparcel').classList.toggle('hidden', mode!=='courier');
+  document.querySelectorAll('.co-shipmode-btn').forEach(btn=>{
+    const active = btn.getAttribute('data-shipmode')===mode;
+    btn.classList.toggle('bg-forest', active); btn.classList.toggle('text-white', active);
+    btn.classList.toggle('bg-cream', !active); btn.classList.toggle('text-inksoft', !active);
+  });
+  if(mode==='pickup'){
+    selectedShipping = window.pickupKawasanCode ? { price:0, courier:'Ambil di PASTI Kawasan', eta:'Ikut susunan kawasan' } : null;
+  } else {
+    window.pickupKawasanCode = '';
+    selectedShipping = null;
+  }
+  renderCheckoutSummary();
 }
 
 window.calculateShipping = function(){
@@ -2591,7 +2616,7 @@ window.submitOrder = async function(){
     else showToast('Kod ejen tidak sah — diteruskan tanpa ejen','alert-circle');
   }
 
-  const items = cart.map(c=>({ productId:c.id, name:c.name, qty:c.qty, price:c.price, weight:c.weight, commissionPct:c.commissionPct }));
+  const items = cart.map(c=>({ productId:c.id, name:c.name, qty:c.qty, price:c.price, weight:c.weight, commissionPct:c.commissionPct, bekalKawasan:c.bekalKawasan||'' }));
 
   const orderPayload = {
     customerName:nama, phone, email, address:alamat, postcode:poskod, city:bandar, state,
