@@ -1558,6 +1558,15 @@
             <label class="flex items-center gap-1.5 text-[11px] font-bold text-forest cursor-pointer hover:underline w-fit mt-1"><i data-lucide="upload" class="w-3 h-3"></i><span id="pm-img3-upload-status">Upload Gambar 3 dari peranti (pilihan)</span><input type="file" accept="image/*" class="hidden" onchange="window.uploadImageToField(this,'pm-img3','products')"></label>
           </div>
           <label class="flex items-center gap-2 text-xs font-bold text-inksoft px-1"><input id="pm-popular" type="checkbox" class="w-4 h-4 accent-[#0B5D3B]"> Tandakan sebagai Produk Popular</label>
+          <label class="flex items-center gap-2 text-xs font-bold text-inksoft px-1"><input id="pm-active" type="checkbox" checked class="w-4 h-4 accent-[#0B5D3B]"> Produk Aktif (nyahtanda untuk sembunyi dari katalog awam)</label>
+
+          <div class="border-t border-sand pt-3 mt-1">
+            <label class="flex items-center gap-2 text-xs font-bold text-ink px-1 mb-2"><input id="pm-use-sizes" type="checkbox" onchange="window.toggleSizeEditor()" class="w-4 h-4 accent-[#0B5D3B]"> Produk ini ada pilihan saiz (cth. pakaian)</label>
+            <div id="pm-sizes-wrap" class="hidden bg-cream rounded-xl p-3 space-y-1.5">
+              <p class="text-[10px] text-inksoft mb-1">Tanda saiz yang tersedia &amp; isi harga masing-masing (RM).</p>
+              <div id="pm-sizes-grid" class="grid grid-cols-2 gap-1.5"></div>
+            </div>
+          </div>
         </div>
         <div class="flex gap-3 mt-5">
           <button onclick="window.closeProductModal()" class="flex-1 bg-cream text-ink font-bold py-3 rounded-xl">Batal</button>
@@ -2046,6 +2055,7 @@ function productMediaHTML(p, heightClass){
 }
 function productTileHTML(p){
   const cat = CATEGORIES[p.category] || CATEGORIES.kurma;
+  const hasSizes = Array.isArray(p.sizes) && p.sizes.length > 0;
   const stockLabel = p.stock>0 ? `${p.stock} lagi` : 'Stok Habis';
   const stockClass = p.stock>0 ? 'text-forest' : 'text-red-500';
   return `
@@ -2056,11 +2066,11 @@ function productTileHTML(p){
       <button onclick="window.openQuickView('${p.id}')" class="text-left font-display font-semibold text-sm text-ink leading-snug mt-0.5 line-clamp-2">${escapeHtml(p.name)}</button>
       <div class="mt-auto pt-2 flex items-end justify-between gap-2">
         <div>
-          <p class="font-display font-bold text-forest text-sm sm:text-base">${formatRM(p.price)}</p>
+          <p class="font-display font-bold text-forest text-sm sm:text-base">${hasSizes ? 'dari ' : ''}${formatRM(p.price)}</p>
           <p class="text-[10px] ${stockClass} font-semibold">${stockLabel}</p>
         </div>
-        <button ${p.stock<=0?'disabled':''} onclick="window.addToCart('${p.id}',1); event.stopPropagation();" class="shrink-0 ${p.stock<=0?'bg-slate-200 text-slate-400':'bg-forest hover:bg-forestdark text-white'} rounded-full w-9 h-9 flex items-center justify-center shadow-sm transition-colors" title="Tambah ke Troli">
-          <i data-lucide="plus" class="w-4 h-4"></i>
+        <button ${p.stock<=0?'disabled':''} onclick="${hasSizes ? `window.openQuickView('${p.id}')` : `window.addToCart('${p.id}',1)`}; event.stopPropagation();" class="shrink-0 ${p.stock<=0?'bg-slate-200 text-slate-400':'bg-forest hover:bg-forestdark text-white'} rounded-full w-9 h-9 flex items-center justify-center shadow-sm transition-colors" title="${hasSizes?'Pilih Saiz':'Tambah ke Troli'}">
+          <i data-lucide="${hasSizes?'ruler':'plus'}" class="w-4 h-4"></i>
         </button>
       </div>
     </div>
@@ -2089,11 +2099,13 @@ function renderHomeCatGrid(){
   icons();
 }
 
+function customerVisibleProducts(){ return appProducts.filter(p=>p.active!==false); }
 function renderHome(){
   renderHomeCatGrid();
-  const latest = appProducts.slice().sort((a,b)=> new Date(b.createdAt)-new Date(a.createdAt)).slice(0,6);
+  const visible = customerVisibleProducts();
+  const latest = visible.slice().sort((a,b)=> new Date(b.createdAt)-new Date(a.createdAt)).slice(0,6);
   document.getElementById('home-latest').innerHTML = latest.map(p=>`<div class="w-40 sm:w-48 shrink-0">${productTileHTML(p)}</div>`).join('');
-  const popular = appProducts.filter(p=>p.popular).slice(0,4);
+  const popular = visible.filter(p=>p.popular).slice(0,4);
   document.getElementById('home-popular').innerHTML = popular.map(productTileHTML).join('');
   icons();
 }
@@ -2120,7 +2132,7 @@ function renderKawasanChips(){
 function renderCatalog(){
   renderCategoryChips('catalog-cat-chips');
   renderKawasanChips();
-  let list = appProducts.slice();
+  let list = customerVisibleProducts();
   if(catalogState.cat !== 'all') list = list.filter(p=>p.category===catalogState.cat);
   if(catalogState.kawasan !== 'all') list = list.filter(p=>p.pickupKawasan===catalogState.kawasan);
   if(catalogState.search) list = list.filter(p=>p.name.toLowerCase().includes(catalogState.search));
@@ -2137,13 +2149,16 @@ function renderCatalog(){
 }
 
 /* ================= QUICK VIEW ================= */
+let qvSelectedSize = null;
 window.openQuickView = function(id){
   qvProduct = appProducts.find(p=>p.id===id);
   if(!qvProduct){ showToast('Produk tidak dijumpai','alert-circle'); return; }
   qvQty = 1;
+  qvSelectedSize = null;
   const cat = CATEGORIES[qvProduct.category] || CATEGORIES.kurma;
   const shareUrl = window.location.href.split('?')[0] + '?produk=' + encodeURIComponent(qvProduct.id);
   const waText = encodeURIComponent(`${qvProduct.name} — ${formatRM(qvProduct.price)}\n${shareUrl}`);
+  const hasSizes = Array.isArray(qvProduct.sizes) && qvProduct.sizes.length > 0;
   document.getElementById('qv-content').innerHTML = `
     <div class="relative">
       ${productMediaHTML(qvProduct, 'h-48')}
@@ -2152,8 +2167,15 @@ window.openQuickView = function(id){
     <div class="p-5 sm:p-6">
       <p class="text-[10px] font-bold text-honeydeep uppercase tracking-widest">${escapeHtml(cat.name)}</p>
       <h3 class="font-display font-bold text-xl text-ink mt-1">${escapeHtml(qvProduct.name)}</h3>
-      <p class="font-display font-extrabold text-forest text-2xl mt-2">${formatRM(qvProduct.price)}</p>
+      <p id="qv-price" class="font-display font-extrabold text-forest text-2xl mt-2">${hasSizes ? 'Pilih saiz untuk lihat harga' : formatRM(qvProduct.price)}</p>
       <p class="text-inksoft text-sm mt-3 leading-relaxed">${escapeHtml(qvProduct.desc||'')}</p>
+      ${hasSizes ? `
+      <div class="mt-4">
+        <p class="text-[10px] font-bold text-inksoft uppercase tracking-wide mb-2">Pilih Saiz *</p>
+        <div id="qv-size-grid" class="flex flex-wrap gap-2">
+          ${qvProduct.sizes.map(s=>`<button type="button" onclick="window.qvSelectSize('${escapeHtml(s.label)}')" data-size="${escapeHtml(s.label)}" class="qv-size-btn px-3 py-1.5 rounded-lg border-2 border-sand text-xs font-bold text-ink transition-colors">${escapeHtml(s.label)}</button>`).join('')}
+        </div>
+      </div>` : ''}
       <div class="grid grid-cols-3 gap-2 mt-4">
         <div class="bg-cream rounded-xl p-2.5 text-center"><p class="text-[9px] font-bold text-inksoft uppercase">Berat</p><p class="text-xs font-bold text-ink">${qvProduct.weight} kg</p></div>
         <div class="bg-cream rounded-xl p-2.5 text-center"><p class="text-[9px] font-bold text-inksoft uppercase">Stok</p><p class="text-xs font-bold text-ink">${qvProduct.stock}</p></div>
@@ -2165,8 +2187,8 @@ window.openQuickView = function(id){
           <span id="qv-qty" class="font-bold text-sm w-5 text-center">1</span>
           <button onclick="window.qvChangeQty(1)" class="w-7 h-7 rounded-full bg-white shadow flex items-center justify-center"><i data-lucide="plus" class="w-3.5 h-3.5"></i></button>
         </div>
-        <button ${qvProduct.stock<=0?'disabled':''} onclick="window.addToCart('${qvProduct.id}', qvQty); window.closeQuickView();" class="flex-1 ${qvProduct.stock<=0?'bg-slate-200 text-slate-400':'bg-forest hover:bg-forestdark text-white'} font-bold py-3 rounded-2xl flex items-center justify-center gap-2 transition-colors">
-          <i data-lucide="shopping-bag" class="w-4 h-4"></i> ${qvProduct.stock<=0?'Stok Habis':'Tambah ke Troli'}
+        <button id="qv-add-btn" ${qvProduct.stock<=0?'disabled':''} onclick="window.qvAddToCart()" class="flex-1 ${qvProduct.stock<=0?'bg-slate-200 text-slate-400':'bg-forest hover:bg-forestdark text-white'} font-bold py-3 rounded-2xl flex items-center justify-center gap-2 transition-colors">
+          <i data-lucide="shopping-bag" class="w-4 h-4"></i> ${qvProduct.stock<=0?'Stok Habis':(hasSizes?'Pilih Saiz Dahulu':'Tambah ke Troli')}
         </button>
       </div>
       <a href="https://wa.me/?text=${waText}" target="_blank" class="mt-3 w-full bg-[#25D366] hover:bg-[#1DA851] text-white font-bold py-2.5 rounded-2xl flex items-center justify-center gap-2 transition-colors text-sm"><i data-lucide="share-2" class="w-4 h-4"></i> Kongsi Produk ke WhatsApp</a>
@@ -2176,16 +2198,44 @@ window.openQuickView = function(id){
 }
 window.closeQuickView = function(){ document.getElementById('modal-quickview').classList.add('hidden'); }
 window.qvChangeQty = function(delta){ qvQty = Math.max(1, qvQty+delta); document.getElementById('qv-qty').innerText = qvQty; }
+window.qvSelectSize = function(label){
+  qvSelectedSize = label;
+  document.querySelectorAll('.qv-size-btn').forEach(btn=>{
+    const active = btn.getAttribute('data-size')===label;
+    btn.classList.toggle('border-forest', active);
+    btn.classList.toggle('bg-leaflight', active);
+    btn.classList.toggle('border-sand', !active);
+  });
+  const sizeObj = qvProduct.sizes.find(s=>s.label===label);
+  document.getElementById('qv-price').innerText = formatRM(sizeObj.price);
+  if(qvProduct.stock>0){
+    document.getElementById('qv-add-btn').innerHTML = `<i data-lucide="shopping-bag" class="w-4 h-4"></i> Tambah ke Troli`;
+    icons();
+  }
+}
+window.qvAddToCart = function(){
+  const hasSizes = Array.isArray(qvProduct.sizes) && qvProduct.sizes.length > 0;
+  if(hasSizes && !qvSelectedSize){ showToast('Sila pilih saiz dahulu','alert-circle'); return; }
+  window.addToCart(qvProduct.id, qvQty, qvSelectedSize);
+  window.closeQuickView();
+}
 
 /* ================= CART CORE ================= */
-window.addToCart = function(productId, qty){
+window.addToCart = function(productId, qty, size){
   const p = appProducts.find(x=>x.id===productId);
   if(!p || p.stock<=0) return;
-  const existing = cart.find(c=>c.id===productId);
+  const hasSizes = Array.isArray(p.sizes) && p.sizes.length > 0;
+  let price = p.price;
+  if(hasSizes){
+    const sizeObj = p.sizes.find(s=>s.label===size);
+    if(!sizeObj){ showToast('Sila pilih saiz produk','alert-circle'); return; }
+    price = sizeObj.price;
+  }
+  const existing = cart.find(c=>c.id===productId && (c.size||'')===(size||''));
   const addQty = qty||1;
   if(existing){ existing.qty = Math.min(existing.qty+addQty, p.stock); }
-  else { cart.push({ id:p.id, name:p.name, price:p.price, weight:p.weight, commissionPct:p.commissionPct, bekalKawasan:p.pickupKawasan||'', qty:Math.min(addQty,p.stock) }); }
-  persistCart(); updateCartBadge(); showToast(p.name+' ditambah ke troli', 'shopping-bag');
+  else { cart.push({ id:p.id, name:p.name, price, weight:p.weight, commissionPct:p.commissionPct, bekalKawasan:p.pickupKawasan||'', size:size||'', qty:Math.min(addQty,p.stock) }); }
+  persistCart(); updateCartBadge(); showToast(p.name+(size?' ('+size+')':'')+' ditambah ke troli', 'shopping-bag');
   if(typeof renderCart==='function') renderCart();
 }
 function updateCartBadge(){
@@ -2285,21 +2335,22 @@ async function renderSenaraiEjen(){
 function cartItemHTML(item){
   const prod = appProducts.find(p=>p.id===item.id);
   const cat = CATEGORIES[prod?prod.category:'kurma'] || CATEGORIES.kurma;
+  const sizeAttr = escapeHtml(item.size||'');
   return `
   <div class="bg-white border border-sand rounded-2xl p-3 flex items-center gap-3">
     <div class="w-16 h-16 rounded-xl flex items-center justify-center shrink-0" style="background:linear-gradient(135deg, ${cat.grad[0]}, ${cat.grad[1]})"><i data-lucide="${cat.icon}" class="w-6 h-6 text-white/90"></i></div>
     <div class="flex-1 min-w-0">
-      <p class="font-semibold text-sm text-ink truncate">${escapeHtml(item.name)}</p>
+      <p class="font-semibold text-sm text-ink truncate">${escapeHtml(item.name)}${item.size ? ` <span class="text-inksoft font-normal">(Saiz ${escapeHtml(item.size)})</span>` : ''}</p>
       <p class="text-forest font-bold text-sm">${formatRM(item.price)}</p>
       <div class="flex items-center gap-2 mt-1.5">
-        <button onclick="window.updateCartQty('${item.id}',-1)" class="w-6 h-6 rounded-full bg-cream flex items-center justify-center"><i data-lucide="minus" class="w-3 h-3"></i></button>
+        <button onclick="window.updateCartQty('${item.id}',-1,'${sizeAttr}')" class="w-6 h-6 rounded-full bg-cream flex items-center justify-center"><i data-lucide="minus" class="w-3 h-3"></i></button>
         <span class="text-xs font-bold w-4 text-center">${item.qty}</span>
-        <button onclick="window.updateCartQty('${item.id}',1)" class="w-6 h-6 rounded-full bg-cream flex items-center justify-center"><i data-lucide="plus" class="w-3 h-3"></i></button>
+        <button onclick="window.updateCartQty('${item.id}',1,'${sizeAttr}')" class="w-6 h-6 rounded-full bg-cream flex items-center justify-center"><i data-lucide="plus" class="w-3 h-3"></i></button>
       </div>
     </div>
     <div class="text-right shrink-0">
       <p class="font-bold text-sm text-ink">${formatRM(item.price*item.qty)}</p>
-      <button onclick="window.removeFromCart('${item.id}')" class="text-red-400 hover:text-red-600 mt-2.5"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+      <button onclick="window.removeFromCart('${item.id}','${sizeAttr}')" class="text-red-400 hover:text-red-600 mt-2.5"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
     </div>
   </div>`;
 }
@@ -2317,17 +2368,17 @@ function renderCart(){
   document.getElementById('cart-total').innerText = formatRM(subtotal);
   icons();
 }
-window.updateCartQty = function(id, delta){
-  const item = cart.find(c=>c.id===id);
+window.updateCartQty = function(id, delta, size){
+  const item = cart.find(c=>c.id===id && (c.size||'')===(size||''));
   if(!item) return;
   const p = appProducts.find(x=>x.id===id);
   item.qty += delta;
-  if(item.qty <= 0){ cart = cart.filter(c=>c.id!==id); }
+  if(item.qty <= 0){ cart = cart.filter(c=>c!==item); }
   else if(p && item.qty > p.stock){ item.qty = p.stock; }
   persistCart(); updateCartBadge(); renderCart();
 }
-window.removeFromCart = function(id){
-  cart = cart.filter(c=>c.id!==id);
+window.removeFromCart = function(id, size){
+  cart = cart.filter(c=>!(c.id===id && (c.size||'')===(size||'')));
   persistCart(); updateCartBadge(); renderCart();
 }
 window.goToCheckout = function(){
@@ -2357,7 +2408,7 @@ function populateStateSelect(){
 function renderCheckoutSummary(){
   const itemsEl = document.getElementById('checkout-items');
   if(!itemsEl) return;
-  itemsEl.innerHTML = cart.map(c=>`<div class="flex justify-between text-xs"><span class="text-inksoft">${c.qty}x ${escapeHtml(c.name)}</span><span class="font-bold text-ink">${formatRM(c.price*c.qty)}</span></div>`).join('') || `<p class="text-xs text-inksoft italic">Troli kosong</p>`;
+  itemsEl.innerHTML = cart.map(c=>`<div class="flex justify-between text-xs"><span class="text-inksoft">${c.qty}x ${escapeHtml(c.name)}${c.size ? ' (Saiz '+escapeHtml(c.size)+')' : ''}</span><span class="font-bold text-ink">${formatRM(c.price*c.qty)}</span></div>`).join('') || `<p class="text-xs text-inksoft italic">Troli kosong</p>`;
   const subtotal = cart.reduce((s,c)=>s+c.price*c.qty,0);
   document.getElementById('co-subtotal').innerText = formatRM(subtotal);
   document.getElementById('co-shipfee').innerText = selectedShipping ? formatRM(selectedShipping.price) : 'Belum dikira';
@@ -2654,7 +2705,7 @@ window.submitOrder = async function(){
     else showToast('Kod ejen tidak sah — diteruskan tanpa ejen','alert-circle');
   }
 
-  const items = cart.map(c=>({ productId:c.id, name:c.name, qty:c.qty, price:c.price, weight:c.weight, commissionPct:c.commissionPct, bekalKawasan:c.bekalKawasan||'' }));
+  const items = cart.map(c=>({ productId:c.id, name:c.name, qty:c.qty, price:c.price, weight:c.weight, commissionPct:c.commissionPct, bekalKawasan:c.bekalKawasan||'', size:c.size||'' }));
 
   const orderPayload = {
     customerName:nama, phone, email, address:alamat, postcode:poskod, city:bandar, state,
@@ -2670,7 +2721,8 @@ window.submitOrder = async function(){
   try{
     result = await window.fbSubmitOrder(orderPayload);
   }catch(e){
-    showToast('Gagal hantar tempahan, cuba lagi','alert-circle');
+    console.error('submitOrder failed:', e);
+    showToast('Gagal hantar tempahan: ' + (e && (e.code || e.message) || 'ralat tidak diketahui'), 'alert-circle');
     return;
   }
 
@@ -3496,6 +3548,31 @@ function renderAdminView(){
 }
 
 /* ================= ADMIN: PRODUK ================= */
+const CLOTHING_SIZES = ['3XS','2XS','XS','S','M','L','XL','2XL','3XL','4XL','5XL','6XL','7XL','8XL'];
+function renderProductSizesGrid(existingSizes){
+  const grid = document.getElementById('pm-sizes-grid');
+  if(!grid) return;
+  const map = {};
+  (existingSizes||[]).forEach(s=>{ map[s.label] = s.price; });
+  grid.innerHTML = CLOTHING_SIZES.map(sz=>{
+    const checked = map.hasOwnProperty(sz);
+    const price = checked ? map[sz] : '';
+    return `<div class="flex items-center gap-1.5 bg-white border border-sand rounded-lg px-2 py-1.5">
+      <input type="checkbox" class="pm-size-check w-3.5 h-3.5 accent-[#0B5D3B]" data-size="${sz}" ${checked?'checked':''} onchange="window.onSizeCheckboxChange(this)">
+      <span class="text-[11px] font-bold text-ink w-9 shrink-0">${sz}</span>
+      <input type="number" step="0.01" placeholder="RM" class="pm-size-price w-full bg-cream border border-sand rounded px-1.5 py-1 text-[11px]" data-size="${sz}" value="${price}" ${checked?'':'disabled'}>
+    </div>`;
+  }).join('');
+}
+window.onSizeCheckboxChange = function(checkbox){
+  const priceInput = checkbox.closest('div').querySelector('.pm-size-price');
+  priceInput.disabled = !checkbox.checked;
+  if(checkbox.checked) priceInput.focus();
+}
+window.toggleSizeEditor = function(){
+  const on = document.getElementById('pm-use-sizes').checked;
+  document.getElementById('pm-sizes-wrap').classList.toggle('hidden', !on);
+}
 window.openProductModal = function(id){
   const editing = id ? appProducts.find(p=>p.id===id) : null;
   document.getElementById('pm-title').innerText = editing ? 'Edit Produk' : 'Tambah Produk';
@@ -3517,6 +3594,11 @@ window.openProductModal = function(id){
   setUploadStatusDisplay('pm-img2', imgs[1], 'Upload Gambar 2 dari peranti (pilihan)');
   setUploadStatusDisplay('pm-img3', imgs[2], 'Upload Gambar 3 dari peranti (pilihan)');
   document.getElementById('pm-popular').checked = editing ? !!editing.popular : false;
+  document.getElementById('pm-active').checked = editing ? editing.active !== false : true;
+  const existingSizes = editing && Array.isArray(editing.sizes) ? editing.sizes : [];
+  document.getElementById('pm-use-sizes').checked = existingSizes.length > 0;
+  document.getElementById('pm-sizes-wrap').classList.toggle('hidden', existingSizes.length === 0);
+  renderProductSizesGrid(existingSizes);
   const catSel = document.getElementById('pm-category');
   if(catSel.options.length===0){
     Object.entries(CATEGORIES).forEach(([key,cat])=>{ const o=document.createElement('option'); o.value=key; o.innerText=cat.name; catSel.appendChild(o); });
@@ -3549,12 +3631,25 @@ window.saveProduct = async function(){
   const desc = document.getElementById('pm-desc').value.trim();
   const sellerName = document.getElementById('pm-seller').value.trim() || 'Kedai PASTI Sarawak Official';
   const popular = document.getElementById('pm-popular').checked;
+  const active = document.getElementById('pm-active').checked;
   const images = [document.getElementById('pm-img1').value.trim(), document.getElementById('pm-img2').value.trim(), document.getElementById('pm-img3').value.trim()].filter(Boolean);
 
-  if(!name || isNaN(price) || isNaN(weight) || isNaN(stock) || isNaN(commissionPct)){
+  const useSizes = document.getElementById('pm-use-sizes').checked;
+  let sizes = [];
+  if(useSizes){
+    document.querySelectorAll('.pm-size-check:checked').forEach(cb=>{
+      const label = cb.getAttribute('data-size');
+      const szPrice = parseFloat(cb.closest('div').querySelector('.pm-size-price').value);
+      if(!isNaN(szPrice)) sizes.push({ label, price: szPrice });
+    });
+    if(!sizes.length){ showToast('Sila tanda sekurang-kurangnya satu saiz & isi harga','alert-circle'); return; }
+  }
+  const effectivePrice = sizes.length ? Math.min(...sizes.map(s=>s.price)) : price;
+
+  if(!name || isNaN(effectivePrice) || isNaN(weight) || isNaN(stock) || isNaN(commissionPct)){
     showToast('Sila lengkapkan semua medan dengan betul','alert-circle'); return;
   }
-  const product = { id:id||undefined, name,price,modal,weight,stock,commissionPct,jualan,category,desc,sellerName,popular,images, createdAt:new Date().toISOString() };
+  const product = { id:id||undefined, name, price:effectivePrice, modal,weight,stock,commissionPct,jualan,category,desc,sellerName,popular,active,sizes,images, createdAt:new Date().toISOString() };
   try{
     await window.fbAdminSaveProduct(product);
     await refreshOwnProducts();
@@ -3563,6 +3658,19 @@ window.saveProduct = async function(){
     showToast('Produk berjaya disimpan','check-circle-2');
   }catch(e){
     showToast('Gagal simpan produk','alert-circle');
+  }
+}
+window.toggleProductActive = async function(id){
+  const p = appProducts.find(x=>x.id===id);
+  if(!p) return;
+  const nextActive = !(p.active !== false);
+  try{
+    await window.fbAdminSaveProduct({ ...p, active: nextActive });
+    p.active = nextActive;
+    renderAdminProducts(); renderHome(); renderCatalog();
+    showToast(nextActive ? 'Produk diaktifkan' : 'Produk dinyahaktifkan', nextActive ? 'eye' : 'eye-off');
+  }catch(e){
+    showToast('Gagal kemas kini status produk','alert-circle');
   }
 }
 window.deleteProduct = async function(id){
@@ -3582,19 +3690,25 @@ function renderAdminProducts(){
   document.getElementById('admin-produk-count').innerText = appProducts.length+' produk';
   tbody.innerHTML = appProducts.map(p=>{
     const cat = CATEGORIES[p.category]||CATEGORIES.kurma;
-    return `<tr class="border-t border-sand">
+    const active = p.active !== false;
+    return `<tr class="border-t border-sand ${active?'':'opacity-50'}">
       <td class="p-3">
         <div class="flex items-center gap-2">
           <div class="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style="background:linear-gradient(135deg, ${cat.grad[0]}, ${cat.grad[1]})"><i data-lucide="${cat.icon}" class="w-4 h-4 text-white"></i></div>
-          <span class="font-bold text-ink">${escapeHtml(p.name)}</span>
+          <div>
+            <span class="font-bold text-ink block">${escapeHtml(p.name)}</span>
+            <span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold ${active?'bg-green-100 text-green-700':'bg-red-100 text-red-600'}">${active?'AKTIF':'TIDAK AKTIF'}</span>
+            ${p.sizes && p.sizes.length ? `<span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-honey/20 text-honeydeep ml-1">${p.sizes.length} SAIZ</span>` : ''}
+          </div>
         </div>
       </td>
       <td class="p-3 text-inksoft">${escapeHtml(cat.name)}</td>
-      <td class="p-3"><span class="font-bold text-forest">${formatRM(p.price)}</span><br><span class="text-inksoft text-[10px]">${p.weight} kg</span></td>
+      <td class="p-3"><span class="font-bold text-forest">${p.sizes && p.sizes.length ? 'dari '+formatRM(p.price) : formatRM(p.price)}</span><br><span class="text-inksoft text-[10px]">${p.weight} kg</span></td>
       <td class="p-3 font-bold text-honeydeep">${p.commissionPct}%</td>
       <td class="p-3 font-bold ${p.stock>0?'text-ink':'text-red-500'}">${p.stock}</td>
       <td class="p-3">
         <div class="flex gap-1.5">
+          <button onclick="window.toggleProductActive('${p.id}')" title="${active?'Nyahaktifkan':'Aktifkan'}" class="w-8 h-8 rounded-lg ${active?'bg-green-50 text-green-600':'bg-slate-100 text-slate-500'} flex items-center justify-center"><i data-lucide="${active?'eye':'eye-off'}" class="w-3.5 h-3.5"></i></button>
           <button onclick="window.openProductModal('${p.id}')" class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
           <button onclick="window.deleteProduct('${p.id}')" class="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
         </div>
