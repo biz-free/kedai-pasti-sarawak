@@ -3094,6 +3094,11 @@ function renderKawasanPortalView(){
   document.getElementById('kw-pic-name').value = currentKawasan.picName || '';
   document.getElementById('kw-pic-phone').value = currentKawasan.picPhone || '';
   document.getElementById('kw-pic-email').value = currentKawasan.picEmail || '';
+  document.getElementById('kw-bank-name').value = currentKawasan.bankName || '';
+  document.getElementById('kw-bank-acc').value = currentKawasan.bankAccountNo || '';
+  document.getElementById('kw-bank-acc-name').value = currentKawasan.bankAccountName || '';
+  document.getElementById('kw-qr-url').value = currentKawasan.qrImageUrl || '';
+  setUploadStatusDisplay('kw-qr-url', currentKawasan.qrImageUrl);
   window.setKawasanTab(kwCurrentTab);
 }
 window.setKawasanTab = function(tab){
@@ -3316,6 +3321,7 @@ window.saveKwPayout = async function(){
   };
   try{
     await window.fbKawasanSavePayout(payload);
+    if(currentKawasan) Object.assign(currentKawasan, payload);
     showToast('Butiran berjaya disimpan','check-circle-2');
   }catch(e){
     showToast('Gagal simpan butiran','alert-circle');
