@@ -2554,6 +2554,7 @@ function renderCheckoutEnter(){
   if(uid && typeof window.fbCustomerGetProfile==='function'){
     window.fbCustomerGetProfile().then(profile=>{
       if(profile.name) document.getElementById('co-nama').value = profile.name;
+      if(profile.email) document.getElementById('co-email').value = profile.email;
       if(profile.phone) document.getElementById('co-phone').value = profile.phone;
       if(profile.address) document.getElementById('co-alamat').value = profile.address;
       if(profile.postcode) document.getElementById('co-poskod').value = profile.postcode;
