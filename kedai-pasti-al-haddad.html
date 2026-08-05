@@ -698,11 +698,12 @@
                   <div id="co-pickup-selected" class="hidden items-center justify-between bg-leaflight border border-forest/20 rounded-xl px-4 py-3 mb-2">
                     <div class="min-w-0">
                       <p class="font-bold text-sm text-ink" id="co-pickup-selected-name"></p>
-                      <p class="text-[11px] text-inksoft" id="co-pickup-selected-pic"></p>
                     </div>
                     <button type="button" onclick="window.selectPickupKawasan('')" class="text-xs font-bold text-red-500 shrink-0">Tukar</button>
                   </div>
-                  <div id="co-pickup-kawasan-list" class="space-y-2"></div>
+                  <select id="co-pickup-kawasan-select" onchange="window.selectPickupKawasan(this.value)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                    <option value="">-- Pilih PASTI Kawasan --</option>
+                  </select>
                 </div>
 
                 <div id="co-ship-easyparcel" class="hidden">
@@ -711,7 +712,6 @@
                     <i data-lucide="calculator" class="w-4 h-4"></i> Kira Kos Penghantaran
                   </button>
                   <div id="shipping-options" class="space-y-2"></div>
-                  <p class="text-[10px] text-inksoft italic mt-3 leading-relaxed">* Kadar dianggarkan berdasarkan berat troli &amp; zon penghantaran, menggunakan <code class="bg-cream px-1 rounded">easyparcel-rate.js</code> untuk kadar EasyParcel masa nyata.</p>
                 </div>
               </div>
 
@@ -2358,53 +2358,41 @@ function renderCheckoutSummary(){
 
 window._kawasanListCache = [];
 async function populatePickupKawasan(){
-  const wrap = document.getElementById('co-pickup-kawasan-list');
-  if(!wrap || typeof window.fbListKawasanPublic !== 'function') return;
-  wrap.innerHTML = `<p class="text-inksoft text-xs italic">Memuatkan senarai kawasan...</p>`;
+  const sel = document.getElementById('co-pickup-kawasan-select');
+  if(!sel || typeof window.fbListKawasanPublic !== 'function') return;
+  sel.innerHTML = `<option value="">Memuatkan...</option>`;
   try{
     const list = (await window.fbListKawasanPublic()).filter(k=>k.active!==false);
     window._kawasanListCache = list;
     suggestKawasanByBandar();
-    wrap.innerHTML = list.length ? list.map(k=>`
-      <label onclick="window.selectPickupKawasan('${escapeHtml(k.code)}')" data-kw-code="${escapeHtml(k.code)}" class="flex items-center justify-between gap-3 border-2 border-sand rounded-xl px-4 py-3 cursor-pointer transition-colors">
-        <div class="flex items-center gap-3">
-          <input type="radio" name="pickup-kw-opt" class="accent-[#0B5D3B] w-4 h-4">
-          <div>
-            <p class="font-bold text-sm text-ink">PASTI ${escapeHtml(k.namaKawasan)}</p>
-            <p class="text-[11px] text-inksoft">${escapeHtml(k.picName||'PIC belum ditetapkan')}${k.picPhone ? ' · '+escapeHtml(k.picPhone) : ''}</p>
-          </div>
-        </div>
-      </label>`).join('') : `<p class="text-inksoft text-xs italic">Belum ada PASTI Kawasan aktif buat masa ini.</p>`;
+    sel.innerHTML = `<option value="">-- Pilih PASTI Kawasan --</option>` + list.map(k=>
+      `<option value="${escapeHtml(k.code)}">PASTI ${escapeHtml(k.namaKawasan)}</option>`).join('');
+    sel.value = window.pickupKawasanCode || '';
   }catch(e){
-    wrap.innerHTML = `<p class="text-red-500 text-xs italic">Gagal muatkan senarai kawasan.</p>`;
+    sel.innerHTML = `<option value="">Gagal muatkan senarai kawasan</option>`;
   }
 }
 window.selectPickupKawasan = function(code){
   window.pickupKawasanCode = code;
   selectedShipping = code ? { price:0, courier:'Ambil di PASTI Kawasan', eta:'Ikut susunan kawasan' } : null;
-  document.querySelectorAll('#co-pickup-kawasan-list label').forEach(el=>{
-    const active = el.getAttribute('data-kw-code')===code;
-    el.classList.toggle('border-forest', active);
-    el.classList.toggle('bg-leaflight', active);
-    el.classList.toggle('border-sand', !active);
-    const radio = el.querySelector('input'); if(radio) radio.checked = active;
-  });
+  const sel = document.getElementById('co-pickup-kawasan-select');
+  if(sel) sel.value = code || '';
+
   const suggestBanner = document.getElementById('co-pickup-suggest');
   if(suggestBanner){ suggestBanner.classList.add('hidden'); suggestBanner.classList.remove('flex'); }
 
   const selectedCard = document.getElementById('co-pickup-selected');
-  const fullList = document.getElementById('co-pickup-kawasan-list');
+  const dropdown = document.getElementById('co-pickup-kawasan-select');
   const intro = document.getElementById('co-pickup-intro');
   const kw = code ? (window._kawasanListCache||[]).find(k=>k.code===code) : null;
   if(kw){
     document.getElementById('co-pickup-selected-name').innerText = 'PASTI ' + kw.namaKawasan;
-    document.getElementById('co-pickup-selected-pic').innerText = (kw.picName||'PIC belum ditetapkan') + (kw.picPhone ? ' · '+kw.picPhone : '');
     selectedCard.classList.remove('hidden'); selectedCard.classList.add('flex');
-    fullList.classList.add('hidden');
+    dropdown.classList.add('hidden');
     if(intro) intro.classList.add('hidden');
   } else {
     selectedCard.classList.add('hidden'); selectedCard.classList.remove('flex');
-    fullList.classList.remove('hidden');
+    dropdown.classList.remove('hidden');
     if(intro) intro.classList.remove('hidden');
   }
   renderCheckoutSummary();
@@ -2564,7 +2552,7 @@ function renderCheckoutEnter(){
   }
 }
 window.shipMode = 'pickup';
-window.setShipMode = function(mode){
+window.setShipMode = async function(mode){
   window.shipMode = mode;
   document.getElementById('co-ship-pickup').classList.toggle('hidden', mode!=='pickup');
   document.getElementById('co-ship-easyparcel').classList.toggle('hidden', mode!=='courier');
@@ -2577,6 +2565,12 @@ window.setShipMode = function(mode){
     window.selectPickupKawasan('');
   }
   if(mode==='pickup'){
+    if(!window.pickupKawasanCode){
+      const agentCode = document.getElementById('co-agentcode').value;
+      const agent = agentCode ? appAgents.find(a=>a.code===agentCode) : null;
+      if(agent) await autoSelectKawasanForAgent(agent.area);
+      else suggestKawasanByBandar();
+    }
     selectedShipping = window.pickupKawasanCode ? { price:0, courier:'Ambil di PASTI Kawasan', eta:'Ikut susunan kawasan' } : null;
   } else {
     selectedShipping = null;
