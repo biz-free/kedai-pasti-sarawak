@@ -1,0 +1,18 @@
+{
+  "name": "Kedai PASTI Sarawak Official",
+  "short_name": "Kedai PASTI",
+  "description": "Kedai PASTI Sarawak Official — platform jualan produk komuniti (kurma, madu, kudapan tradisional) dengan sistem ejen & komisen, fokus utama Sarawak.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#FBF7EE",
+  "theme_color": "#0B5D3B",
+  "lang": "ms",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

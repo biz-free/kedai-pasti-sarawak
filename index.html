@@ -5,6 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 <title>Kedai PASTI Sarawak Official — Produk Komuniti Seluruh Malaysia</title>
 <meta name="description" content="Kedai PASTI Sarawak Official — platform jualan produk komuniti (kurma, madu, kudapan tradisional) dengan sistem ejen & komisen, fokus utama Sarawak.">
+
+<!-- PWA: installable "Add to Home Screen" on Android & iOS -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0B5D3B">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Kedai PASTI">
+
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
   // Simple localStorage-backed KV store matching the {get,set,delete}(key, _global) shape
@@ -14,6 +25,11 @@
     async set(key, value){ try{ localStorage.setItem(key, value); }catch(e){} },
     async delete(key){ try{ localStorage.removeItem(key); }catch(e){} },
   };
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    });
+  }
 </script>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
