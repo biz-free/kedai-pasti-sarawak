@@ -3640,11 +3640,20 @@ window.confirmOrderPayment = async function(orderId){
 async function refreshAndRenderAdminAgents(){
   const tbody = document.getElementById('admin-agent-body');
   if(tbody) tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-inksoft italic">Memuatkan senarai ejen...</td></tr>`;
-  try{
-    [appAgents, appKPOrders] = await Promise.all([window.fbAdminListAgents(), window.fbAdminListOrders()]);
-  }catch(e){
+  const [agentsResult, ordersResult] = await Promise.allSettled([window.fbAdminListAgents(), window.fbAdminListOrders()]);
+  if(agentsResult.status==='fulfilled'){
+    appAgents = agentsResult.value;
+  } else {
     appAgents = [];
-    showToast('Gagal muatkan senarai ejen','alert-circle');
+    console.error('adminListAgents failed:', agentsResult.reason);
+    showToast('Gagal muatkan senarai ejen: ' + (agentsResult.reason && (agentsResult.reason.code || agentsResult.reason.message) || 'ralat tidak diketahui'), 'alert-circle');
+  }
+  if(ordersResult.status==='fulfilled'){
+    appKPOrders = ordersResult.value;
+  } else {
+    appKPOrders = [];
+    console.error('adminListOrders failed:', ordersResult.reason);
+    showToast('Gagal muatkan senarai tempahan: ' + (ordersResult.reason && (ordersResult.reason.code || ordersResult.reason.message) || 'ralat tidak diketahui'), 'alert-circle');
   }
   renderAdminAgents();
 }
