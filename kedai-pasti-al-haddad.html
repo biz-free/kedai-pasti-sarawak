@@ -2250,9 +2250,10 @@ async function renderSenaraiEjen(){
     appAgents = agents;
     if(sub) sub.innerText = `${agents.length} ejen komuniti berdaftar yang menjual produk Kedai PASTI Sarawak Official di kawasan masing-masing.`;
     el.innerHTML = agents.length ? agents.map(a=>{
-      const msg = encodeURIComponent(`Assalamualaikum ${a.name}, saya berminat dengan produk Kedai PASTI Sarawak Official.`);
+      const displayName = toTitleCase(a.name);
+      const msg = encodeURIComponent(`Assalamualaikum ${displayName}, saya berminat dengan produk Kedai PASTI Sarawak Official.`);
       return `<div class="bg-white border border-sand rounded-2xl p-4">
-        <p class="font-display font-bold text-ink">${escapeHtml(a.name)}</p>
+        <p class="font-display font-bold text-ink">${escapeHtml(displayName)}</p>
         <p class="text-inksoft text-xs mt-1">PASTI ${escapeHtml(a.area)}${a.branch ? ' · '+escapeHtml(a.branch) : ''}</p>
         ${a.phone ? `<a href="https://wa.me/${escapeHtml(normalizePhoneClient(a.phone))}?text=${msg}" target="_blank" class="mt-2 inline-flex items-center gap-1.5 text-[11px] font-bold text-forest hover:underline"><i data-lucide="message-circle" class="w-3 h-3"></i> WhatsApp</a>` : ''}
       </div>`;
