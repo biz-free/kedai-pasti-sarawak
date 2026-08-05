@@ -689,11 +689,18 @@
                 </div>
 
                 <div id="co-ship-pickup">
-                  <p class="text-inksoft text-xs mb-3">Sokong ejen &amp; PASTI Kawasan komuniti kami — pilih ejen di atas dan PASTI kawasan akan dipilih automatik, atau pilih PASTI kawasan terus di bawah untuk ambil pesanan anda.</p>
+                  <p id="co-pickup-intro" class="text-inksoft text-xs mb-3">Sokong ejen &amp; PASTI Kawasan komuniti kami — pilih ejen di atas dan PASTI kawasan akan dipilih automatik, atau pilih PASTI kawasan terus di bawah untuk ambil pesanan anda.</p>
                   <p id="co-pickup-auto-note" class="hidden bg-leaflight text-forest text-xs font-bold rounded-xl px-3 py-2 mb-2 flex items-center gap-1.5"><i data-lucide="check-circle-2" class="w-3.5 h-3.5 shrink-0"></i> <span></span></p>
                   <div id="co-pickup-suggest" class="hidden bg-honey/10 border border-honey text-ink text-xs font-bold rounded-xl px-3 py-2 mb-2 items-center justify-between gap-2">
                     <span class="flex items-center gap-1.5"><i data-lucide="sparkles" class="w-3.5 h-3.5 text-honeydeep shrink-0"></i> <span id="co-pickup-suggest-text"></span></span>
                     <button type="button" onclick="window.acceptPickupSuggestion()" class="bg-forest text-white text-[10px] font-bold px-3 py-1.5 rounded-lg shrink-0">Pilih</button>
+                  </div>
+                  <div id="co-pickup-selected" class="hidden items-center justify-between bg-leaflight border border-forest/20 rounded-xl px-4 py-3 mb-2">
+                    <div class="min-w-0">
+                      <p class="font-bold text-sm text-ink" id="co-pickup-selected-name"></p>
+                      <p class="text-[11px] text-inksoft" id="co-pickup-selected-pic"></p>
+                    </div>
+                    <button type="button" onclick="window.selectPickupKawasan('')" class="text-xs font-bold text-red-500 shrink-0">Tukar</button>
                   </div>
                   <div id="co-pickup-kawasan-list" class="space-y-2"></div>
                 </div>
@@ -732,6 +739,7 @@
                 <div class="border-t border-sand pt-3 space-y-2 text-sm">
                   <div class="flex justify-between"><span class="text-inksoft">Subtotal</span><span id="co-subtotal" class="font-bold">RM 0.00</span></div>
                   <div class="flex justify-between"><span class="text-inksoft">Penghantaran</span><span id="co-shipfee" class="font-bold">Belum dikira</span></div>
+                  <div id="co-handling-row" class="hidden flex justify-between"><span class="text-inksoft">Kos Pengendalian PASTI Kawasan</span><span id="co-handling-fee" class="font-bold">RM 0.00</span></div>
                   <div class="flex justify-between text-base pt-2 border-t border-sand"><span class="font-bold">Jumlah</span><span id="co-total" class="font-display font-extrabold text-forest text-xl">RM 0.00</span></div>
                 </div>
                 <button onclick="window.submitOrder()" class="w-full mt-4 bg-forest hover:bg-forestdark text-white font-bold py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-colors">
@@ -1481,10 +1489,6 @@
       <button onclick="window.openHadiHudaChat()" class="w-full flex items-center gap-2 bg-leaflight hover:bg-forest hover:text-white text-forest font-bold text-sm px-3 py-2.5 rounded-xl transition-colors">
         <i data-lucide="bot" class="w-4 h-4"></i> Chat dengan HadiHuda
       </button>
-      <button onclick="window.toggleWaKawasanPicker()" class="w-full flex items-center gap-2 bg-cream hover:bg-sand text-ink font-bold text-sm px-3 py-2.5 rounded-xl transition-colors">
-        <i data-lucide="map-pin" class="w-4 h-4"></i> Hubungi PASTI Kawasan Saya
-      </button>
-      <div id="wa-fab-kawasan-list" class="hidden max-h-40 overflow-y-auto no-scrollbar space-y-1 border-t border-sand pt-2"></div>
     </div>
     <button onclick="window.toggleWaFabMenu()" class="w-14 h-14 bg-[#25D366] hover:bg-[#1DA851] text-white rounded-full shadow-xl flex items-center justify-center transition-colors">
       <i data-lucide="message-circle" class="w-7 h-7"></i>
@@ -1775,23 +1779,6 @@ function applySiteContent(){
 
 window.toggleWaFabMenu = function(){
   document.getElementById('wa-fab-menu').classList.toggle('hidden');
-}
-window.toggleWaKawasanPicker = async function(){
-  const list = document.getElementById('wa-fab-kawasan-list');
-  list.classList.toggle('hidden');
-  if(list.classList.contains('hidden') || list.dataset.loaded) return;
-  list.innerHTML = '<p class="text-inksoft text-xs italic px-1">Memuatkan...</p>';
-  try{
-    const kawasanList = await window.fbListKawasanPublic();
-    const active = kawasanList.filter(k=>k.active!==false && k.picPhone);
-    list.innerHTML = active.length ? active.map(k=>{
-      const msg = encodeURIComponent(`Assalamualaikum PASTI ${k.namaKawasan}, saya ada soalan tentang produk/tempahan.`);
-      return `<a href="https://wa.me/${escapeHtml(normalizePhoneClient(k.picPhone))}?text=${msg}" target="_blank" class="block text-xs font-bold text-forest hover:underline px-1 py-1">PASTI ${escapeHtml(k.namaKawasan)}</a>`;
-    }).join('') : '<p class="text-inksoft text-xs italic px-1">Tiada kawasan berdaftar lagi.</p>';
-    list.dataset.loaded = '1';
-  }catch(e){
-    list.innerHTML = '<p class="text-inksoft text-xs italic px-1">Gagal muatkan senarai.</p>';
-  }
 }
 function normalizePhoneClient(raw){
   let p = String(raw||'').replace(/[\s\-]/g,'');
@@ -2360,7 +2347,12 @@ function renderCheckoutSummary(){
   const subtotal = cart.reduce((s,c)=>s+c.price*c.qty,0);
   document.getElementById('co-subtotal').innerText = formatRM(subtotal);
   document.getElementById('co-shipfee').innerText = selectedShipping ? formatRM(selectedShipping.price) : 'Belum dikira';
-  const total = subtotal + (selectedShipping?selectedShipping.price:0);
+  const totalQty = cart.reduce((s,c)=>s+c.qty,0);
+  const handlingFee = window.pickupKawasanCode ? totalQty * 1 : 0;
+  const handlingRow = document.getElementById('co-handling-row');
+  handlingRow.classList.toggle('hidden', !handlingFee);
+  if(handlingFee) document.getElementById('co-handling-fee').innerText = formatRM(handlingFee);
+  const total = subtotal + (selectedShipping?selectedShipping.price:0) + handlingFee;
   document.getElementById('co-total').innerText = formatRM(total);
 }
 
@@ -2399,6 +2391,22 @@ window.selectPickupKawasan = function(code){
   });
   const suggestBanner = document.getElementById('co-pickup-suggest');
   if(suggestBanner){ suggestBanner.classList.add('hidden'); suggestBanner.classList.remove('flex'); }
+
+  const selectedCard = document.getElementById('co-pickup-selected');
+  const fullList = document.getElementById('co-pickup-kawasan-list');
+  const intro = document.getElementById('co-pickup-intro');
+  const kw = code ? (window._kawasanListCache||[]).find(k=>k.code===code) : null;
+  if(kw){
+    document.getElementById('co-pickup-selected-name').innerText = 'PASTI ' + kw.namaKawasan;
+    document.getElementById('co-pickup-selected-pic').innerText = (kw.picName||'PIC belum ditetapkan') + (kw.picPhone ? ' · '+kw.picPhone : '');
+    selectedCard.classList.remove('hidden'); selectedCard.classList.add('flex');
+    fullList.classList.add('hidden');
+    if(intro) intro.classList.add('hidden');
+  } else {
+    selectedCard.classList.add('hidden'); selectedCard.classList.remove('flex');
+    fullList.classList.remove('hidden');
+    if(intro) intro.classList.remove('hidden');
+  }
   renderCheckoutSummary();
 };
 window._pickupSuggestCode = '';
@@ -2507,7 +2515,8 @@ function renderCheckoutEnter(){
   document.getElementById('checkout-form-wrap').classList.remove('hidden');
   document.getElementById('checkout-success').classList.add('hidden');
   selectedShipping = null;
-  window.pickupKawasanCode = '';
+  window._kawasanListCache = [];
+  window.selectPickupKawasan('');
   document.getElementById('shipping-options').innerHTML = '';
   populateStateSelect();
   renderCheckoutSummary();
@@ -2518,7 +2527,6 @@ function renderCheckoutEnter(){
   document.getElementById('co-agentcode').value = '';
   const pickupNote = document.getElementById('co-pickup-auto-note');
   if(pickupNote){ pickupNote.classList.add('hidden'); pickupNote.classList.remove('flex'); }
-  window._kawasanListCache = [];
 
   const easyParcelOn = siteContent.easyParcelEnabled !== false;
   document.getElementById('co-ship-mode-tabs').classList.toggle('hidden', !easyParcelOn);
@@ -2564,10 +2572,12 @@ window.setShipMode = function(mode){
     btn.classList.toggle('bg-forest', active); btn.classList.toggle('text-white', active);
     btn.classList.toggle('bg-cream', !active); btn.classList.toggle('text-inksoft', !active);
   });
+  if(mode!=='pickup' && window.pickupKawasanCode){
+    window.selectPickupKawasan('');
+  }
   if(mode==='pickup'){
     selectedShipping = window.pickupKawasanCode ? { price:0, courier:'Ambil di PASTI Kawasan', eta:'Ikut susunan kawasan' } : null;
   } else {
-    window.pickupKawasanCode = '';
     selectedShipping = null;
   }
   renderCheckoutSummary();
