@@ -1131,6 +1131,29 @@
 
           <!-- TAB LAPORAN -->
           <div id="admin-tab-laporan" class="admin-tab-panel hidden">
+            <div class="bg-white border border-sand rounded-3xl p-4 mb-6">
+              <div class="flex flex-wrap items-end gap-3">
+                <div>
+                  <label class="text-[10px] font-bold text-inksoft block mb-1">Bulan</label>
+                  <input id="rep-filter-month" type="month" onchange="window.applyReportFilters()" class="bg-cream border border-sand rounded-xl px-3 py-2.5 text-xs font-bold">
+                </div>
+                <div>
+                  <label class="text-[10px] font-bold text-inksoft block mb-1">PASTI Kawasan</label>
+                  <select id="rep-filter-kawasan" onchange="window.applyReportFilters()" class="bg-cream border border-sand rounded-xl px-3 py-2.5 text-xs font-bold"><option value="">Semua Kawasan</option></select>
+                </div>
+                <div>
+                  <label class="text-[10px] font-bold text-inksoft block mb-1">Ejen</label>
+                  <select id="rep-filter-agent" onchange="window.applyReportFilters()" class="bg-cream border border-sand rounded-xl px-3 py-2.5 text-xs font-bold"><option value="">Semua Ejen</option></select>
+                </div>
+                <div>
+                  <label class="text-[10px] font-bold text-inksoft block mb-1">Seller</label>
+                  <select id="rep-filter-seller" onchange="window.applyReportFilters()" class="bg-cream border border-sand rounded-xl px-3 py-2.5 text-xs font-bold"><option value="">Semua Seller</option></select>
+                </div>
+                <button onclick="window.resetReportFilters()" class="bg-cream hover:bg-sand text-ink text-xs font-bold px-4 py-2.5 rounded-xl">Reset Tapisan</button>
+                <button onclick="window.exportReportCsv()" class="ml-auto bg-forest hover:bg-forestdark text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5"><i data-lucide="download" class="w-3.5 h-3.5"></i> Muat Turun CSV</button>
+              </div>
+            </div>
+
             <div class="grid sm:grid-cols-4 gap-4 mb-6">
               <div class="bg-white border border-sand rounded-2xl p-4">
                 <p class="text-[10px] font-bold text-inksoft uppercase mb-1">Jumlah Jualan</p>
@@ -1170,6 +1193,19 @@
               <div class="bg-white border border-sand rounded-3xl p-5">
                 <h3 class="font-display font-bold text-ink mb-4 flex items-center gap-2"><i data-lucide="medal" class="w-4 h-4 text-honey"></i> Prestasi Ejen</h3>
                 <div id="rep-agent-rank" class="space-y-3"></div>
+              </div>
+            </div>
+
+            <div class="bg-white border border-sand rounded-3xl p-5 mt-6">
+              <div class="flex justify-between items-center mb-4">
+                <h3 class="font-display font-bold text-ink">Butiran Tempahan (Ditapis)</h3>
+                <p class="text-xs font-bold text-inksoft" id="rep-order-count">0 tempahan</p>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs whitespace-nowrap">
+                  <thead><tr class="bg-cream text-inksoft uppercase text-[10px]"><th class="p-3">ID / Tarikh</th><th class="p-3">Pelanggan</th><th class="p-3">Ejen</th><th class="p-3">Kawasan</th><th class="p-3">Seller</th><th class="p-3">Jumlah</th><th class="p-3">Status</th></tr></thead>
+                  <tbody id="rep-order-body"></tbody>
+                </table>
               </div>
             </div>
           </div>
@@ -4068,8 +4104,25 @@ function renderAdminAgents(){
 /* ================= ADMIN: LAPORAN ================= */
 window.reportPeriod = 'harian';
 window.salesChartInstance = null;
+window.reportFilters = { month:'', kawasan:'', agent:'', seller:'' };
+let reportKawasanCache = [];
+let lastFilteredOrders = [];
 
 function ordersExcCancelled(){ return appKPOrders.filter(o=>o.status!=='Dibatalkan'); }
+
+function resolveItemSeller(it){
+  return it.sellerName || (appProducts.find(p=>p.id===it.productId)||{}).sellerName || 'Kedai PASTI Sarawak Official';
+}
+function orderMatchesSeller(o, seller){
+  return !seller || (o.items||[]).some(it=>resolveItemSeller(it)===seller);
+}
+// Whole-order total when no seller filter (matches what the customer paid);
+// scoped to just that seller's item revenue when filtering by seller, since
+// one order/cart can mix items from different sellers.
+function orderRevenue(o){
+  if(!reportFilters.seller) return o.total;
+  return (o.items||[]).filter(it=>resolveItemSeller(it)===reportFilters.seller).reduce((s,it)=>s+it.price*it.qty,0);
+}
 
 async function refreshAndRenderReports(){
   try{
@@ -4078,7 +4131,58 @@ async function refreshAndRenderReports(){
     appKPOrders = [];
     showToast('Gagal muatkan data laporan','alert-circle');
   }
+  try{
+    reportKawasanCache = (typeof window.fbListKawasanPublic==='function') ? await window.fbListKawasanPublic() : [];
+  }catch(e){ reportKawasanCache = []; }
+  populateReportFilterOptions();
   renderReports();
+}
+
+function populateReportFilterOptions(){
+  const kawasanSel = document.getElementById('rep-filter-kawasan');
+  const prevKawasan = reportFilters.kawasan;
+  kawasanSel.innerHTML = `<option value="">Semua Kawasan</option>` + reportKawasanCache.map(k=>
+    `<option value="${escapeHtml(k.code)}">PASTI ${escapeHtml(k.namaKawasan)}</option>`).join('');
+  kawasanSel.value = prevKawasan;
+
+  const agentSel = document.getElementById('rep-filter-agent');
+  const prevAgent = reportFilters.agent;
+  agentSel.innerHTML = `<option value="">Semua Ejen</option>` + appAgents.map(a=>
+    `<option value="${escapeHtml(a.code)}">${escapeHtml(a.name)} (${escapeHtml(a.code)})</option>`).join('');
+  agentSel.value = prevAgent;
+
+  const sellers = Array.from(new Set(appProducts.map(p=>p.sellerName || 'Kedai PASTI Sarawak Official')));
+  const sellerSel = document.getElementById('rep-filter-seller');
+  const prevSeller = reportFilters.seller;
+  sellerSel.innerHTML = `<option value="">Semua Seller</option>` + sellers.map(s=>
+    `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+  sellerSel.value = prevSeller;
+}
+
+window.applyReportFilters = function(){
+  reportFilters.month = document.getElementById('rep-filter-month').value;
+  reportFilters.kawasan = document.getElementById('rep-filter-kawasan').value;
+  reportFilters.agent = document.getElementById('rep-filter-agent').value;
+  reportFilters.seller = document.getElementById('rep-filter-seller').value;
+  renderReports();
+}
+window.resetReportFilters = function(){
+  reportFilters = { month:'', kawasan:'', agent:'', seller:'' };
+  document.getElementById('rep-filter-month').value = '';
+  document.getElementById('rep-filter-kawasan').value = '';
+  document.getElementById('rep-filter-agent').value = '';
+  document.getElementById('rep-filter-seller').value = '';
+  renderReports();
+}
+
+function getFilteredOrders(){
+  return ordersExcCancelled().filter(o=>{
+    if(reportFilters.month && o.createdAt.slice(0,7)!==reportFilters.month) return false;
+    if(reportFilters.kawasan && o.pickupKawasanCode!==reportFilters.kawasan) return false;
+    if(reportFilters.agent && o.agentCode!==reportFilters.agent) return false;
+    if(!orderMatchesSeller(o, reportFilters.seller)) return false;
+    return true;
+  });
 }
 
 window.setReportPeriod = function(p){
@@ -4092,22 +4196,24 @@ window.setReportPeriod = function(p){
 }
 
 function renderReports(){
-  const valid = ordersExcCancelled();
-  const totalSales = valid.reduce((s,o)=>s+o.total,0);
-  const totalComm = valid.reduce((s,o)=>s+(o.agentCommission||0),0);
+  const filtered = getFilteredOrders();
+  lastFilteredOrders = filtered;
+  const totalSales = filtered.reduce((s,o)=>s+orderRevenue(o),0);
+  const totalComm = filtered.reduce((s,o)=>s+(o.agentCommission||0),0);
   document.getElementById('rep-total-sales').innerText = formatRM(totalSales);
-  document.getElementById('rep-total-orders').innerText = valid.length;
-  document.getElementById('rep-avg-order').innerText = formatRM(valid.length ? totalSales/valid.length : 0);
+  document.getElementById('rep-total-orders').innerText = filtered.length;
+  document.getElementById('rep-avg-order').innerText = formatRM(filtered.length ? totalSales/filtered.length : 0);
   document.getElementById('rep-total-comm').innerText = formatRM(totalComm);
   renderSalesChart();
   renderTopProducts();
   renderAgentRanking();
+  renderReportOrderTable();
 }
 
 function renderSalesChart(){
   const canvas = document.getElementById('sales-chart');
   if(!canvas || !window.Chart) return;
-  const valid = ordersExcCancelled();
+  const valid = lastFilteredOrders;
   let labels = [], data = [];
 
   if(reportPeriod==='harian'){
@@ -4115,7 +4221,7 @@ function renderSalesChart(){
       const day = new Date(Date.now()-i*86400000);
       const key = day.toISOString().slice(0,10);
       labels.push(day.toLocaleDateString('ms-MY',{day:'2-digit',month:'short'}));
-      data.push(valid.filter(o=>o.createdAt.slice(0,10)===key).reduce((s,o)=>s+o.total,0));
+      data.push(valid.filter(o=>o.createdAt.slice(0,10)===key).reduce((s,o)=>s+orderRevenue(o),0));
     }
   } else if(reportPeriod==='mingguan'){
     for(let i=7;i>=0;i--){
@@ -4124,14 +4230,14 @@ function renderSalesChart(){
       const startMid = new Date(start.getFullYear(),start.getMonth(),start.getDate(),0,0,0);
       const endMid = new Date(end.getFullYear(),end.getMonth(),end.getDate(),23,59,59);
       labels.push(start.toLocaleDateString('ms-MY',{day:'2-digit',month:'short'}));
-      data.push(valid.filter(o=>{ const d=new Date(o.createdAt); return d>=startMid && d<=endMid; }).reduce((s,o)=>s+o.total,0));
+      data.push(valid.filter(o=>{ const d=new Date(o.createdAt); return d>=startMid && d<=endMid; }).reduce((s,o)=>s+orderRevenue(o),0));
     }
   } else {
     for(let i=5;i>=0;i--){
       const d = new Date(); d.setDate(1); d.setMonth(d.getMonth()-i);
       const key = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
       labels.push(d.toLocaleDateString('ms-MY',{month:'short',year:'2-digit'}));
-      data.push(valid.filter(o=>o.createdAt.slice(0,7)===key).reduce((s,o)=>s+o.total,0));
+      data.push(valid.filter(o=>o.createdAt.slice(0,7)===key).reduce((s,o)=>s+orderRevenue(o),0));
     }
   }
 
@@ -4144,10 +4250,11 @@ function renderSalesChart(){
 }
 
 function renderTopProducts(){
-  const valid = ordersExcCancelled();
+  const valid = lastFilteredOrders;
   const agg = {};
   valid.forEach(o=>{
     o.items.forEach(it=>{
+      if(reportFilters.seller && resolveItemSeller(it)!==reportFilters.seller) return;
       if(!agg[it.productId]) agg[it.productId] = { name:it.name, qty:0, revenue:0 };
       agg[it.productId].qty += it.qty;
       agg[it.productId].revenue += it.price*it.qty;
@@ -4167,7 +4274,19 @@ function renderTopProducts(){
 }
 
 function renderAgentRanking(){
-  const ranked = appAgents.map(a=>({ ...a, ...statsForAgent(a.code) })).sort((a,b)=>b.sales-a.sales);
+  const valid = lastFilteredOrders;
+  const byAgent = {};
+  valid.forEach(o=>{
+    if(!o.agentCode) return;
+    if(!byAgent[o.agentCode]) byAgent[o.agentCode] = { sales:0, commission:0, orderCount:0 };
+    byAgent[o.agentCode].sales += orderRevenue(o);
+    byAgent[o.agentCode].commission += (o.agentCommission||0);
+    byAgent[o.agentCode].orderCount += 1;
+  });
+  const ranked = appAgents
+    .map(a=>({ ...a, ...(byAgent[a.code]||{sales:0,commission:0,orderCount:0}) }))
+    .filter(a=>a.orderCount>0)
+    .sort((a,b)=>b.sales-a.sales);
   const maxSales = ranked.length ? ranked[0].sales : 1;
   const el = document.getElementById('rep-agent-rank');
   el.innerHTML = ranked.length ? ranked.map((a,i)=>`
@@ -4177,7 +4296,52 @@ function renderAgentRanking(){
         <p class="text-xs font-bold text-forest shrink-0">${formatRM(a.sales)}</p>
       </div>
       <div class="h-2 bg-cream rounded-full overflow-hidden"><div class="h-full bg-gradient-to-r from-honeydeep to-honey rounded-full" style="width:${maxSales>0?(a.sales/maxSales*100).toFixed(0):0}%"></div></div>
-    </div>`).join('') : `<p class="text-xs text-inksoft italic">Tiada ejen lagi.</p>`;
+    </div>`).join('') : `<p class="text-xs text-inksoft italic">Tiada ejen dengan jualan dalam tapisan ini.</p>`;
+}
+
+function renderReportOrderTable(){
+  const valid = lastFilteredOrders;
+  document.getElementById('rep-order-count').innerText = valid.length + ' tempahan';
+  const tbody = document.getElementById('rep-order-body');
+  const sorted = valid.slice().sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt));
+  tbody.innerHTML = sorted.map(o=>{
+    const sellers = Array.from(new Set((o.items||[]).map(resolveItemSeller)));
+    const kwName = o.pickupKawasanCode ? (reportKawasanCache.find(k=>k.code===o.pickupKawasanCode)||{}).namaKawasan : '';
+    return `<tr class="border-t border-sand">
+      <td class="p-3 font-bold text-ink">${escapeHtml(o.orderId)}<br><span class="text-[10px] text-inksoft font-normal">${formatDate(o.createdAt)}</span></td>
+      <td class="p-3 text-inksoft">${escapeHtml(o.customerName)}</td>
+      <td class="p-3 text-inksoft">${o.agentCode?escapeHtml(o.agentCode):'<span class="italic">Tiada</span>'}</td>
+      <td class="p-3 text-inksoft">${kwName?'PASTI '+escapeHtml(kwName):'<span class="italic">-</span>'}</td>
+      <td class="p-3 text-inksoft truncate max-w-[160px]">${escapeHtml(sellers.join(', '))}</td>
+      <td class="p-3 font-bold text-forest">${formatRM(orderRevenue(o))}</td>
+      <td class="p-3"><span class="px-2 py-1 rounded-full text-[10px] font-bold status-${statusClass(o.status)}">${escapeHtml(o.status)}</span></td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="7" class="p-6 text-center text-inksoft italic">Tiada tempahan sepadan dengan tapisan ini.</td></tr>`;
+}
+
+window.exportReportCsv = function(){
+  const valid = lastFilteredOrders;
+  if(!valid.length){ showToast('Tiada data untuk dimuat turun','alert-circle'); return; }
+  const rows = [['ID Tempahan','Tarikh','Pelanggan','Telefon','Ejen','PASTI Kawasan','Seller','Jumlah (RM)','Status']];
+  valid.slice().sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt)).forEach(o=>{
+    const sellers = Array.from(new Set((o.items||[]).map(resolveItemSeller)));
+    const kwName = o.pickupKawasanCode ? (reportKawasanCache.find(k=>k.code===o.pickupKawasanCode)||{}).namaKawasan : '';
+    rows.push([
+      o.orderId, formatDate(o.createdAt), o.customerName, o.phone||'', o.agentCode||'',
+      kwName?('PASTI '+kwName):'', sellers.join(' | '), orderRevenue(o).toFixed(2), o.status
+    ]);
+  });
+  const csv = rows.map(r=>r.map(cell=>{
+    const s = String(cell==null?'':cell);
+    return /[",\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s;
+  }).join(',')).join('\n');
+  const blob = new Blob(['﻿'+csv], { type:'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'laporan-jualan-'+new Date().toISOString().slice(0,10)+'.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 /* ================= INIT ================= */
