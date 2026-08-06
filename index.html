@@ -94,6 +94,7 @@
   const callAgentConfirmDelivery = httpsCallable(fbFns, 'agentConfirmDelivery');
   const callEasyParcelOAuthStart = httpsCallable(fbFns, 'easyParcelOAuthStart');
   const callEasyParcelStatus = httpsCallable(fbFns, 'easyParcelStatus');
+  const callEasyParcelGetQuotations = httpsCallable(fbFns, 'easyParcelGetQuotations');
 
   let adminSignedIn = false;
   onAuthStateChanged(fbAuth, (user) => {
@@ -117,6 +118,11 @@
 
   window.fbEasyParcelStatus = async function() {
     const res = await callEasyParcelStatus();
+    return res.data;
+  };
+
+  window.fbEasyParcelGetQuotations = async function(payload) {
+    const res = await callEasyParcelGetQuotations(payload);
     return res.data;
   };
 
@@ -1250,6 +1256,14 @@
                 <i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Menyemak status...
               </div>
               <button onclick="window.easyParcelConnect()" class="bg-forest hover:bg-forestdark text-white font-bold px-5 py-2.5 rounded-xl text-sm flex items-center gap-2 w-fit"><i data-lucide="link" class="w-4 h-4"></i> Sambung / Sambung Semula EasyParcel</button>
+              <p class="text-inksoft text-[11px] leading-relaxed pt-1 border-t border-sand mt-1">Alamat ambilan (sender) di bawah digunakan untuk kira kadar penghantaran sebenar. Jika tidak diisi, sistem guna anggaran kadar sedia ada.</p>
+              <input id="ep-sender-name" type="text" placeholder="Nama Penghantar (cth: Kedai PASTI Sarawak Official)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              <input id="ep-sender-phone" type="text" placeholder="No. Telefon Penghantar (cth: 60123456789)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              <input id="ep-sender-address" type="text" placeholder="Alamat Penuh Ambilan" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              <div class="grid sm:grid-cols-2 gap-3">
+                <input id="ep-sender-postcode" type="text" placeholder="Poskod" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                <select id="ep-sender-state" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium"></select>
+              </div>
             </div>
             <div class="bg-white border border-sand rounded-3xl p-5 max-w-xl space-y-3 mb-5">
               <h3 class="font-display font-bold text-ink mb-1">Komisen</h3>
@@ -2793,15 +2807,29 @@ window.setShipMode = async function(mode){
   renderCheckoutSummary();
 }
 
-window.calculateShipping = function(){
+window.calculateShipping = async function(){
   const state = document.getElementById('co-negeri').value;
+  const postcode = document.getElementById('co-poskod').value.trim();
   if(!state){ showToast('Sila pilih negeri dahulu','alert-circle'); return; }
   if(cart.length===0){ showToast('Troli kosong','alert-circle'); return; }
   const weight = cart.reduce((s,c)=>s+c.weight*c.qty,0);
-  const opts = calculateShippingOptions(state, weight);
+  const value = cart.reduce((s,c)=>s+c.price*c.qty,0);
+  const wrap = document.getElementById('shipping-options');
+  wrap.innerHTML = `<p class="text-inksoft text-xs italic">Mengira kos penghantaran...</p>`;
+
+  let opts = null;
+  if(postcode && typeof window.fbEasyParcelGetQuotations === 'function'){
+    try{
+      const res = await window.fbEasyParcelGetQuotations({ receiverPostcode: postcode, receiverState: state, weightKg: weight, parcelValue: value });
+      if(res.quotations && res.quotations.length) opts = res.quotations;
+    }catch(e){
+      console.error('easyParcelGetQuotations failed, using static rate table:', e);
+    }
+  }
+  if(!opts) opts = calculateShippingOptions(state, weight);
+
   window._shipOpts = opts;
   selectedShipping = opts[0];
-  const wrap = document.getElementById('shipping-options');
   wrap.innerHTML = opts.map((o,i)=>`
     <label onclick="window.selectShipping(${i})" class="flex items-center justify-between gap-3 border-2 ${i===0?'border-forest bg-leaflight':'border-sand'} rounded-xl px-4 py-3 cursor-pointer transition-colors">
       <div class="flex items-center gap-3">
@@ -3619,6 +3647,15 @@ function loadSiteContentAdminForm(){
   document.getElementById('cms-easyparcel').checked = siteContent.easyParcelEnabled !== false;
   document.getElementById('cms-comm-agent').value = siteContent.agentCommissionPct != null ? siteContent.agentCommissionPct : 10;
   document.getElementById('cms-comm-kawasan').value = siteContent.kawasanCommissionPct != null ? siteContent.kawasanCommissionPct : 5;
+  const senderStateSel = document.getElementById('ep-sender-state');
+  if(senderStateSel && !senderStateSel.options.length){
+    senderStateSel.innerHTML = '<option value="">Pilih Negeri</option>' + STATES.map(s=>`<option value="${s}">${s}</option>`).join('');
+  }
+  document.getElementById('ep-sender-name').value = siteContent.senderName || '';
+  document.getElementById('ep-sender-phone').value = siteContent.senderPhone || '';
+  document.getElementById('ep-sender-address').value = siteContent.senderAddress || '';
+  document.getElementById('ep-sender-postcode').value = siteContent.senderPostcode || '';
+  if(senderStateSel) senderStateSel.value = siteContent.senderState || '';
 }
 window.saveSiteContentAdmin = async function(){
   const content = {
@@ -3632,6 +3669,11 @@ window.saveSiteContentAdmin = async function(){
     easyParcelEnabled: document.getElementById('cms-easyparcel').checked,
     agentCommissionPct: parseFloat(document.getElementById('cms-comm-agent').value) || 0,
     kawasanCommissionPct: parseFloat(document.getElementById('cms-comm-kawasan').value) || 0,
+    senderName: document.getElementById('ep-sender-name').value.trim(),
+    senderPhone: document.getElementById('ep-sender-phone').value.trim(),
+    senderAddress: document.getElementById('ep-sender-address').value.trim(),
+    senderPostcode: document.getElementById('ep-sender-postcode').value.trim(),
+    senderState: document.getElementById('ep-sender-state').value,
   };
   try{
     await window.fbAdminSaveSiteContent(content);
