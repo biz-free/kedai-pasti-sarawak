@@ -1058,9 +1058,12 @@
         </div>
 
         <div id="admin-dashboard-wrap" class="hidden">
-          <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center justify-between mb-6 gap-3 flex-wrap">
             <h1 class="font-display font-bold text-2xl text-ink">Dashboard Admin</h1>
-            <button onclick="window.logoutAdmin()" class="bg-cream hover:bg-sand text-ink text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2"><i data-lucide="log-out" class="w-3.5 h-3.5"></i> Log Keluar</button>
+            <div class="flex items-center gap-2">
+              <div id="admin-ep-balance-badge" class="hidden items-center gap-1.5 bg-leaflight border border-forest/30 text-forest text-xs font-bold px-3 py-2 rounded-xl"><i data-lucide="wallet" class="w-3.5 h-3.5"></i> <span id="admin-ep-balance-text">Baki EasyParcel: -</span></div>
+              <button onclick="window.logoutAdmin()" class="bg-cream hover:bg-sand text-ink text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2"><i data-lucide="log-out" class="w-3.5 h-3.5"></i> Log Keluar</button>
+            </div>
           </div>
 
           <div class="flex gap-2 overflow-x-auto no-scrollbar mb-6 border-b border-sand pb-px">
@@ -3625,6 +3628,7 @@ window.refreshEasyParcelStatus = async function(){
     box.innerHTML = '<i data-lucide="alert-circle" class="w-4 h-4 text-honeydeep"></i> <span>Gagal semak status: ' + (e && (e.code || e.message) || 'ralat tidak diketahui') + '</span>';
   }
   if(window.lucide) lucide.createIcons();
+  window.refreshEasyParcelBalanceBadge();
 }
 window.easyParcelConnect = async function(){
   try{
@@ -3772,6 +3776,24 @@ function renderAdminView(){
   if(!isAdminIn){ loginWrap.classList.remove('hidden'); dashWrap.classList.add('hidden'); return; }
   loginWrap.classList.add('hidden'); dashWrap.classList.remove('hidden');
   window.setAdminTab(adminCurrentTab);
+  window.refreshEasyParcelBalanceBadge();
+}
+window.refreshEasyParcelBalanceBadge = async function(){
+  const badge = document.getElementById('admin-ep-balance-badge');
+  const text = document.getElementById('admin-ep-balance-text');
+  if(!badge || !text) return;
+  try{
+    const status = await window.fbEasyParcelStatus();
+    if(status.connected){
+      text.innerText = 'Baki EasyParcel: ' + (status.walletBalance != null ? 'RM' + Number(status.walletBalance).toFixed(2) : 'tidak diketahui');
+      badge.classList.remove('hidden'); badge.classList.add('flex');
+    } else {
+      badge.classList.add('hidden'); badge.classList.remove('flex');
+    }
+  }catch(e){
+    badge.classList.add('hidden'); badge.classList.remove('flex');
+  }
+  icons();
 }
 
 /* ================= ADMIN: PRODUK ================= */
