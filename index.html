@@ -3906,7 +3906,8 @@ window.deleteProduct = async function(id){
     renderAdminProducts(); renderHome(); renderCatalog();
     showToast('Produk dipadam','trash-2');
   }catch(e){
-    showToast('Gagal padam produk','alert-circle');
+    console.error('deleteProduct failed:', e);
+    showToast('Gagal padam produk: ' + (e && (e.code || e.message) || 'ralat tidak diketahui'), 'alert-circle');
   }
 }
 function renderAdminProducts(){
