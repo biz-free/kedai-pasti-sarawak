@@ -92,6 +92,8 @@
   const callAgentOrderStats = httpsCallable(fbFns, 'agentOrderStats');
   const callAgentSavePayout = httpsCallable(fbFns, 'agentSavePayout');
   const callAgentConfirmDelivery = httpsCallable(fbFns, 'agentConfirmDelivery');
+  const callEasyParcelOAuthStart = httpsCallable(fbFns, 'easyParcelOAuthStart');
+  const callEasyParcelStatus = httpsCallable(fbFns, 'easyParcelStatus');
 
   let adminSignedIn = false;
   onAuthStateChanged(fbAuth, (user) => {
@@ -105,6 +107,16 @@
 
   window.fbAgentSelfRegister = async function(profile) {
     const res = await callAgentSelfRegister(profile);
+    return res.data;
+  };
+
+  window.fbEasyParcelOAuthStart = async function() {
+    const res = await callEasyParcelOAuthStart();
+    return res.data;
+  };
+
+  window.fbEasyParcelStatus = async function() {
+    const res = await callEasyParcelStatus();
     return res.data;
   };
 
@@ -1230,6 +1242,14 @@
               <label class="flex items-center gap-2 bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium cursor-pointer">
                 <input id="cms-easyparcel" type="checkbox" checked class="w-4 h-4"> Beri pembeli pilihan Pos/Kurier (EasyParcel) semasa checkout, selain "Ambil di PASTI Kawasan" (nyahtanda untuk guna "Ambil di PASTI Kawasan" sahaja)
               </label>
+            </div>
+            <div class="bg-white border border-sand rounded-3xl p-5 max-w-xl space-y-3 mb-5">
+              <h3 class="font-display font-bold text-ink mb-1">Sambungan EasyParcel</h3>
+              <p class="text-inksoft text-xs -mt-2 mb-1">Sambungkan akaun EasyParcel (live) untuk kadar penghantaran masa nyata dan penempahan automatik.</p>
+              <div id="ep-status-box" class="flex items-center gap-2 bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                <i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Menyemak status...
+              </div>
+              <button onclick="window.easyParcelConnect()" class="bg-forest hover:bg-forestdark text-white font-bold px-5 py-2.5 rounded-xl text-sm flex items-center gap-2 w-fit"><i data-lucide="link" class="w-4 h-4"></i> Sambung / Sambung Semula EasyParcel</button>
             </div>
             <div class="bg-white border border-sand rounded-3xl p-5 max-w-xl space-y-3 mb-5">
               <h3 class="font-display font-bold text-ink mb-1">Komisen</h3>
@@ -3557,7 +3577,35 @@ window.setAdminTab = function(tab){
   if(tab==='ejen') refreshAndRenderAdminAgents();
   if(tab==='kawasanadmin') refreshAndRenderAdminKawasan();
   if(tab==='laporan' && typeof renderReports==='function') refreshAndRenderReports();
-  if(tab==='tetapan') loadSiteContentAdminForm();
+  if(tab==='tetapan'){ loadSiteContentAdminForm(); window.refreshEasyParcelStatus(); }
+}
+window.refreshEasyParcelStatus = async function(){
+  const box = document.getElementById('ep-status-box');
+  if(!box) return;
+  box.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Menyemak status...';
+  if(window.lucide) lucide.createIcons();
+  try{
+    const status = await window.fbEasyParcelStatus();
+    if(status.connected){
+      const bal = status.walletBalance != null ? ` &middot; Baki wallet: RM${Number(status.walletBalance).toFixed(2)}` : '';
+      box.innerHTML = `<i data-lucide="check-circle" class="w-4 h-4 text-forest"></i> <span>Disambungkan${bal}</span>`;
+    } else {
+      box.innerHTML = '<i data-lucide="x-circle" class="w-4 h-4 text-honeydeep"></i> <span>Belum disambung' + (status.error ? ' (' + status.error + ')' : '') + '</span>';
+    }
+  }catch(e){
+    console.error('refreshEasyParcelStatus failed:', e);
+    box.innerHTML = '<i data-lucide="alert-circle" class="w-4 h-4 text-honeydeep"></i> <span>Gagal semak status: ' + (e && (e.code || e.message) || 'ralat tidak diketahui') + '</span>';
+  }
+  if(window.lucide) lucide.createIcons();
+}
+window.easyParcelConnect = async function(){
+  try{
+    const res = await window.fbEasyParcelOAuthStart();
+    if(res && res.url){ window.location.href = res.url; }
+  }catch(e){
+    console.error('easyParcelConnect failed:', e);
+    showToast('Gagal mula sambungan EasyParcel: ' + (e && (e.code || e.message) || 'ralat tidak diketahui'), 'alert-circle');
+  }
 }
 function loadSiteContentAdminForm(){
   document.getElementById('cms-phone').value = siteContent.contactPhone || '';
@@ -4380,6 +4428,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   if(produkId){
     window.showView('catalog');
     window.openQuickView(produkId);
+  }
+
+  const epParam = (new URLSearchParams(window.location.search)).get('easyparcel');
+  if(epParam){
+    const epMsg = (new URLSearchParams(window.location.search)).get('msg');
+    history.replaceState({}, '', window.location.pathname + window.location.hash);
+    if(epParam === 'connected'){
+      showToast('EasyParcel berjaya disambungkan','check-circle');
+    } else {
+      showToast('Sambungan EasyParcel gagal' + (epMsg ? ': ' + epMsg : ''), 'alert-circle');
+    }
+    if(isAdminIn){
+      window.showView('admin');
+      window.setAdminTab('tetapan');
+    }
   }
 });
 </script>
