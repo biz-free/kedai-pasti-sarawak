@@ -776,6 +776,8 @@
           <p class="text-inksoft text-sm mb-5">Nombor pesanan anda:</p>
           <p id="success-orderid" class="font-display font-extrabold text-2xl text-forest mb-6">ORD-000000</p>
           <div class="bg-white border border-sand rounded-3xl p-5 text-left space-y-2 text-sm mb-6">
+            <p class="font-display font-bold text-ink mb-1">Produk Ditempah</p>
+            <div id="success-items" class="space-y-1.5 pb-2 mb-2 border-b border-sand"></div>
             <div class="flex justify-between"><span class="text-inksoft">Jumlah Bayaran</span><span id="success-total" class="font-bold">RM 0.00</span></div>
             <div class="flex justify-between"><span class="text-inksoft">Kurier</span><span id="success-courier" class="font-bold">-</span></div>
           </div>
@@ -2852,7 +2854,10 @@ window.submitOrder = async function(){
     return;
   }
 
-  const total = +(cart.reduce((s,c)=>s+c.price*c.qty,0) + selectedShipping.price).toFixed(2);
+  const totalQty = cart.reduce((s,c)=>s+c.qty,0);
+  const handlingFee = window.pickupKawasanCode ? totalQty * 1 : 0;
+  const total = +(cart.reduce((s,c)=>s+c.price*c.qty,0) + selectedShipping.price + handlingFee).toFixed(2);
+  const itemsSnapshot = cart.map(c=>({ name:c.name, size:c.size||'', qty:c.qty, price:c.price }));
   cart = []; persistCart(); updateCartBadge();
 
   document.getElementById('checkout-form-wrap').classList.add('hidden');
@@ -2861,7 +2866,11 @@ window.submitOrder = async function(){
   document.getElementById('success-orderid').innerText = result.orderId;
   document.getElementById('success-total').innerText = formatRM(total);
   document.getElementById('success-courier').innerText = selectedShipping.courier+' ('+selectedShipping.eta+')';
-  const waMsg = encodeURIComponent(`Assalamualaikum, saya ingin sahkan tempahan ${result.orderId} bernilai ${formatRM(total)} atas nama ${nama}.`);
+  document.getElementById('success-items').innerHTML = itemsSnapshot.map(it=>
+    `<div class="flex justify-between text-xs"><span class="text-inksoft">${it.qty}x ${escapeHtml(it.name)}${it.size?' (Saiz '+escapeHtml(it.size)+')':''}</span><span class="font-bold text-ink">${formatRM(it.price*it.qty)}</span></div>`
+  ).join('');
+  const itemsText = itemsSnapshot.map(it=>`- ${it.qty}x ${it.name}${it.size?' (Saiz '+it.size+')':''} — ${formatRM(it.price*it.qty)}`).join('\n');
+  const waMsg = encodeURIComponent(`Assalamualaikum, saya ingin sahkan tempahan ${result.orderId} atas nama ${nama}.\n\nProduk:\n${itemsText}\n\nJumlah: ${formatRM(total)}`);
   document.getElementById('success-whatsapp').href = `https://wa.me/${(siteContent.whatsappNumber||'60123456789')}?text=${waMsg}`;
 
   showToast('Tempahan berjaya dihantar!','check-circle-2');
@@ -3596,7 +3605,8 @@ async function refreshAndRenderAdminKawasan(){
     appKawasanList = await window.fbAdminListKawasan();
   }catch(e){
     appKawasanList = [];
-    showToast('Gagal muatkan senarai kawasan','alert-circle');
+    console.error('adminListKawasan failed:', e);
+    showToast('Gagal muatkan senarai kawasan: ' + (e && (e.code || e.message) || 'ralat tidak diketahui'), 'alert-circle');
   }
   renderAdminKawasan();
 }
@@ -4130,7 +4140,8 @@ async function refreshAndRenderReports(){
     appKPOrders = await window.fbAdminListOrders();
   }catch(e){
     appKPOrders = [];
-    showToast('Gagal muatkan data laporan','alert-circle');
+    console.error('adminListOrders (laporan) failed:', e);
+    showToast('Gagal muatkan data laporan: ' + (e && (e.code || e.message) || 'ralat tidak diketahui'), 'alert-circle');
   }
   try{
     reportKawasanCache = (typeof window.fbListKawasanPublic==='function') ? await window.fbListKawasanPublic() : [];
