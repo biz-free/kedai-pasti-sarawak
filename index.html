@@ -66,7 +66,6 @@
 
   const callAgentLogin = httpsCallable(fbFns, 'agentLogin');
   const callAgentSelfRegister = httpsCallable(fbFns, 'agentSelfRegister');
-  const callListAgentsPublic = httpsCallable(fbFns, 'listAgentsPublic');
   const callAdminListAgents = httpsCallable(fbFns, 'adminListAgents');
   const callAdminSaveAgent = httpsCallable(fbFns, 'adminSaveAgent');
   const callAdminDeleteAgent = httpsCallable(fbFns, 'adminDeleteAgent');
@@ -74,7 +73,6 @@
   const callKawasanLogin = httpsCallable(fbFns, 'kawasanLogin');
   const callKawasanSelfRegister = httpsCallable(fbFns, 'kawasanSelfRegister');
   const callListKawasanPublic = httpsCallable(fbFns, 'listKawasanPublic');
-  const callListKawasanProductsPublic = httpsCallable(fbFns, 'listKawasanProductsPublic');
   const callKawasanListMyProducts = httpsCallable(fbFns, 'kawasanListMyProducts');
   const callKawasanSaveProduct = httpsCallable(fbFns, 'kawasanSaveProduct');
   const callKawasanDeleteProduct = httpsCallable(fbFns, 'kawasanDeleteProduct');
@@ -148,8 +146,18 @@
   };
 
   window.fbListAgentsPublic = async function() {
-    const res = await callListAgentsPublic();
-    return res.data.agents;
+    // Direct Firestore read of the public-safe agentsPublic mirror instead
+    // of a Cloud Function round-trip — same reasoning as kawasanProducts
+    // above: no extra security was being enforced by the function itself
+    // (the mirror collection is already scoped to safe fields server-side),
+    // so the function only added cold-start latency.
+    const snap = await getDocs(kpCol('agentsPublic'));
+    const agents = [];
+    snap.forEach(docSnap => {
+      const d = docSnap.data();
+      agents.push({ code: d.code || "", name: d.name || "", phone: d.phone || "", area: d.area || "", branch: d.branch || "" });
+    });
+    return agents;
   };
 
   window.fbAdminSaveAgent = async function(agent) {
@@ -188,8 +196,31 @@
   };
 
   window.fbListKawasanProductsPublic = async function() {
-    const res = await callListKawasanProductsPublic();
-    return res.data.products;
+    // Direct Firestore read instead of a Cloud Function round-trip — the
+    // kawasanProducts collection is already open to public read in
+    // firestore.rules, so the Cloud Function added a cold-start-prone hop
+    // for no extra security (it did no filtering/auth of its own either).
+    const snap = await getDocs(kpCol('kawasanProducts'));
+    const products = [];
+    snap.forEach(docSnap => {
+      const d = docSnap.data();
+      products.push({
+        id: docSnap.id,
+        name: d.name || "",
+        category: d.category || "lain",
+        price: d.price || 0,
+        weight: d.weight || 0.1,
+        stockStatus: d.stockStatus || "habis",
+        commissionPct: d.commissionPct || 10,
+        desc: d.desc || "",
+        images: Array.isArray(d.images) ? d.images : [],
+        ownerKawasan: d.ownerKawasan || "",
+        sellerName: d.sellerName || ("PASTI " + (d.ownerKawasan || "")),
+        pickupKawasan: d.ownerKawasan || "",
+        createdAt: d.createdAt && d.createdAt.toDate ? d.createdAt.toDate().toISOString() : new Date().toISOString(),
+      });
+    });
+    return products;
   };
 
   window.fbKawasanListMyProducts = async function() {
