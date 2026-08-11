@@ -2122,65 +2122,64 @@ function generateSeedOrders(){
 
 /* ================= STORAGE ================= */
 async function loadAllData(){
-  try{
-    const cats = (typeof window.fbListCategoriesPublic === 'function') ? await window.fbListCategoriesPublic() : [];
-    if(cats.length){
-      const built = {};
-      cats.forEach(c=>{ built[c.id] = { name:c.name, icon:c.icon, grad:[c.gradFrom, c.gradTo] }; });
-      CATEGORIES = built;
-      categoriesSeeded = true;
-    }
-  }catch(e){ /* keep DEFAULT_CATEGORIES fallback already in CATEGORIES */ }
+  // All independent reads (Firestore + Cloud Functions + local storage) are
+  // fired in parallel rather than awaited one-by-one — sequential awaits
+  // here were stacking each round-trip's latency (worst case, a Cloud
+  // Function cold start) into a multi-second wait before anything rendered.
+  const [catsR, productsR, siteContentR, kwProdsR, agentsR, ordersR, cartR, sessR] = await Promise.allSettled([
+    typeof window.fbListCategoriesPublic === 'function' ? window.fbListCategoriesPublic() : Promise.resolve([]),
+    typeof window.fbListProductsPublic === 'function' ? window.fbListProductsPublic() : Promise.resolve([]),
+    typeof window.fbGetSiteContent === 'function' ? window.fbGetSiteContent() : Promise.resolve({}),
+    typeof window.fbListKawasanProductsPublic === 'function' ? window.fbListKawasanProductsPublic() : Promise.resolve([]),
+    typeof window.fbListAgentsPublic === 'function' ? window.fbListAgentsPublic() : Promise.resolve([]),
+    window.storage.get('alhaddad:orders', true),
+    window.storage.get('alhaddad:cart', false),
+    window.storage.get('alhaddad:session', false),
+  ]);
 
-  try{
-    appProducts = (typeof window.fbListProductsPublic === 'function') ? await window.fbListProductsPublic() : [];
-    if(!appProducts.length) appProducts = defaultProducts.slice();
-  }catch(e){ appProducts = defaultProducts.slice(); }
+  if(catsR.status==='fulfilled' && catsR.value.length){
+    const built = {};
+    catsR.value.forEach(c=>{ built[c.id] = { name:c.name, icon:c.icon, grad:[c.gradFrom, c.gradTo] }; });
+    CATEGORIES = built;
+    categoriesSeeded = true;
+  }
 
-  try{ siteContent = (typeof window.fbGetSiteContent === 'function') ? await window.fbGetSiteContent() : {}; }
-  catch(e){ siteContent = {}; }
+  appProducts = (productsR.status==='fulfilled' && productsR.value.length) ? productsR.value : defaultProducts.slice();
+  appProducts = appProducts.filter(p => !String(p.id).startsWith('KWP-'));
+
+  siteContent = siteContentR.status==='fulfilled' ? siteContentR.value : {};
   applySiteContent();
 
-  appProducts = appProducts.filter(p => !String(p.id).startsWith('KWP-'));
-  try{
-    if(typeof window.fbListKawasanProductsPublic === 'function'){
-      const kwProds = await window.fbListKawasanProductsPublic();
-      const mapped = kwProds.map(kp => ({
-        id: 'KWP-'+kp.id,
-        name: kp.name,
-        category: CATEGORIES[kp.category] ? kp.category : Object.keys(CATEGORIES)[0],
-        price: kp.price,
-        weight: kp.weight,
-        stock: kp.stockStatus==='ready' ? 999 : 0,
-        commissionPct: kp.commissionPct,
-        popular: false,
-        sellerName: kp.sellerName,
-        pickupKawasan: kp.pickupKawasan,
-        images: kp.images,
-        desc: kp.desc,
-        createdAt: kp.createdAt,
-      }));
-      appProducts = appProducts.concat(mapped);
-    }
-  }catch(e){ /* kawasan products optional, ignore failures */ }
+  if(kwProdsR.status==='fulfilled'){
+    const mapped = kwProdsR.value.map(kp => ({
+      id: 'KWP-'+kp.id,
+      name: kp.name,
+      category: CATEGORIES[kp.category] ? kp.category : Object.keys(CATEGORIES)[0],
+      price: kp.price,
+      weight: kp.weight,
+      stock: kp.stockStatus==='ready' ? 999 : 0,
+      commissionPct: kp.commissionPct,
+      popular: false,
+      sellerName: kp.sellerName,
+      pickupKawasan: kp.pickupKawasan,
+      images: kp.images,
+      desc: kp.desc,
+      createdAt: kp.createdAt,
+    }));
+    appProducts = appProducts.concat(mapped);
+  }
 
-  try{
-    appAgents = (typeof window.fbListAgentsPublic === 'function') ? await window.fbListAgentsPublic() : [];
-  }catch(e){ appAgents = defaultAgents.slice(); }
+  appAgents = (agentsR.status==='fulfilled' && agentsR.value.length) ? agentsR.value : defaultAgents.slice();
 
-  try{
-    const o = await window.storage.get('alhaddad:orders', true);
-    appOrders = o ? JSON.parse(o.value) : generateSeedOrders();
-    if(!o) await window.storage.set('alhaddad:orders', JSON.stringify(appOrders), true);
-  }catch(e){ appOrders = generateSeedOrders(); }
+  const o = ordersR.status==='fulfilled' ? ordersR.value : null;
+  appOrders = o ? JSON.parse(o.value) : generateSeedOrders();
+  if(!o){ try{ await window.storage.set('alhaddad:orders', JSON.stringify(appOrders), true); }catch(e){} }
 
-  try{
-    const c = await window.storage.get('alhaddad:cart', false);
-    cart = c ? JSON.parse(c.value) : [];
-  }catch(e){ cart = []; }
+  const c = cartR.status==='fulfilled' ? cartR.value : null;
+  try{ cart = c ? JSON.parse(c.value) : []; }catch(e){ cart = []; }
 
+  const sess = sessR.status==='fulfilled' ? sessR.value : null;
   try{
-    const sess = await window.storage.get('alhaddad:session', false);
     if(sess){
       const parsed = JSON.parse(sess.value);
       if(parsed.type==='agent'){
