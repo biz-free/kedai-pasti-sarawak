@@ -2264,11 +2264,18 @@ function productGalleryHTML(p, heightClass){
     <div id="qv-gallery-track" class="flex overflow-x-auto snap-x snap-mandatory h-full no-scrollbar" onscroll="window.onGalleryScroll(this)" style="scroll-behavior:smooth;">
       ${slides}
     </div>
+    <button type="button" onclick="window.scrollGallery(-1)" class="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/80 hover:bg-white rounded-full flex items-center justify-center text-ink shadow z-10"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+    <button type="button" onclick="window.scrollGallery(1)" class="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/80 hover:bg-white rounded-full flex items-center justify-center text-ink shadow z-10"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
     <div id="qv-gallery-dots" class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 bg-ink/30 px-2 py-1.5 rounded-full pointer-events-none">
       ${imgs.map((_,i)=>`<span class="w-1.5 h-1.5 rounded-full transition-colors ${i===0?'bg-white':'bg-white/40'}"></span>`).join('')}
     </div>
     <span class="absolute bottom-1.5 right-2 text-[8px] sm:text-[9px] font-extrabold uppercase tracking-wider text-ink/20 select-none pointer-events-none">Kedai PASTI Sarawak</span>
   </div>`;
+}
+window.scrollGallery = function(dir){
+  const track = document.getElementById('qv-gallery-track');
+  if(!track) return;
+  track.scrollLeft = track.scrollLeft + dir * track.clientWidth;
 }
 window.onGalleryScroll = function(el){
   const idx = Math.round(el.scrollLeft / el.clientWidth);
