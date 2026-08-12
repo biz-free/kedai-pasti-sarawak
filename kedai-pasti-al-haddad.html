@@ -217,6 +217,8 @@
         ownerKawasan: d.ownerKawasan || "",
         sellerName: d.sellerName || ("PASTI " + (d.ownerKawasan || "")),
         pickupKawasan: d.ownerKawasan || "",
+        preorder: !!d.preorder,
+        preorderEta: d.preorderEta || "",
         createdAt: d.createdAt && d.createdAt.toDate ? d.createdAt.toDate().toISOString() : new Date().toISOString(),
       });
     });
@@ -1060,6 +1062,10 @@
             <label class="flex items-center gap-2 bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium cursor-pointer">
               <input id="kwpm-ready" type="checkbox" class="w-4 h-4"> Ready Stok (nyahtanda jika Stok Habis)
             </label>
+            <label class="flex items-center gap-2 bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium cursor-pointer">
+              <input id="kwpm-preorder" type="checkbox" class="w-4 h-4" onchange="window.toggleKwPreorderField()"> <i data-lucide="clock" class="w-4 h-4 text-honeydeep"></i> Pre-order (pelanggan tempah dahulu, produk belum ready)
+            </label>
+            <input id="kwpm-preorder-eta" type="text" placeholder="Jangkaan tempoh ready (cth: 3-5 hari bekerja)" class="hidden w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
           </div>
           <div class="flex gap-3 mt-5">
             <button onclick="window.closeKwProductModal()" class="flex-1 bg-cream text-ink font-bold py-3 rounded-xl">Batal</button>
@@ -2196,13 +2202,15 @@ async function loadAllData(){
       category: CATEGORIES[kp.category] ? kp.category : Object.keys(CATEGORIES)[0],
       price: kp.price,
       weight: kp.weight,
-      stock: kp.stockStatus==='ready' ? 999 : 0,
+      stock: (kp.preorder || kp.stockStatus==='ready') ? 999 : 0,
       commissionPct: kp.commissionPct,
       popular: false,
       sellerName: kp.sellerName,
       pickupKawasan: kp.pickupKawasan,
       images: kp.images,
       desc: kp.desc,
+      preorder: !!kp.preorder,
+      preorderEta: kp.preorderEta || '',
       createdAt: kp.createdAt,
     }));
     appProducts = appProducts.concat(mapped);
@@ -2249,11 +2257,13 @@ function productMediaHTML(p, heightClass){
       <div class="absolute inset-0 hidden items-center justify-center" style="background:linear-gradient(135deg, ${cat.grad[0]}, ${cat.grad[1]})"><i data-lucide="${cat.icon}" class="w-11 h-11 sm:w-12 sm:h-12 text-white/90"></i></div>
       <span class="absolute bottom-1.5 right-2 text-[8px] sm:text-[9px] font-extrabold uppercase tracking-wider text-ink/20 select-none pointer-events-none">Kedai PASTI Sarawak</span>
       ${p.popular ? `<span class="absolute top-2 left-2 bg-honey text-ink text-[9px] font-black px-2 py-1 rounded-full">POPULAR</span>` : ''}
+      ${p.preorder ? `<span class="absolute top-2 right-2 bg-honeydeep text-white text-[9px] font-black px-2 py-1 rounded-full flex items-center gap-1"><i data-lucide="clock" class="w-2.5 h-2.5"></i> PRE-ORDER</span>` : ''}
     </div>`;
   }
   return `<div class="relative ${heightClass} w-full flex items-center justify-center" style="background:linear-gradient(135deg, ${cat.grad[0]}, ${cat.grad[1]})">
     <i data-lucide="${cat.icon}" class="w-11 h-11 sm:w-12 sm:h-12 text-white/90"></i>
     ${p.popular ? `<span class="absolute top-2 left-2 bg-honey text-ink text-[9px] font-black px-2 py-1 rounded-full">POPULAR</span>` : ''}
+    ${p.preorder ? `<span class="absolute top-2 right-2 bg-honeydeep text-white text-[9px] font-black px-2 py-1 rounded-full flex items-center gap-1"><i data-lucide="clock" class="w-2.5 h-2.5"></i> PRE-ORDER</span>` : ''}
   </div>`;
 }
 function productGalleryHTML(p, heightClass){
@@ -2289,8 +2299,8 @@ window.onGalleryScroll = function(el){
 function productTileHTML(p){
   const cat = CATEGORIES[p.category] || fallbackCategory();
   const hasSizes = Array.isArray(p.sizes) && p.sizes.length > 0;
-  const stockLabel = p.stock>0 ? `${p.stock} lagi` : 'Stok Habis';
-  const stockClass = p.stock>0 ? 'text-forest' : 'text-red-500';
+  const stockLabel = p.preorder ? `Pre-order · ${p.preorderEta||'Jangkaan akan dimaklumkan'}` : (p.stock>0 ? `${p.stock} lagi` : 'Stok Habis');
+  const stockClass = p.preorder ? 'text-honeydeep' : (p.stock>0 ? 'text-forest' : 'text-red-500');
   return `
   <div class="bg-white rounded-3xl border border-sand overflow-hidden card-hover shadow-sm flex flex-col">
     <button onclick="window.openQuickView('${p.id}')" class="block w-full">${productMediaHTML(p, 'h-28 sm:h-36')}</button>
@@ -2402,6 +2412,10 @@ window.openQuickView = function(id){
       <h3 class="font-display font-bold text-xl text-ink mt-1">${escapeHtml(qvProduct.name)}</h3>
       <p id="qv-price" class="font-display font-extrabold text-forest text-2xl mt-2">${hasSizes ? 'Pilih saiz untuk lihat harga' : formatRM(qvProduct.price)}</p>
       <p class="text-inksoft text-sm mt-3 leading-relaxed">${escapeHtml(qvProduct.desc||'')}</p>
+      ${qvProduct.preorder ? `<div class="mt-3 bg-honey/10 border border-honey rounded-xl px-3 py-2.5 flex items-center gap-2">
+        <i data-lucide="clock" class="w-4 h-4 text-honeydeep shrink-0"></i>
+        <p class="text-xs text-ink"><span class="font-bold">Pre-order</span> — Jangkaan tempoh ready: ${escapeHtml(qvProduct.preorderEta || 'akan dimaklumkan')}</p>
+      </div>` : ''}
       ${hasSizes ? `
       <div class="mt-4">
         <div class="flex items-center justify-between mb-2">
@@ -2414,7 +2428,7 @@ window.openQuickView = function(id){
       </div>` : ''}
       <div class="grid grid-cols-3 gap-2 mt-4">
         <div class="bg-cream rounded-xl p-2.5 text-center"><p class="text-[9px] font-bold text-inksoft uppercase">Berat</p><p class="text-xs font-bold text-ink">${qvProduct.weight} kg</p></div>
-        <div class="bg-cream rounded-xl p-2.5 text-center"><p class="text-[9px] font-bold text-inksoft uppercase">Stok</p><p class="text-xs font-bold text-ink">${qvProduct.stock}</p></div>
+        <div class="bg-cream rounded-xl p-2.5 text-center"><p class="text-[9px] font-bold text-inksoft uppercase">Stok</p><p class="text-xs font-bold text-ink">${qvProduct.preorder ? 'Pre-order' : qvProduct.stock}</p></div>
         <div class="bg-cream rounded-xl p-2.5 text-center"><p class="text-[9px] font-bold text-inksoft uppercase">Penjual</p><p class="text-[11px] font-bold text-ink truncate">${escapeHtml(qvProduct.sellerName||'-')}</p></div>
       </div>
       <div class="flex items-center gap-4 mt-5">
@@ -2424,7 +2438,7 @@ window.openQuickView = function(id){
           <button onclick="window.qvChangeQty(1)" class="w-7 h-7 rounded-full bg-white shadow flex items-center justify-center"><i data-lucide="plus" class="w-3.5 h-3.5"></i></button>
         </div>
         <button id="qv-add-btn" ${qvProduct.stock<=0?'disabled':''} onclick="window.qvAddToCart()" class="flex-1 ${qvProduct.stock<=0?'bg-slate-200 text-slate-400':'bg-forest hover:bg-forestdark text-white'} font-bold py-3 rounded-2xl flex items-center justify-center gap-2 transition-colors">
-          <i data-lucide="shopping-bag" class="w-4 h-4"></i> ${qvProduct.stock<=0?'Stok Habis':(hasSizes?'Pilih Saiz Dahulu':'Tambah ke Troli')}
+          <i data-lucide="shopping-bag" class="w-4 h-4"></i> ${qvProduct.stock<=0?'Stok Habis':(hasSizes?'Pilih Saiz Dahulu':(qvProduct.preorder?'Tempah (Pre-order)':'Tambah ke Troli'))}
         </button>
       </div>
       <a href="https://wa.me/?text=${waText}" target="_blank" class="mt-3 w-full bg-[#25D366] hover:bg-[#1DA851] text-white font-bold py-2.5 rounded-2xl flex items-center justify-center gap-2 transition-colors text-sm"><i data-lucide="share-2" class="w-4 h-4"></i> Kongsi Produk ke WhatsApp</a>
@@ -2450,7 +2464,7 @@ window.qvSelectSize = function(label){
   const sizeObj = qvProduct.sizes.find(s=>s.label===label);
   document.getElementById('qv-price').innerText = formatRM(sizeObj.price);
   if(qvProduct.stock>0){
-    document.getElementById('qv-add-btn').innerHTML = `<i data-lucide="shopping-bag" class="w-4 h-4"></i> Tambah ke Troli`;
+    document.getElementById('qv-add-btn').innerHTML = `<i data-lucide="shopping-bag" class="w-4 h-4"></i> ${qvProduct.preorder?'Tempah (Pre-order)':'Tambah ke Troli'}`;
     icons();
   }
 }
@@ -3542,10 +3556,13 @@ function renderKwProducts(){
     <div class="bg-white border border-sand rounded-2xl p-4">
       <div class="flex items-start justify-between gap-2 mb-2">
         <p class="font-display font-bold text-sm text-ink">${escapeHtml(p.name)}</p>
-        <span class="shrink-0 px-2 py-1 rounded-full text-[9px] font-bold ${p.stockStatus==='ready' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}">${p.stockStatus==='ready' ? 'READY STOK' : 'STOK HABIS'}</span>
+        <div class="flex flex-col items-end gap-1 shrink-0">
+          <span class="px-2 py-1 rounded-full text-[9px] font-bold ${p.stockStatus==='ready' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}">${p.stockStatus==='ready' ? 'READY STOK' : 'STOK HABIS'}</span>
+          ${p.preorder ? `<span class="px-2 py-1 rounded-full text-[9px] font-bold bg-honey/20 text-honeydeep flex items-center gap-1"><i data-lucide="clock" class="w-2.5 h-2.5"></i> PRE-ORDER</span>` : ''}
+        </div>
       </div>
       <p class="text-forest font-bold text-sm mb-1">${formatRM(p.price)}</p>
-      <p class="text-inksoft text-xs mb-3">Modal: ${formatRM(p.modal||0)} · Komisen: ${p.commissionPct||0}%</p>
+      <p class="text-inksoft text-xs mb-3">Modal: ${formatRM(p.modal||0)} · Komisen: ${p.commissionPct||0}%${p.preorder ? ` · Jangkaan: ${escapeHtml(p.preorderEta||'-')}` : ''}</p>
       <div class="flex gap-1.5">
         <button onclick="window.toggleKwStock('${p.id}','${p.stockStatus==='ready'?'habis':'ready'}')" class="flex-1 bg-cream hover:bg-sand text-ink text-[11px] font-bold py-2 rounded-lg">${p.stockStatus==='ready' ? 'Tandakan Habis' : 'Tandakan Ready'}</button>
         <button onclick="window.openKwProductModal('${p.id}')" class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
@@ -3575,7 +3592,13 @@ window.openKwProductModal = function(id){
   setUploadStatusDisplay('kwpm-img2', imgs[1], 'Upload Gambar 2 dari peranti (pilihan)');
   setUploadStatusDisplay('kwpm-img3', imgs[2], 'Upload Gambar 3 dari peranti (pilihan)');
   document.getElementById('kwpm-ready').checked = editing ? editing.stockStatus==='ready' : true;
+  document.getElementById('kwpm-preorder').checked = editing ? !!editing.preorder : false;
+  document.getElementById('kwpm-preorder-eta').value = editing ? (editing.preorderEta||'') : '';
+  window.toggleKwPreorderField();
   document.getElementById('modal-kw-product').classList.remove('hidden');
+}
+window.toggleKwPreorderField = function(){
+  document.getElementById('kwpm-preorder-eta').classList.toggle('hidden', !document.getElementById('kwpm-preorder').checked);
 }
 window.closeKwProductModal = function(){ document.getElementById('modal-kw-product').classList.add('hidden'); }
 window.saveKwProduct = async function(){
@@ -3594,6 +3617,8 @@ window.saveKwProduct = async function(){
     desc: document.getElementById('kwpm-desc').value.trim(),
     images,
     stockStatus: document.getElementById('kwpm-ready').checked ? 'ready' : 'habis',
+    preorder: document.getElementById('kwpm-preorder').checked,
+    preorderEta: document.getElementById('kwpm-preorder-eta').value.trim(),
   };
   try{
     await window.fbKawasanSaveProduct(payload);
