@@ -16,7 +16,15 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Kedai PASTI">
 
-<script src="https://cdn.tailwindcss.com" defer></script>
+<style>
+  /* Deferring the Tailwind CDN script (below) lets the rest of the page load
+     in parallel instead of blocking on it, but that opens a brief window
+     where the static header/nav HTML is parsed and painted before Tailwind
+     has applied any utility classes to it — a flash of unstyled content.
+     Hide the page until Tailwind finishes (or fails), then reveal it. */
+  body{ visibility:hidden; }
+</style>
+<script src="https://cdn.tailwindcss.com" defer onload="document.body.style.visibility='visible'" onerror="document.body.style.visibility='visible'"></script>
 <script>
   // Simple localStorage-backed KV store matching the {get,set,delete}(key, _global) shape
   // used throughout this file for cart/session/demo-data persistence.
@@ -30,6 +38,10 @@
       navigator.serviceWorker.register('sw.js').catch(() => {});
     });
   }
+  // Safety net: force-reveal the page even if Tailwind's onload/onerror
+  // never fire for some reason (e.g. silently blocked), so a styling
+  // hiccup can never leave the page permanently blank.
+  setTimeout(() => { document.body.style.visibility = 'visible'; }, 2500);
 </script>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
