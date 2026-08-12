@@ -16,7 +16,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Kedai PASTI">
 
-<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.tailwindcss.com" defer></script>
 <script>
   // Simple localStorage-backed KV store matching the {get,set,delete}(key, _global) shape
   // used throughout this file for cart/session/demo-data persistence.
@@ -427,7 +427,7 @@
   };
 
 </script>
-<script>
+<script type="module">
   tailwind.config = {
     theme: {
       extend: {
@@ -442,8 +442,8 @@
     }
   }
 </script>
-<script src="https://unpkg.com/lucide@latest"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js"></script>
+<script src="https://unpkg.com/lucide@latest" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js" defer></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
   html{ scroll-behavior:smooth; }
