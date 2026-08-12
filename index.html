@@ -1643,6 +1643,14 @@
     </div>
   </div>
 
+  <!-- MODAL: SIZE CHART LIGHTBOX -->
+  <div id="modal-sizechart" class="hidden fixed inset-0 z-[96] flex items-center justify-center p-4 modal-mask" onclick="if(event.target===this) window.closeSizeChart()">
+    <div class="relative max-w-lg w-full">
+      <button onclick="window.closeSizeChart()" class="absolute -top-3 -right-3 w-9 h-9 bg-white rounded-full flex items-center justify-center text-ink shadow-lg z-10"><i data-lucide="x" class="w-5 h-5"></i></button>
+      <img id="sizechart-img" src="" alt="Chart Saiz" class="w-full h-auto rounded-2xl shadow-2xl">
+    </div>
+  </div>
+
   <!-- MODAL: HADIHUDA CHAT -->
   <div id="modal-hadihuda" class="hidden fixed inset-0 z-[92] flex items-end sm:items-center justify-center p-0 sm:p-4 modal-mask">
     <div class="bg-cream rounded-t-[2rem] sm:rounded-[2rem] w-full sm:max-w-md h-[85vh] sm:h-[36rem] max-h-[90vh] shadow-2xl flex flex-col overflow-hidden">
@@ -2366,7 +2374,10 @@ window.openQuickView = function(id){
       <p class="text-inksoft text-sm mt-3 leading-relaxed">${escapeHtml(qvProduct.desc||'')}</p>
       ${hasSizes ? `
       <div class="mt-4">
-        <p class="text-[10px] font-bold text-inksoft uppercase tracking-wide mb-2">Pilih Saiz *</p>
+        <div class="flex items-center justify-between mb-2">
+          <p class="text-[10px] font-bold text-inksoft uppercase tracking-wide">Pilih Saiz *</p>
+          ${qvProduct.sizeChartUrl ? `<button type="button" onclick="window.showSizeChart('${escapeHtml(qvProduct.sizeChartUrl)}')" class="text-[10px] font-bold text-forest flex items-center gap-1 hover:underline"><i data-lucide="ruler" class="w-3 h-3"></i> Chart Saiz</button>` : ''}
+        </div>
         <div id="qv-size-grid" class="flex flex-wrap gap-2">
           ${qvProduct.sizes.map(s=>`<button type="button" onclick="window.qvSelectSize('${escapeHtml(s.label)}')" data-size="${escapeHtml(s.label)}" class="qv-size-btn px-3 py-1.5 rounded-lg border-2 border-sand text-xs font-bold text-ink transition-colors">${escapeHtml(s.label)}</button>`).join('')}
         </div>
@@ -2392,6 +2403,11 @@ window.openQuickView = function(id){
   icons();
 }
 window.closeQuickView = function(){ document.getElementById('modal-quickview').classList.add('hidden'); }
+window.showSizeChart = function(url){
+  document.getElementById('sizechart-img').src = url;
+  document.getElementById('modal-sizechart').classList.remove('hidden');
+}
+window.closeSizeChart = function(){ document.getElementById('modal-sizechart').classList.add('hidden'); }
 window.qvChangeQty = function(delta){ qvQty = Math.max(1, qvQty+delta); document.getElementById('qv-qty').innerText = qvQty; }
 window.qvSelectSize = function(label){
   qvSelectedSize = label;
