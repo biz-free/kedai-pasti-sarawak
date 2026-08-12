@@ -2256,6 +2256,29 @@ function productMediaHTML(p, heightClass){
     ${p.popular ? `<span class="absolute top-2 left-2 bg-honey text-ink text-[9px] font-black px-2 py-1 rounded-full">POPULAR</span>` : ''}
   </div>`;
 }
+function productGalleryHTML(p, heightClass){
+  const imgs = Array.isArray(p.images) ? p.images.filter(Boolean) : [];
+  if(imgs.length <= 1) return productMediaHTML(p, heightClass);
+  const slides = imgs.map((img,i)=>`<div class="snap-center shrink-0 w-full ${heightClass} bg-white flex items-center justify-center"><img src="${escapeHtml(img)}" alt="${escapeHtml(p.name)} ${i+1}" class="w-full h-full object-contain p-2" loading="lazy"></div>`).join('');
+  return `<div class="relative ${heightClass} w-full bg-white overflow-hidden">
+    <div id="qv-gallery-track" class="flex overflow-x-auto snap-x snap-mandatory h-full no-scrollbar" onscroll="window.onGalleryScroll(this)" style="scroll-behavior:smooth;">
+      ${slides}
+    </div>
+    <div id="qv-gallery-dots" class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 bg-ink/30 px-2 py-1.5 rounded-full pointer-events-none">
+      ${imgs.map((_,i)=>`<span class="w-1.5 h-1.5 rounded-full transition-colors ${i===0?'bg-white':'bg-white/40'}"></span>`).join('')}
+    </div>
+    <span class="absolute bottom-1.5 right-2 text-[8px] sm:text-[9px] font-extrabold uppercase tracking-wider text-ink/20 select-none pointer-events-none">Kedai PASTI Sarawak</span>
+  </div>`;
+}
+window.onGalleryScroll = function(el){
+  const idx = Math.round(el.scrollLeft / el.clientWidth);
+  const dotsWrap = document.getElementById('qv-gallery-dots');
+  if(!dotsWrap) return;
+  Array.from(dotsWrap.children).forEach((dot,i)=>{
+    dot.classList.toggle('bg-white', i===idx);
+    dot.classList.toggle('bg-white/40', i!==idx);
+  });
+}
 function productTileHTML(p){
   const cat = CATEGORIES[p.category] || fallbackCategory();
   const hasSizes = Array.isArray(p.sizes) && p.sizes.length > 0;
@@ -2364,7 +2387,7 @@ window.openQuickView = function(id){
   const hasSizes = Array.isArray(qvProduct.sizes) && qvProduct.sizes.length > 0;
   document.getElementById('qv-content').innerHTML = `
     <div class="relative">
-      ${productMediaHTML(qvProduct, 'h-48')}
+      ${productGalleryHTML(qvProduct, 'h-48')}
       <button onclick="window.closeQuickView()" class="absolute top-3 right-3 w-9 h-9 bg-white/70 hover:bg-white rounded-full flex items-center justify-center text-ink shadow"><i data-lucide="x" class="w-5 h-5"></i></button>
     </div>
     <div class="p-5 sm:p-6">
