@@ -1,7 +1,7 @@
 {
-  "name": "Kedai PASTI Sarawak Official",
-  "short_name": "Kedai PASTI",
-  "description": "Kedai PASTI Sarawak Official — platform jualan produk komuniti (kurma, madu, kudapan tradisional) dengan sistem ejen & komisen, fokus utama Sarawak.",
+  "name": "PASTI Sarawak Mart Official",
+  "short_name": "PASTI Sarawak Mart",
+  "description": "PASTI Sarawak Mart Official — platform jualan produk komuniti (kurma, madu, kudapan tradisional) dengan sistem ejen & komisen, fokus utama Sarawak.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
