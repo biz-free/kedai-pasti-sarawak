@@ -1364,8 +1364,13 @@
       <div class="max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-16">
         <button onclick="window.showView('home')" class="text-forest text-xs font-bold flex items-center gap-1 mb-4"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Kembali ke Utama</button>
         <p class="text-honeydeep text-[11px] font-bold tracking-widest uppercase mb-2">Komuniti Kami</p>
-        <h1 class="font-display font-bold text-2xl sm:text-3xl text-ink mb-2">Senarai Ejen</h1>
-        <p id="senaraiejen-subtitle" class="text-inksoft text-sm mb-6 max-w-2xl">Ejen komuniti berdaftar yang menjual produk PASTI Sarawak Mart Official di kawasan masing-masing.</p>
+        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-6">
+          <div>
+            <h1 class="font-display font-bold text-2xl sm:text-3xl text-ink mb-2">Senarai Ejen</h1>
+            <p id="senaraiejen-subtitle" class="text-inksoft text-sm max-w-2xl">Ejen komuniti berdaftar yang menjual produk PASTI Sarawak Mart Official di kawasan masing-masing.</p>
+          </div>
+          <button onclick="window.showView('agent')" class="shrink-0 bg-forest hover:bg-forestdark text-white font-bold px-5 py-2.5 rounded-2xl flex items-center gap-2 transition-colors text-sm"><i data-lucide="log-in" class="w-4 h-4"></i> Log Masuk / Daftar Ejen</button>
+        </div>
         <div id="senaraiejen-list" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <p class="text-inksoft text-sm italic col-span-full">Memuatkan...</p>
         </div>
@@ -1384,8 +1389,13 @@
       <div class="max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-16">
         <button onclick="window.showView('home')" class="text-forest text-xs font-bold flex items-center gap-1 mb-4"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Kembali ke Utama</button>
         <p class="text-honeydeep text-[11px] font-bold tracking-widest uppercase mb-2">Liputan Komuniti</p>
-        <h1 class="font-display font-bold text-2xl sm:text-3xl text-ink mb-2">PASTI Kawasan</h1>
-        <p id="kawasan-subtitle" class="text-inksoft text-sm mb-8 max-w-2xl">PASTI kawasan berdaftar yang menguruskan penyerahan pesanan dan menjual produk sendiri di PASTI Sarawak Mart Official.</p>
+        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-8">
+          <div>
+            <h1 class="font-display font-bold text-2xl sm:text-3xl text-ink mb-2">PASTI Kawasan</h1>
+            <p id="kawasan-subtitle" class="text-inksoft text-sm max-w-2xl">PASTI kawasan berdaftar yang menguruskan penyerahan pesanan dan menjual produk sendiri di PASTI Sarawak Mart Official.</p>
+          </div>
+          <button onclick="window.showView('kawasanportal')" class="shrink-0 bg-forest hover:bg-forestdark text-white font-bold px-5 py-2.5 rounded-2xl flex items-center gap-2 transition-colors text-sm"><i data-lucide="store" class="w-4 h-4"></i> Daftar PASTI Kawasan</button>
+        </div>
         <div id="kawasan-registered-list" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <p class="text-inksoft text-sm italic col-span-full">Memuatkan...</p>
         </div>
@@ -2633,9 +2643,16 @@ function cartItemHTML(item){
   const prod = appProducts.find(p=>p.id===item.id);
   const cat = CATEGORIES[prod?prod.category:'kurma'] || fallbackCategory();
   const sizeAttr = escapeHtml(item.size||'');
+  const img = prod && Array.isArray(prod.images) && prod.images[0];
+  const thumbHTML = img
+    ? `<div class="w-16 h-16 rounded-xl shrink-0 bg-white border border-sand overflow-hidden relative">
+        <img src="${escapeHtml(img)}" alt="${escapeHtml(item.name)}" class="w-full h-full object-contain p-1" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+        <div class="absolute inset-0 hidden items-center justify-center" style="background:linear-gradient(135deg, ${cat.grad[0]}, ${cat.grad[1]})"><i data-lucide="${cat.icon}" class="w-6 h-6 text-white/90"></i></div>
+      </div>`
+    : `<div class="w-16 h-16 rounded-xl flex items-center justify-center shrink-0" style="background:linear-gradient(135deg, ${cat.grad[0]}, ${cat.grad[1]})"><i data-lucide="${cat.icon}" class="w-6 h-6 text-white/90"></i></div>`;
   return `
   <div class="bg-white border border-sand rounded-2xl p-3 flex items-center gap-3">
-    <div class="w-16 h-16 rounded-xl flex items-center justify-center shrink-0" style="background:linear-gradient(135deg, ${cat.grad[0]}, ${cat.grad[1]})"><i data-lucide="${cat.icon}" class="w-6 h-6 text-white/90"></i></div>
+    ${thumbHTML}
     <div class="flex-1 min-w-0">
       <p class="font-semibold text-sm text-ink truncate">${escapeHtml(item.name)}${item.size ? ` <span class="text-inksoft font-normal">(Saiz ${escapeHtml(item.size)})</span>` : ''}</p>
       <p class="text-forest font-bold text-sm">${formatRM(item.price)}</p>
@@ -3677,6 +3694,7 @@ window.saveKwProduct = async function(){
   const name = document.getElementById('kwpm-name').value.trim();
   if(!name){ showToast('Nama produk wajib diisi','alert-circle'); return; }
   const images = [document.getElementById('kwpm-img1').value.trim(), document.getElementById('kwpm-img2').value.trim(), document.getElementById('kwpm-img3').value.trim()].filter(Boolean);
+  if(!images.length){ showToast('Sila upload sekurang-kurangnya 1 gambar produk','alert-circle'); return; }
   const payload = {
     id: id || undefined,
     name,
@@ -4192,6 +4210,7 @@ window.saveProduct = async function(){
   if(!name || isNaN(effectivePrice) || isNaN(weight) || isNaN(stock) || isNaN(commissionPct)){
     showToast('Sila lengkapkan semua medan dengan betul','alert-circle'); return;
   }
+  if(!images.length){ showToast('Sila upload sekurang-kurangnya 1 gambar produk','alert-circle'); return; }
   const product = { id:id||undefined, name, price:effectivePrice, modal,weight,stock,commissionPct,jualan,category,desc,sellerName,popular,active,sizes,images, createdAt:new Date().toISOString() };
   try{
     await window.fbAdminSaveProduct(product);
