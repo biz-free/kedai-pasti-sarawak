@@ -1754,6 +1754,8 @@
           </div>
           <label class="flex items-center gap-2 text-xs font-bold text-inksoft px-1"><input id="pm-popular" type="checkbox" class="w-4 h-4 accent-[#0B5D3B]"> Tandakan sebagai Produk Popular</label>
           <label class="flex items-center gap-2 text-xs font-bold text-inksoft px-1"><input id="pm-active" type="checkbox" checked class="w-4 h-4 accent-[#0B5D3B]"> Produk Aktif (nyahtanda untuk sembunyi dari katalog awam)</label>
+          <label class="flex items-center gap-2 text-xs font-bold text-inksoft px-1"><input id="pm-preorder" type="checkbox" class="w-4 h-4 accent-[#0B5D3B]" onchange="window.togglePmPreorderField()"> <i data-lucide="clock" class="w-4 h-4 text-honeydeep"></i> Pre-order (pelanggan tempah dahulu, produk belum ready)</label>
+          <input id="pm-preorder-eta" type="text" placeholder="Jangkaan tempoh ready (cth: 3-5 hari bekerja)" class="hidden w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
 
           <div class="border-t border-sand pt-3 mt-1">
             <label class="flex items-center gap-2 text-xs font-bold text-ink px-1 mb-2"><input id="pm-use-sizes" type="checkbox" onchange="window.toggleSizeEditor()" class="w-4 h-4 accent-[#0B5D3B]"> Produk ini ada pilihan saiz (cth. pakaian)</label>
@@ -4058,6 +4060,9 @@ window.openProductModal = function(id){
   setUploadStatusDisplay('pm-img3', imgs[2], 'Upload Gambar 3 dari peranti (pilihan)');
   document.getElementById('pm-popular').checked = editing ? !!editing.popular : false;
   document.getElementById('pm-active').checked = editing ? editing.active !== false : true;
+  document.getElementById('pm-preorder').checked = editing ? !!editing.preorder : false;
+  document.getElementById('pm-preorder-eta').value = editing ? (editing.preorderEta||'') : '';
+  window.togglePmPreorderField();
   const existingSizes = editing && Array.isArray(editing.sizes) ? editing.sizes : [];
   document.getElementById('pm-use-sizes').checked = existingSizes.length > 0;
   document.getElementById('pm-sizes-wrap').classList.toggle('hidden', existingSizes.length === 0);
@@ -4068,6 +4073,9 @@ window.openProductModal = function(id){
   document.getElementById('modal-admin-product').classList.remove('hidden');
 }
 window.closeProductModal = function(){ document.getElementById('modal-admin-product').classList.add('hidden'); }
+window.togglePmPreorderField = function(){
+  document.getElementById('pm-preorder-eta').classList.toggle('hidden', !document.getElementById('pm-preorder').checked);
+}
 async function refreshOwnProducts(){
   try{
     const own = await window.fbListProductsPublic();
@@ -4193,6 +4201,8 @@ window.saveProduct = async function(){
   const sellerName = document.getElementById('pm-seller').value.trim() || 'PASTI Sarawak Mart Official';
   const popular = document.getElementById('pm-popular').checked;
   const active = document.getElementById('pm-active').checked;
+  const preorder = document.getElementById('pm-preorder').checked;
+  const preorderEta = document.getElementById('pm-preorder-eta').value.trim();
   const images = [document.getElementById('pm-img1').value.trim(), document.getElementById('pm-img2').value.trim(), document.getElementById('pm-img3').value.trim()].filter(Boolean);
 
   const useSizes = document.getElementById('pm-use-sizes').checked;
@@ -4211,7 +4221,7 @@ window.saveProduct = async function(){
     showToast('Sila lengkapkan semua medan dengan betul','alert-circle'); return;
   }
   if(!images.length){ showToast('Sila upload sekurang-kurangnya 1 gambar produk','alert-circle'); return; }
-  const product = { id:id||undefined, name, price:effectivePrice, modal,weight,stock,commissionPct,jualan,category,desc,sellerName,popular,active,sizes,images, createdAt:new Date().toISOString() };
+  const product = { id:id||undefined, name, price:effectivePrice, modal,weight,stock,commissionPct,jualan,category,desc,sellerName,popular,active,preorder,preorderEta,sizes,images, createdAt:new Date().toISOString() };
   try{
     await window.fbAdminSaveProduct(product);
     await refreshOwnProducts();
@@ -4262,6 +4272,7 @@ function renderAdminProducts(){
             <span class="font-bold text-ink block">${escapeHtml(p.name)}</span>
             <span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold ${active?'bg-green-100 text-green-700':'bg-red-100 text-red-600'}">${active?'AKTIF':'TIDAK AKTIF'}</span>
             ${p.sizes && p.sizes.length ? `<span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-honey/20 text-honeydeep ml-1">${p.sizes.length} SAIZ</span>` : ''}
+            ${p.preorder ? `<span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-honey/20 text-honeydeep ml-1 inline-flex items-center gap-1"><i data-lucide="clock" class="w-2.5 h-2.5"></i> PRE-ORDER</span>` : ''}
           </div>
         </div>
       </td>
