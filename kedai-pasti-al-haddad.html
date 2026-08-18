@@ -3690,7 +3690,8 @@ window.saveKwProduct = async function(){
     await refreshKwProducts();
     showToast('Produk berjaya disimpan','check-circle-2');
   }catch(e){
-    showToast('Gagal simpan produk','alert-circle');
+    console.error('saveKwProduct failed:', e);
+    showToast('Gagal simpan produk: ' + (e && (e.code || e.message) || 'ralat tidak diketahui'), 'alert-circle');
   }
 }
 window.deleteKwProduct = async function(id){
@@ -4202,7 +4203,8 @@ window.saveProduct = async function(){
     renderAdminProducts(); renderHome(); renderCatalog();
     showToast('Produk berjaya disimpan','check-circle-2');
   }catch(e){
-    showToast('Gagal simpan produk','alert-circle');
+    console.error('saveProduct failed:', e);
+    showToast('Gagal simpan produk: ' + (e && (e.code || e.message) || 'ralat tidak diketahui'), 'alert-circle');
   }
 }
 window.toggleProductActive = async function(id){
