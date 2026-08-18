@@ -96,8 +96,21 @@
   const callBookEasyParcelShipment = httpsCallable(fbFns, 'bookEasyParcelShipment');
 
   let adminSignedIn = false;
-  onAuthStateChanged(fbAuth, (user) => {
+  onAuthStateChanged(fbAuth, async (user) => {
     adminSignedIn = !!(user && !user.isAnonymous);
+    // A restored "logged in" admin UI (from localStorage, see loadAppState)
+    // is only a UI hint — it can outlive the real Firebase Auth session
+    // (token expiry, revoked session, etc). If the actual signed-in user
+    // no longer carries the admin custom claim, the UI would keep showing
+    // the dashboard while every write silently fails with permission-denied.
+    // Re-validate against the real token and force back to the login
+    // screen if they've drifted apart, mirroring the kawasan session
+    // comment further down about not trusting a stale restored flag.
+    if (typeof window.onAdminAuthResolved === 'function') {
+      let hasAdminClaim = false;
+      try { hasAdminClaim = !!(user && (await user.getIdTokenResult()).claims.admin); } catch (e) {}
+      window.onAdminAuthResolved(hasAdminClaim);
+    }
   });
 
   window.fbAgentLogin = async function(code, password) {
@@ -3967,6 +3980,21 @@ function renderAdminView(){
   loginWrap.classList.add('hidden'); dashWrap.classList.remove('hidden');
   window.setAdminTab(adminCurrentTab);
   window.refreshEasyParcelBalanceBadge();
+}
+// Called from the Firebase module script whenever auth state resolves,
+// with whether the real signed-in user actually carries the admin custom
+// claim. A restored-from-localStorage `isAdminIn=true` is only a UI hint —
+// if it no longer matches reality (expired/revoked session), every write
+// would otherwise silently fail with permission-denied while the
+// dashboard keeps showing as logged in. Kick back to the login screen
+// instead of leaving that trap in place.
+window.onAdminAuthResolved = function(hasAdminClaim){
+  if(isAdminIn && !hasAdminClaim){
+    isAdminIn = false;
+    persistSession(null);
+    renderAdminView();
+    showToast('Sesi admin tamat, sila log masuk semula','alert-circle');
+  }
 }
 window.refreshEasyParcelBalanceBadge = async function(){
   const badge = document.getElementById('admin-ep-balance-badge');
