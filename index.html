@@ -16,15 +16,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="PASTI Sarawak Mart">
 
-<style>
-  /* Deferring the Tailwind CDN script (below) lets the rest of the page load
-     in parallel instead of blocking on it, but that opens a brief window
-     where the static header/nav HTML is parsed and painted before Tailwind
-     has applied any utility classes to it — a flash of unstyled content.
-     Hide the page until Tailwind finishes (or fails), then reveal it. */
-  body{ visibility:hidden; }
-</style>
-<script src="https://cdn.tailwindcss.com" defer onload="document.body.style.visibility='visible'" onerror="document.body.style.visibility='visible'"></script>
+<link rel="stylesheet" href="tailwind-generated.css">
 <script>
   // Simple localStorage-backed KV store matching the {get,set,delete}(key, _global) shape
   // used throughout this file for cart/session/demo-data persistence.
@@ -38,10 +30,6 @@
       navigator.serviceWorker.register('sw.js').catch(() => {});
     });
   }
-  // Safety net: force-reveal the page even if Tailwind's onload/onerror
-  // never fire for some reason (e.g. silently blocked), so a styling
-  // hiccup can never leave the page permanently blank.
-  setTimeout(() => { document.body.style.visibility = 'visible'; }, 2500);
 </script>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -444,21 +432,6 @@
     return out;
   };
 
-</script>
-<script type="module">
-  tailwind.config = {
-    theme: {
-      extend: {
-        colors: {
-          forest: '#0B5D3B', forestdark:'#083F28', leaf:'#3F9D64', leaflight:'#E4F3EA',
-          honey:'#D4A017', honeydeep:'#B3810A', cream:'#FBF7EE', sand:'#EFE4CF',
-          ink:'#1C2B24', inksoft:'#5B6B63'
-        },
-        fontFamily: { display:['Sora','sans-serif'], body:['Inter','sans-serif'] },
-        boxShadow: { card:'0 10px 30px -12px rgba(11,93,59,0.28)' }
-      }
-    }
-  }
 </script>
 <script src="https://unpkg.com/lucide@latest" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js" defer></script>
