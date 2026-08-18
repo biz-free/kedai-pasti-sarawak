@@ -3669,7 +3669,7 @@ window.saveKwProduct = async function(){
   const name = document.getElementById('kwpm-name').value.trim();
   if(!name){ showToast('Nama produk wajib diisi','alert-circle'); return; }
   const images = [document.getElementById('kwpm-img1').value.trim(), document.getElementById('kwpm-img2').value.trim(), document.getElementById('kwpm-img3').value.trim()].filter(Boolean);
-  if(!images.length){ showToast('Sila upload sekurang-kurangnya 1 gambar produk','alert-circle'); return; }
+  if(!id && !images.length){ showToast('Sila upload sekurang-kurangnya 1 gambar produk','alert-circle'); return; }
   const payload = {
     id: id || undefined,
     name,
@@ -4193,7 +4193,7 @@ window.saveProduct = async function(){
   if(!name || isNaN(effectivePrice) || isNaN(weight) || isNaN(stock) || isNaN(commissionPct)){
     showToast('Sila lengkapkan semua medan dengan betul','alert-circle'); return;
   }
-  if(!images.length){ showToast('Sila upload sekurang-kurangnya 1 gambar produk','alert-circle'); return; }
+  if(!id && !images.length){ showToast('Sila upload sekurang-kurangnya 1 gambar produk','alert-circle'); return; }
   const product = { id:id||undefined, name, price:effectivePrice, modal,weight,stock,commissionPct,jualan,category,desc,sellerName,popular,active,preorder,preorderEta,sizes,images, createdAt:new Date().toISOString() };
   try{
     await window.fbAdminSaveProduct(product);
