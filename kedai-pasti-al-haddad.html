@@ -2322,13 +2322,13 @@ function productMediaHTML(p, heightClass){
       <div class="absolute inset-0 hidden items-center justify-center" style="background:linear-gradient(135deg, ${cat.grad[0]}, ${cat.grad[1]})"><i data-lucide="${cat.icon}" class="w-11 h-11 sm:w-12 sm:h-12 text-white/90"></i></div>
       <span class="absolute bottom-1.5 right-2 text-[8px] sm:text-[9px] font-extrabold uppercase tracking-wider text-ink/20 select-none pointer-events-none">PASTI Sarawak Mart</span>
       ${p.popular ? `<span class="absolute top-2 left-2 bg-honey text-ink text-[9px] font-black px-2 py-1 rounded-full">POPULAR</span>` : ''}
-      ${p.preorder ? `<span class="absolute top-2 right-2 bg-honeydeep text-white text-[9px] font-black px-2 py-1 rounded-full flex items-center gap-1"><i data-lucide="clock" class="w-2.5 h-2.5"></i> PRE-ORDER</span>` : ''}
+      ${p.preorder && p.stock>0 ? `<span class="absolute top-2 right-2 bg-honeydeep text-white text-[9px] font-black px-2 py-1 rounded-full flex items-center gap-1"><i data-lucide="clock" class="w-2.5 h-2.5"></i> PRE-ORDER</span>` : ''}
     </div>`;
   }
   return `<div class="relative ${heightClass} w-full flex items-center justify-center" style="background:linear-gradient(135deg, ${cat.grad[0]}, ${cat.grad[1]})">
     <i data-lucide="${cat.icon}" class="w-11 h-11 sm:w-12 sm:h-12 text-white/90"></i>
     ${p.popular ? `<span class="absolute top-2 left-2 bg-honey text-ink text-[9px] font-black px-2 py-1 rounded-full">POPULAR</span>` : ''}
-    ${p.preorder ? `<span class="absolute top-2 right-2 bg-honeydeep text-white text-[9px] font-black px-2 py-1 rounded-full flex items-center gap-1"><i data-lucide="clock" class="w-2.5 h-2.5"></i> PRE-ORDER</span>` : ''}
+    ${p.preorder && p.stock>0 ? `<span class="absolute top-2 right-2 bg-honeydeep text-white text-[9px] font-black px-2 py-1 rounded-full flex items-center gap-1"><i data-lucide="clock" class="w-2.5 h-2.5"></i> PRE-ORDER</span>` : ''}
   </div>`;
 }
 function productGalleryHTML(p, heightClass){
@@ -2364,8 +2364,8 @@ window.onGalleryScroll = function(el){
 function productTileHTML(p){
   const cat = CATEGORIES[p.category] || fallbackCategory();
   const hasSizes = Array.isArray(p.sizes) && p.sizes.length > 0;
-  const stockLabel = p.preorder ? `Pre-order · ${p.preorderEta||'Jangkaan akan dimaklumkan'}` : (p.stock>0 ? `${p.stock} lagi` : 'Stok Habis');
-  const stockClass = p.preorder ? 'text-honeydeep' : (p.stock>0 ? 'text-forest' : 'text-red-500');
+  const stockLabel = p.stock<=0 ? 'Stok Habis' : (p.preorder ? `Pre-order · ${p.preorderEta||'Jangkaan akan dimaklumkan'}` : `${p.stock} lagi`);
+  const stockClass = p.stock<=0 ? 'text-red-500' : (p.preorder ? 'text-honeydeep' : 'text-forest');
   return `
   <div class="bg-white rounded-3xl border border-sand overflow-hidden card-hover shadow-sm flex flex-col">
     <button onclick="window.openQuickView('${p.id}')" class="block w-full">${productMediaHTML(p, 'h-28 sm:h-36')}</button>
@@ -2493,7 +2493,7 @@ window.openQuickView = function(id){
       </div>` : ''}
       <div class="grid grid-cols-3 gap-2 mt-4">
         <div class="bg-cream rounded-xl p-2.5 text-center"><p class="text-[9px] font-bold text-inksoft uppercase">Berat</p><p class="text-xs font-bold text-ink">${qvProduct.weight} kg</p></div>
-        <div class="bg-cream rounded-xl p-2.5 text-center"><p class="text-[9px] font-bold text-inksoft uppercase">Stok</p><p class="text-xs font-bold text-ink">${qvProduct.preorder ? 'Pre-order' : qvProduct.stock}</p></div>
+        <div class="bg-cream rounded-xl p-2.5 text-center"><p class="text-[9px] font-bold text-inksoft uppercase">Stok</p><p class="text-xs font-bold text-ink">${qvProduct.stock<=0 ? 'Stok Habis' : (qvProduct.preorder ? 'Pre-order' : qvProduct.stock)}</p></div>
         <div class="bg-cream rounded-xl p-2.5 text-center"><p class="text-[9px] font-bold text-inksoft uppercase">Penjual</p><p class="text-[11px] font-bold text-ink truncate">${escapeHtml(qvProduct.sellerName||'-')}</p></div>
       </div>
       <div class="flex items-center gap-4 mt-5">
