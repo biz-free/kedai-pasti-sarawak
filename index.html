@@ -35,7 +35,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import { getAuth, signInAnonymously, signInWithEmailAndPassword, signInWithCustomToken, signOut, onAuthStateChanged, createUserWithEmailAndPassword, sendPasswordResetEmail, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
   import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
-  import { getFirestore, doc, getDoc, setDoc, collection, getDocs, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { getFirestore, doc, getDoc, setDoc, collection, getDocs, deleteDoc, query, where, onSnapshot, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
   const firebaseConfig = {
@@ -55,6 +55,20 @@
   const KP_ROOT = ['artifacts','kedai-pasti-sarawak','public','data'];
   function kpCol(name){ return collection(fbDb, ...KP_ROOT, name); }
   function kpDoc(name, id){ return doc(fbDb, ...KP_ROOT, name, id); }
+
+  window.fbListenPublicPurchases = function(callback) {
+    const q = query(kpCol('publicPurchaseFeed'), orderBy('createdAt', 'desc'), limit(5));
+    let firstSnapshot = true;
+    onSnapshot(q, (snap) => {
+      // The first snapshot delivers whatever's already in the collection
+      // (existing history) — only react to genuinely NEW docs pushed in
+      // after that, so page load doesn't replay old purchases as "live".
+      if (firstSnapshot) { firstSnapshot = false; return; }
+      snap.docChanges().forEach((change) => {
+        if (change.type === 'added') callback(change.doc.data());
+      });
+    }, (err) => { console.error('fbListenPublicPurchases failed:', err); });
+  };
 
   window.fbUploadImage = async function(file, folder) {
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
@@ -1683,6 +1697,8 @@
   <!-- TOAST -->
   <div id="toast" class="hidden fixed bottom-24 md:bottom-8 left-1/2 z-[100] bg-ink text-white text-sm font-semibold px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-2"></div>
 
+  <div id="purchase-notif-wrap" class="fixed top-20 right-3 sm:right-5 z-[99] flex flex-col gap-2 pointer-events-none w-[calc(100%-1.5rem)] max-w-xs"></div>
+
   <!-- MODAL: QUICK VIEW PRODUK -->
   <div id="modal-quickview" class="hidden fixed inset-0 z-[90] flex items-end sm:items-center justify-center p-0 sm:p-4 modal-mask">
     <div class="bg-white rounded-t-[2rem] sm:rounded-[2rem] w-full sm:max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
@@ -2094,6 +2110,31 @@ function showToast(msg, icon){
 }
 
 function calcCommission(item){ return item.price * item.qty * ((item.commissionPct||0)/100); }
+
+/* Floating "someone just bought X" popup — top-right, stays fixed while
+   scrolling, auto-dismisses. Fed by fbListenPublicPurchases (real-time,
+   privacy-safe: initials + area + product name only, never real order data). */
+function showPurchaseNotification(data){
+  const wrap = document.getElementById('purchase-notif-wrap');
+  if(!wrap) return;
+  const el = document.createElement('div');
+  el.className = 'pointer-events-auto bg-white border border-sand rounded-2xl shadow-lg p-3.5 flex items-start gap-3 opacity-0 -translate-y-2 transition-all duration-300';
+  const extra = data.moreCount>0 ? ` +${data.moreCount} lagi` : '';
+  el.innerHTML = `
+    <div class="w-9 h-9 rounded-full bg-leaflight flex items-center justify-center shrink-0"><i data-lucide="shopping-bag" class="w-4 h-4 text-forest"></i></div>
+    <div class="min-w-0 flex-1">
+      <p class="text-xs font-bold text-ink">${escapeHtml(data.initials||'Seseorang')} <span class="font-normal text-inksoft">dari</span> ${escapeHtml(data.area||'PASTI Sarawak')}</p>
+      <p class="text-[11px] text-inksoft truncate">Baru beli ${escapeHtml(data.productName||'produk')}${escapeHtml(extra)}</p>
+    </div>
+    <button onclick="this.closest('.pointer-events-auto').remove()" class="shrink-0 text-inksoft hover:text-ink"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>`;
+  wrap.appendChild(el);
+  icons();
+  requestAnimationFrame(()=>{ el.classList.remove('opacity-0','-translate-y-2'); });
+  setTimeout(()=>{
+    el.classList.add('opacity-0');
+    setTimeout(()=>el.remove(), 350);
+  }, 6000);
+}
 
 /* ================= SITE CONTENT (CMS) ================= */
 function applySiteContent(){
@@ -4998,6 +5039,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderAdminView();
   renderKawasanPortalView();
   icons();
+
+  if(typeof window.fbListenPublicPurchases === 'function'){
+    window.fbListenPublicPurchases(showPurchaseNotification);
+  }
 
   const initialHash = (window.location.hash||'').replace('#','');
   if(HIDDEN_FROM_ROUTING.includes(initialHash)){
