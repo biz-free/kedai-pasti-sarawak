@@ -87,6 +87,7 @@
   const callAdminListOrders = httpsCallable(fbFns, 'adminListOrders');
   const callAdminUpdateOrderStatus = httpsCallable(fbFns, 'adminUpdateOrderStatus');
   const callAdminConfirmPayment = httpsCallable(fbFns, 'adminConfirmPayment');
+  const callAdminDeleteOrder = httpsCallable(fbFns, 'adminDeleteOrder');
   const callAgentOrderStats = httpsCallable(fbFns, 'agentOrderStats');
   const callAgentSavePayout = httpsCallable(fbFns, 'agentSavePayout');
   const callAgentConfirmDelivery = httpsCallable(fbFns, 'agentConfirmDelivery');
@@ -318,6 +319,11 @@
 
   window.fbAdminConfirmPayment = async function(orderId) {
     const res = await callAdminConfirmPayment({ orderId });
+    return res.data;
+  };
+
+  window.fbAdminDeleteOrder = async function(orderId) {
+    const res = await callAdminDeleteOrder({ orderId });
     return res.data;
   };
 
@@ -725,6 +731,17 @@
           <h1 class="font-display font-bold text-2xl text-ink mb-5">Checkout</h1>
           <div class="grid lg:grid-cols-5 gap-6">
             <div class="lg:col-span-3 space-y-5">
+              <div id="co-guest-prompt" class="hidden bg-leaflight border border-forest/20 rounded-3xl p-5 flex items-center justify-between gap-3 flex-wrap">
+                <div>
+                  <p class="font-display font-bold text-ink text-sm">Ada akaun? Log masuk untuk checkout lebih pantas</p>
+                  <p class="text-inksoft text-xs mt-0.5">Maklumat anda akan diisi automatik. Atau teruskan sebagai tetamu di bawah — akaun bukan wajib.</p>
+                </div>
+                <button type="button" onclick="window.openCheckoutLogin()" class="shrink-0 bg-forest hover:bg-forestdark text-white font-bold px-5 py-2.5 rounded-xl text-sm flex items-center gap-2"><i data-lucide="log-in" class="w-4 h-4"></i> Log Masuk / Daftar</button>
+              </div>
+              <div id="co-account-badge" class="hidden bg-white border border-sand rounded-3xl p-4 items-center justify-between gap-3">
+                <p class="text-inksoft text-xs">Log masuk sebagai <span id="co-account-email" class="font-bold text-ink"></span></p>
+                <button type="button" onclick="window.doCustomerLogout().then(()=>renderCheckoutEnter())" class="text-xs font-bold text-red-500">Log Keluar</button>
+              </div>
               <div class="bg-white border border-sand rounded-3xl p-5 shadow-sm">
                 <h3 class="font-display font-bold text-ink mb-4 flex items-center gap-2"><i data-lucide="user" class="w-4 h-4 text-forest"></i> Maklumat Pelanggan</h3>
                 <div class="grid sm:grid-cols-2 gap-3">
@@ -757,10 +774,9 @@
 
               <div class="bg-white border border-sand rounded-3xl p-5 shadow-sm">
                 <h3 class="font-display font-bold text-ink mb-4 flex items-center gap-2"><i data-lucide="truck" class="w-4 h-4 text-forest"></i> Penghantaran</h3>
-                <div id="co-ship-mode-tabs" class="grid grid-cols-3 gap-2 mb-4">
+                <div id="co-ship-mode-tabs" class="grid grid-cols-2 gap-2 mb-4">
                   <button type="button" data-shipmode="pickup" onclick="window.setShipMode('pickup')" class="co-shipmode-btn bg-forest text-white text-xs font-bold px-3 py-2.5 rounded-xl transition-colors">Ambil di PASTI Kawasan</button>
-                  <button type="button" data-shipmode="biasa" onclick="window.setShipMode('biasa')" class="co-shipmode-btn bg-cream text-inksoft text-xs font-bold px-3 py-2.5 rounded-xl transition-colors">Penghantaran Biasa</button>
-                  <button type="button" data-shipmode="kurier" onclick="window.setShipMode('kurier')" class="co-shipmode-btn bg-cream text-inksoft text-xs font-bold px-3 py-2.5 rounded-xl transition-colors">Kurier Express</button>
+                  <button type="button" data-shipmode="kurier" onclick="window.setShipMode('kurier')" class="co-shipmode-btn bg-cream text-inksoft text-xs font-bold px-3 py-2.5 rounded-xl transition-colors">Kurier</button>
                 </div>
 
                 <div id="co-ship-pickup">
@@ -779,11 +795,6 @@
                   <select id="co-pickup-kawasan-select" onchange="window.selectPickupKawasan(this.value)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
                     <option value="">-- Pilih PASTI Kawasan --</option>
                   </select>
-                </div>
-
-                <div id="co-ship-biasa" class="hidden">
-                  <p class="text-inksoft text-xs mb-3">Penghantaran pos standard — lebih murah, tempoh lebih lama berbanding kurier express.</p>
-                  <div id="co-biasa-rate" class="flex items-center justify-between gap-3 border-2 border-forest bg-leaflight rounded-xl px-4 py-3"></div>
                 </div>
 
                 <div id="co-ship-easyparcel" class="hidden">
@@ -884,7 +895,7 @@
                 <button onclick="window.doAgentSignup()" class="w-full bg-forest hover:bg-forestdark text-white font-bold py-3 rounded-xl transition-colors">Daftar Jadi Ejen</button>
               </div>
             </div>
-            <p class="text-center text-xs text-inksoft mt-4">Perlu bantuan? <a href="https://wa.me/60123456789?text=Saya%20berminat%20menjadi%20ejen%20Kedai%20PASTI%20Sarawak%20Official" target="_blank" class="text-forest font-bold hover:underline">Hubungi kami via WhatsApp</a></p>
+            <p class="text-center text-xs text-inksoft mt-4">Perlu bantuan? <a href="https://wa.me/60134636383?text=Saya%20berminat%20menjadi%20ejen%20Kedai%20PASTI%20Sarawak%20Official" target="_blank" class="text-forest font-bold hover:underline">Hubungi kami via WhatsApp</a></p>
           </div>
         </div>
 
@@ -978,7 +989,7 @@
                 <button onclick="window.doKawasanSignup()" class="w-full bg-forest hover:bg-forestdark text-white font-bold py-3 rounded-xl transition-colors">Daftar PASTI Kawasan</button>
               </div>
             </div>
-            <p class="text-center text-xs text-inksoft mt-4">Perlu bantuan? <a href="https://wa.me/60123456789?text=Saya%20mahu%20daftarkan%20PASTI%20Kawasan%20saya" target="_blank" class="text-forest font-bold hover:underline">Hubungi kami via WhatsApp</a></p>
+            <p class="text-center text-xs text-inksoft mt-4">Perlu bantuan? <a href="https://wa.me/60134636383?text=Saya%20mahu%20daftarkan%20PASTI%20Kawasan%20saya" target="_blank" class="text-forest font-bold hover:underline">Hubungi kami via WhatsApp</a></p>
           </div>
         </div>
 
@@ -1090,15 +1101,6 @@
               <input id="kwpm-preorder" type="checkbox" class="w-4 h-4" onchange="window.toggleKwPreorderField()"> <i data-lucide="clock" class="w-4 h-4 text-honeydeep"></i> Pre-order (pelanggan tempah dahulu, produk belum ready)
             </label>
             <input id="kwpm-preorder-eta" type="text" placeholder="Jangkaan tempoh ready (cth: 3-5 hari bekerja)" class="hidden w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-            <div class="border-t border-sand pt-3">
-              <p class="text-xs font-bold text-ink mb-2">Kaedah Penghantaran Sesuai</p>
-              <label class="flex items-center gap-2 bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium cursor-pointer mb-2">
-                <input id="kwpm-ship-biasa" type="checkbox" checked class="w-4 h-4"> Penghantaran Biasa (Pos)
-              </label>
-              <label class="flex items-center gap-2 bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium cursor-pointer">
-                <input id="kwpm-ship-kurier" type="checkbox" class="w-4 h-4"> Kurier Express (EasyParcel)
-              </label>
-            </div>
           </div>
           <div class="flex gap-3 mt-5">
             <button onclick="window.closeKwProductModal()" class="flex-1 bg-cream text-ink font-bold py-3 rounded-xl">Batal</button>
@@ -1188,7 +1190,7 @@
             </div>
             <div class="overflow-x-auto bg-white border border-sand rounded-2xl">
               <table class="w-full text-left text-xs whitespace-nowrap">
-                <thead><tr class="bg-cream text-inksoft uppercase text-[10px]"><th class="p-3">ID / Tarikh</th><th class="p-3">Pelanggan</th><th class="p-3">Ejen</th><th class="p-3">Jumlah</th><th class="p-3">Status</th><th class="p-3">Tindakan</th><th class="p-3">Penghantaran Kawasan</th><th class="p-3">Kurier EasyParcel</th></tr></thead>
+                <thead><tr class="bg-cream text-inksoft uppercase text-[10px]"><th class="p-3">ID / Tarikh</th><th class="p-3">Pelanggan</th><th class="p-3">Ejen</th><th class="p-3">Jumlah</th><th class="p-3">Status</th><th class="p-3">Tindakan</th><th class="p-3">Penghantaran Kawasan</th><th class="p-3">Kurier</th><th class="p-3"></th></tr></thead>
                 <tbody id="admin-order-body"></tbody>
               </table>
             </div>
@@ -1319,13 +1321,8 @@
               <input id="cms-qr" type="hidden">
               <label class="flex items-center gap-1.5 text-[11px] font-bold text-forest cursor-pointer hover:underline w-fit"><i data-lucide="upload" class="w-3 h-3"></i><span id="cms-qr-upload-status">Upload dari peranti</span><input type="file" accept="image/*" class="hidden" onchange="window.uploadImageToField(this,'cms-qr','site-qr')"></label>
               <label class="flex items-center gap-2 bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium cursor-pointer">
-                <input id="cms-easyparcel" type="checkbox" checked class="w-4 h-4"> Beri pembeli pilihan Penghantaran Biasa / Kurier semasa checkout, selain "Ambil di PASTI Kawasan" (nyahtanda untuk guna "Ambil di PASTI Kawasan" sahaja)
+                <input id="cms-easyparcel" type="checkbox" checked class="w-4 h-4"> Beri pembeli pilihan Kurier semasa checkout, selain "Ambil di PASTI Kawasan" (nyahtanda untuk guna "Ambil di PASTI Kawasan" sahaja)
               </label>
-              <p class="text-xs font-bold text-ink pt-2">Kadar Penghantaran Biasa (Pos)</p>
-              <div class="grid grid-cols-2 gap-3">
-                <input id="cms-biasa-base" type="number" step="0.01" placeholder="Kadar Asas (RM, sehingga 1kg)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-                <input id="cms-biasa-perkg" type="number" step="0.01" placeholder="Tambahan per kg (RM)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-              </div>
             </div>
             <div class="bg-white border border-sand rounded-3xl p-5 max-w-xl space-y-3 mb-5">
               <h3 class="font-display font-bold text-ink mb-1">Sambungan EasyParcel</h3>
@@ -1701,6 +1698,49 @@
     </div>
   </div>
 
+  <!-- MODAL: LOG MASUK/DAFTAR (Checkout) -->
+  <div id="modal-checkout-login" class="hidden fixed inset-0 z-[97] flex items-end sm:items-center justify-center p-0 sm:p-4 modal-mask" onclick="if(event.target===this) window.closeCheckoutLogin()">
+    <div class="bg-white rounded-t-[2rem] sm:rounded-[2rem] w-full sm:max-w-sm max-h-[92vh] overflow-y-auto shadow-2xl">
+      <div class="p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="font-display font-bold text-lg text-ink">Log Masuk / Daftar</h3>
+          <button onclick="window.closeCheckoutLogin()" class="w-8 h-8 rounded-full bg-cream flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        <div class="flex bg-cream rounded-xl p-1 mb-4">
+          <button type="button" onclick="window.setCoLoginTab('login')" data-cologintab="login" class="co-login-tab-btn flex-1 py-2 rounded-lg text-sm font-bold transition-colors">Log Masuk</button>
+          <button type="button" onclick="window.setCoLoginTab('signup')" data-cologintab="signup" class="co-login-tab-btn flex-1 py-2 rounded-lg text-sm font-bold transition-colors">Daftar</button>
+        </div>
+        <div id="co-login-pane" class="space-y-3">
+          <input id="co-login-email" type="email" placeholder="Emel" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          <input id="co-login-pass" type="password" placeholder="Kata Laluan" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          <button onclick="window.doCheckoutLogin()" class="w-full bg-forest hover:bg-forestdark text-white font-bold py-3 rounded-xl">Log Masuk</button>
+        </div>
+        <div id="co-signup-pane" class="hidden space-y-3">
+          <input id="co-signup-email" type="email" placeholder="Emel" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          <input id="co-signup-pass" type="password" placeholder="Kata Laluan (min. 6 aksara)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          <button onclick="window.doCheckoutSignup()" class="w-full bg-forest hover:bg-forestdark text-white font-bold py-3 rounded-xl">Daftar Akaun</button>
+        </div>
+        <div class="flex items-center gap-2 my-4"><div class="flex-1 h-px bg-sand"></div><span class="text-inksoft text-xs">ATAU</span><div class="flex-1 h-px bg-sand"></div></div>
+        <button onclick="window.doCheckoutGoogleLogin()" class="w-full bg-white border border-sand hover:bg-cream text-ink font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 text-sm mb-2">
+          <i data-lucide="log-in" class="w-4 h-4"></i> Log Masuk dengan Google
+        </button>
+        <button onclick="window.closeCheckoutLogin()" class="w-full text-inksoft text-xs font-bold py-2">Teruskan sebagai Tetamu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: RESIT TEMPAHAN (Admin) -->
+  <div id="modal-order-receipt" class="hidden fixed inset-0 z-[96] flex items-center justify-center p-4 modal-mask" onclick="if(event.target===this) window.closeOrderReceipt()">
+    <div class="relative max-w-lg w-full">
+      <button onclick="window.closeOrderReceipt()" class="absolute -top-3 -right-3 w-9 h-9 bg-white rounded-full flex items-center justify-center text-ink shadow-lg z-10"><i data-lucide="x" class="w-5 h-5"></i></button>
+      <div class="bg-white rounded-2xl shadow-2xl p-4 max-h-[85vh] overflow-y-auto">
+        <p id="order-receipt-title" class="font-display font-bold text-ink mb-3"></p>
+        <img id="order-receipt-img" src="" alt="Resit Pembayaran" class="w-full h-auto rounded-xl">
+        <p id="order-receipt-empty" class="hidden text-inksoft text-sm italic py-8 text-center">Tiada resit dimuat naik untuk tempahan ini.</p>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL: HADIHUDA CHAT -->
   <div id="modal-hadihuda" class="hidden fixed inset-0 z-[92] flex items-end sm:items-center justify-center p-0 sm:p-4 modal-mask">
     <div class="bg-cream rounded-t-[2rem] sm:rounded-[2rem] w-full sm:max-w-md h-[85vh] sm:h-[36rem] max-h-[90vh] shadow-2xl flex flex-col overflow-hidden">
@@ -1736,7 +1776,8 @@
             <input id="pm-modal" type="number" step="0.01" placeholder="Modal/Kos (RM)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
             <input id="pm-weight" type="number" step="0.01" placeholder="Berat (kg)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
             <input id="pm-stock" type="number" placeholder="Stok" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-            <input id="pm-comm" type="number" step="0.1" placeholder="Komisen (%)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+            <input id="pm-comm" type="number" step="0.1" placeholder="Komisen Ejen (%)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+            <input id="pm-comm-kawasan" type="number" step="0.1" placeholder="Komisen PASTI Kawasan/Cawangan (%)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
             <input id="pm-jualan" type="number" placeholder="Jualan Direkod" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
           </div>
           <textarea id="pm-desc" rows="3" placeholder="Deskripsi produk" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium"></textarea>
@@ -1757,16 +1798,6 @@
           <label class="flex items-center gap-2 text-xs font-bold text-inksoft px-1"><input id="pm-active" type="checkbox" checked class="w-4 h-4 accent-[#0B5D3B]"> Produk Aktif (nyahtanda untuk sembunyi dari katalog awam)</label>
           <label class="flex items-center gap-2 text-xs font-bold text-inksoft px-1"><input id="pm-preorder" type="checkbox" class="w-4 h-4 accent-[#0B5D3B]" onchange="window.togglePmPreorderField()"> <i data-lucide="clock" class="w-4 h-4 text-honeydeep"></i> Pre-order (pelanggan tempah dahulu, produk belum ready)</label>
           <input id="pm-preorder-eta" type="text" placeholder="Jangkaan tempoh ready (cth: 3-5 hari bekerja)" class="hidden w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-
-          <div class="border-t border-sand pt-3">
-            <p class="text-xs font-bold text-ink mb-2 px-1">Kaedah Penghantaran Sesuai</p>
-            <label class="flex items-center gap-2 bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium cursor-pointer mb-2">
-              <input id="pm-ship-biasa" type="checkbox" checked class="w-4 h-4 accent-[#0B5D3B]"> Penghantaran Biasa (Pos)
-            </label>
-            <label class="flex items-center gap-2 bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium cursor-pointer">
-              <input id="pm-ship-kurier" type="checkbox" class="w-4 h-4 accent-[#0B5D3B]"> Kurier Express (EasyParcel)
-            </label>
-          </div>
 
           <div class="border-t border-sand pt-3 mt-1">
             <label class="flex items-center gap-2 text-xs font-bold text-ink px-1 mb-2"><input id="pm-use-sizes" type="checkbox" onchange="window.toggleSizeEditor()" class="w-4 h-4 accent-[#0B5D3B]"> Produk ini ada pilihan saiz (cth. pakaian)</label>
@@ -2178,7 +2209,7 @@ window.hadihudaSubmitLookup = async function(){
 function hadihudaShowHumanEscalation(){
   document.getElementById('hadihuda-quickreplies').innerHTML = `<p class="text-inksoft text-xs italic px-1 py-1">HadiHuda sedang menaip...</p>`;
   setTimeout(()=>{
-    const waNum = siteContent.whatsappNumber || '60123456789';
+    const waNum = siteContent.whatsappNumber || '60134636383';
     const msg = encodeURIComponent(siteContent.hadiHudaGreeting || 'Hai, saya ada soalan tentang PASTI Sarawak Mart Official.');
     hadihudaBotSay('Baik, saya sambungkan anda dengan admin kami melalui WhatsApp untuk bantuan lanjut.');
     const qr = document.getElementById('hadihuda-quickreplies');
@@ -2554,7 +2585,7 @@ window.addToCart = function(productId, qty, size){
   const existing = cart.find(c=>c.id===productId && (c.size||'')===(size||''));
   const addQty = qty||1;
   if(existing){ existing.qty = Math.min(existing.qty+addQty, p.stock); }
-  else { cart.push({ id:p.id, name:p.name, price, weight:p.weight, commissionPct:p.commissionPct, bekalKawasan:p.pickupKawasan||'', size:size||'', qty:Math.min(addQty,p.stock) }); }
+  else { cart.push({ id:p.id, name:p.name, price, weight:p.weight, commissionPct:p.commissionPct, kawasanCommissionPct:p.kawasanCommissionPct||0, bekalKawasan:p.pickupKawasan||'', size:size||'', qty:Math.min(addQty,p.stock) }); }
   persistCart(); updateCartBadge(); showToast(p.name+(size?' ('+size+')':'')+' ditambah ke troli', 'shopping-bag');
   if(typeof renderCart==='function') renderCart();
 }
@@ -2912,11 +2943,6 @@ function renderCheckoutEnter(){
 
   const easyParcelOn = siteContent.easyParcelEnabled !== false;
   document.getElementById('co-ship-mode-tabs').classList.toggle('hidden', !easyParcelOn);
-  const elig = getCartShipEligibility();
-  const biasaBtn = document.querySelector('.co-shipmode-btn[data-shipmode="biasa"]');
-  const kurierBtn = document.querySelector('.co-shipmode-btn[data-shipmode="kurier"]');
-  if(biasaBtn) biasaBtn.classList.toggle('hidden', !elig.biasa);
-  if(kurierBtn) kurierBtn.classList.toggle('hidden', !elig.kurier);
   window.setShipMode('pickup');
   populatePickupKawasan();
 
@@ -2938,8 +2964,12 @@ function renderCheckoutEnter(){
   document.getElementById('co-pay-date').value = today;
 
   const uid = typeof window.fbCustomerCurrentUid==='function' ? window.fbCustomerCurrentUid() : null;
+  document.getElementById('co-guest-prompt').classList.toggle('hidden', !!uid);
+  document.getElementById('co-account-badge').classList.toggle('hidden', !uid);
+  document.getElementById('co-account-badge').classList.toggle('flex', !!uid);
   if(uid && typeof window.fbCustomerGetProfile==='function'){
     window.fbCustomerGetProfile().then(profile=>{
+      document.getElementById('co-account-email').innerText = profile.email || '';
       if(profile.name) document.getElementById('co-nama').value = profile.name;
       if(profile.email) document.getElementById('co-email').value = profile.email;
       if(profile.phone) document.getElementById('co-phone').value = profile.phone;
@@ -2950,11 +2980,57 @@ function renderCheckoutEnter(){
     }).catch(()=>{});
   }
 }
+window.openCheckoutLogin = function(){
+  window.setCoLoginTab('login');
+  document.getElementById('modal-checkout-login').classList.remove('hidden');
+}
+window.closeCheckoutLogin = function(){ document.getElementById('modal-checkout-login').classList.add('hidden'); }
+window.setCoLoginTab = function(tab){
+  document.getElementById('co-login-pane').classList.toggle('hidden', tab!=='login');
+  document.getElementById('co-signup-pane').classList.toggle('hidden', tab!=='signup');
+  document.querySelectorAll('.co-login-tab-btn').forEach(btn=>{
+    const active = btn.getAttribute('data-cologintab')===tab;
+    btn.classList.toggle('bg-forest', active); btn.classList.toggle('text-white', active);
+    btn.classList.toggle('text-inksoft', !active);
+  });
+}
+window.doCheckoutLogin = async function(){
+  const email = document.getElementById('co-login-email').value.trim();
+  const pass = document.getElementById('co-login-pass').value;
+  if(!email || !pass){ showToast('Sila isi emel & kata laluan','alert-circle'); return; }
+  try{
+    await window.fbCustomerLogin(email, pass);
+    window.closeCheckoutLogin();
+    showToast('Selamat kembali!','check-circle-2');
+    renderCheckoutEnter();
+  }catch(err){ showToast(akaunAuthErrorMsg(err),'alert-circle'); }
+}
+window.doCheckoutSignup = async function(){
+  const email = document.getElementById('co-signup-email').value.trim();
+  const pass = document.getElementById('co-signup-pass').value;
+  if(!email || !pass){ showToast('Sila isi emel & kata laluan','alert-circle'); return; }
+  try{
+    await window.fbCustomerSignup(email, pass);
+    window.closeCheckoutLogin();
+    showToast('Akaun berjaya didaftarkan!','check-circle-2');
+    renderCheckoutEnter();
+  }catch(err){ showToast(akaunAuthErrorMsg(err),'alert-circle'); }
+}
+window.doCheckoutGoogleLogin = async function(){
+  try{
+    await window.fbCustomerGoogleLogin();
+    window.closeCheckoutLogin();
+    showToast('Selamat kembali!','check-circle-2');
+    renderCheckoutEnter();
+  }catch(err){
+    console.error('doCheckoutGoogleLogin failed:', err && err.code, err);
+    showToast(akaunAuthErrorMsg(err),'alert-circle');
+  }
+}
 window.shipMode = 'pickup';
 window.setShipMode = async function(mode){
   window.shipMode = mode;
   document.getElementById('co-ship-pickup').classList.toggle('hidden', mode!=='pickup');
-  document.getElementById('co-ship-biasa').classList.toggle('hidden', mode!=='biasa');
   document.getElementById('co-ship-easyparcel').classList.toggle('hidden', mode!=='kurier');
   document.querySelectorAll('.co-shipmode-btn').forEach(btn=>{
     const active = btn.getAttribute('data-shipmode')===mode;
@@ -2972,40 +3048,8 @@ window.setShipMode = async function(mode){
       else suggestKawasanByBandar();
     }
     selectedShipping = window.pickupKawasanCode ? { price:0, courier:'Ambil di PASTI Kawasan', eta:'Ikut susunan kawasan', type:'pickup' } : null;
-  } else if(mode==='biasa'){
-    window.calculateBiasaShipping();
   } else {
     selectedShipping = null;
-  }
-  renderCheckoutSummary();
-}
-
-/* Cart items may restrict which delivery methods they support (set per
-   product by the seller — e.g. a heavy/fragile item might not be worth
-   sending via basic post). A method is only offered at checkout if EVERY
-   item in the cart allows it; products saved before this field existed
-   have no flag at all, which is treated as "allows everything" so old
-   listings don't silently lose shipping options they used to have. */
-function getCartShipEligibility(){
-  const elig = { biasa:true, kurier:true };
-  cart.forEach(c=>{
-    const p = appProducts.find(x=>x.id===c.id);
-    if(!p) return;
-    if(p.shipBiasa===false) elig.biasa = false;
-    if(p.shipKurier===false) elig.kurier = false;
-  });
-  return elig;
-}
-window.calculateBiasaShipping = function(){
-  const weight = cart.reduce((s,c)=>s+c.weight*c.qty,0);
-  const base = siteContent.biasaBaseRate!=null ? siteContent.biasaBaseRate : 5;
-  const perKg = siteContent.biasaPerKgRate!=null ? siteContent.biasaPerKgRate : 1.5;
-  const extraKg = Math.ceil(Math.max(0, weight - 1));
-  const price = +(base + extraKg*perKg).toFixed(2);
-  selectedShipping = { price, courier:'Penghantaran Biasa (Pos)', eta:'5-10 hari bekerja', type:'biasa' };
-  const wrap = document.getElementById('co-biasa-rate');
-  if(wrap){
-    wrap.innerHTML = `<div><p class="font-bold text-sm text-ink">Penghantaran Biasa (Pos)</p><p class="text-[11px] text-inksoft">5-10 hari bekerja · ${weight.toFixed(2)} kg</p></div><p class="font-display font-bold text-forest text-sm">${formatRM(price)}</p>`;
   }
   renderCheckoutSummary();
 }
@@ -3085,7 +3129,7 @@ window.submitOrder = async function(){
     else showToast('Kod ejen tidak sah — diteruskan tanpa ejen','alert-circle');
   }
 
-  const items = cart.map(c=>({ productId:c.id, name:c.name, qty:c.qty, price:c.price, weight:c.weight, commissionPct:c.commissionPct, bekalKawasan:c.bekalKawasan||'', size:c.size||'' }));
+  const items = cart.map(c=>({ productId:c.id, name:c.name, qty:c.qty, price:c.price, weight:c.weight, commissionPct:c.commissionPct, kawasanCommissionPct:c.kawasanCommissionPct||0, bekalKawasan:c.bekalKawasan||'', size:c.size||'' }));
 
   const orderPayload = {
     customerName:nama, phone, email, address:alamat, postcode:poskod, city:bandar, state,
@@ -3123,7 +3167,7 @@ window.submitOrder = async function(){
   ).join('');
   const itemsText = itemsSnapshot.map(it=>`- ${it.qty}x ${it.name}${it.size?' (Saiz '+it.size+')':''} — ${formatRM(it.price*it.qty)}`).join('\n');
   const waMsg = encodeURIComponent(`Assalamualaikum, saya ingin sahkan tempahan ${result.orderId} atas nama ${nama}.\n\nProduk:\n${itemsText}\n\nJumlah: ${formatRM(total)}`);
-  document.getElementById('success-whatsapp').href = `https://wa.me/${(siteContent.whatsappNumber||'60123456789')}?text=${waMsg}`;
+  document.getElementById('success-whatsapp').href = `https://wa.me/${(siteContent.whatsappNumber||'60134636383')}?text=${waMsg}`;
 
   showToast('Tempahan berjaya dihantar!','check-circle-2');
   window.scrollTo({top:0});
@@ -3335,6 +3379,10 @@ function akaunAuthErrorMsg(err){
   if(code==='auth/invalid-email') return 'Format emel tidak sah';
   if(code==='auth/weak-password') return 'Kata laluan terlalu lemah (min. 6 aksara)';
   if(code==='auth/invalid-credential' || code==='auth/wrong-password' || code==='auth/user-not-found') return 'Emel atau kata laluan salah';
+  if(code==='auth/unauthorized-domain') return 'Domain laman web ini belum dibenarkan untuk log masuk Google (hubungi admin)';
+  if(code==='auth/popup-blocked') return 'Popup log masuk Google disekat browser — benarkan popup dan cuba lagi';
+  if(code==='auth/popup-closed-by-user' || code==='auth/cancelled-popup-request') return 'Log masuk Google dibatalkan';
+  if(code==='auth/account-exists-with-different-credential') return 'Emel ini sudah didaftarkan guna kata laluan — log masuk dengan emel & kata laluan';
   return 'Gagal, sila cuba lagi';
 }
 
@@ -3363,7 +3411,10 @@ window.doCustomerGoogleLogin = async function(){
     await window.fbCustomerGoogleLogin();
     showToast('Selamat kembali!','check-circle-2');
     renderAkaunView();
-  }catch(err){ showToast('Log masuk Google gagal atau dibatalkan','alert-circle'); }
+  }catch(err){
+    console.error('doCustomerGoogleLogin failed:', err && err.code, err);
+    showToast(akaunAuthErrorMsg(err),'alert-circle');
+  }
 }
 window.doCustomerResetPassword = async function(){
   const email = document.getElementById('akaun-login-email').value.trim();
@@ -3735,8 +3786,6 @@ window.openKwProductModal = function(id){
   document.getElementById('kwpm-preorder').checked = editing ? !!editing.preorder : false;
   document.getElementById('kwpm-preorder-eta').value = editing ? (editing.preorderEta||'') : '';
   window.toggleKwPreorderField();
-  document.getElementById('kwpm-ship-biasa').checked = editing ? editing.shipBiasa !== false : true;
-  document.getElementById('kwpm-ship-kurier').checked = editing ? editing.shipKurier !== false : false;
   document.getElementById('modal-kw-product').classList.remove('hidden');
 }
 window.toggleKwPreorderField = function(){
@@ -3762,8 +3811,6 @@ window.saveKwProduct = async function(){
     stockStatus: document.getElementById('kwpm-ready').checked ? 'ready' : 'habis',
     preorder: document.getElementById('kwpm-preorder').checked,
     preorderEta: document.getElementById('kwpm-preorder-eta').value.trim(),
-    shipBiasa: document.getElementById('kwpm-ship-biasa').checked,
-    shipKurier: document.getElementById('kwpm-ship-kurier').checked,
   };
   try{
     await window.fbKawasanSaveProduct(payload);
@@ -3896,14 +3943,12 @@ function loadSiteContentAdminForm(){
   document.getElementById('cms-phone').value = siteContent.contactPhone || '';
   document.getElementById('cms-email').value = siteContent.contactEmail || '';
   document.getElementById('cms-address').value = siteContent.contactAddress || '';
-  document.getElementById('cms-whatsapp').value = siteContent.whatsappNumber || '60123456789';
+  document.getElementById('cms-whatsapp').value = siteContent.whatsappNumber || '60134636383';
   document.getElementById('cms-hadihuda').value = siteContent.hadiHudaGreeting || '';
   document.getElementById('cms-about').value = siteContent.aboutUsText || '';
   document.getElementById('cms-qr').value = siteContent.paymentQrUrl || '';
   setUploadStatusDisplay('cms-qr', siteContent.paymentQrUrl);
   document.getElementById('cms-easyparcel').checked = siteContent.easyParcelEnabled !== false;
-  document.getElementById('cms-biasa-base').value = siteContent.biasaBaseRate != null ? siteContent.biasaBaseRate : 5;
-  document.getElementById('cms-biasa-perkg').value = siteContent.biasaPerKgRate != null ? siteContent.biasaPerKgRate : 1.5;
   document.getElementById('cms-comm-agent').value = siteContent.agentCommissionPct != null ? siteContent.agentCommissionPct : 10;
   document.getElementById('cms-comm-kawasan').value = siteContent.kawasanCommissionPct != null ? siteContent.kawasanCommissionPct : 5;
   const senderStateSel = document.getElementById('ep-sender-state');
@@ -3922,13 +3967,11 @@ window.saveSiteContentAdmin = async function(){
     contactPhone: document.getElementById('cms-phone').value.trim(),
     contactEmail: document.getElementById('cms-email').value.trim(),
     contactAddress: document.getElementById('cms-address').value.trim(),
-    whatsappNumber: document.getElementById('cms-whatsapp').value.trim() || '60123456789',
+    whatsappNumber: document.getElementById('cms-whatsapp').value.trim() || '60134636383',
     hadiHudaGreeting: document.getElementById('cms-hadihuda').value.trim(),
     aboutUsText: document.getElementById('cms-about').value.trim(),
     paymentQrUrl: document.getElementById('cms-qr').value.trim(),
     easyParcelEnabled: document.getElementById('cms-easyparcel').checked,
-    biasaBaseRate: parseFloat(document.getElementById('cms-biasa-base').value) || 0,
-    biasaPerKgRate: parseFloat(document.getElementById('cms-biasa-perkg').value) || 0,
     agentCommissionPct: parseFloat(document.getElementById('cms-comm-agent').value) || 0,
     kawasanCommissionPct: parseFloat(document.getElementById('cms-comm-kawasan').value) || 0,
     senderName: document.getElementById('ep-sender-name').value.trim(),
@@ -4122,6 +4165,7 @@ window.openProductModal = function(id){
   document.getElementById('pm-weight').value = editing ? editing.weight : '';
   document.getElementById('pm-stock').value = editing ? editing.stock : '';
   document.getElementById('pm-comm').value = editing ? editing.commissionPct : 10;
+  document.getElementById('pm-comm-kawasan').value = editing && editing.kawasanCommissionPct != null ? editing.kawasanCommissionPct : (siteContent.kawasanCommissionPct != null ? siteContent.kawasanCommissionPct : 5);
   document.getElementById('pm-jualan').value = editing ? (editing.jualan||0) : 0;
   document.getElementById('pm-desc').value = editing ? (editing.desc||'') : '';
   document.getElementById('pm-seller').value = editing ? editing.sellerName : 'PASTI Sarawak Mart Official';
@@ -4137,8 +4181,6 @@ window.openProductModal = function(id){
   document.getElementById('pm-preorder').checked = editing ? !!editing.preorder : false;
   document.getElementById('pm-preorder-eta').value = editing ? (editing.preorderEta||'') : '';
   window.togglePmPreorderField();
-  document.getElementById('pm-ship-biasa').checked = editing ? editing.shipBiasa !== false : true;
-  document.getElementById('pm-ship-kurier').checked = editing ? editing.shipKurier !== false : false;
   const existingSizes = editing && Array.isArray(editing.sizes) ? editing.sizes : [];
   document.getElementById('pm-use-sizes').checked = existingSizes.length > 0;
   document.getElementById('pm-sizes-wrap').classList.toggle('hidden', existingSizes.length === 0);
@@ -4271,6 +4313,7 @@ window.saveProduct = async function(){
   const weight = parseFloat(document.getElementById('pm-weight').value);
   const stock = parseInt(document.getElementById('pm-stock').value);
   const commissionPct = parseFloat(document.getElementById('pm-comm').value);
+  const kawasanCommissionPct = parseFloat(document.getElementById('pm-comm-kawasan').value) || 0;
   const jualan = parseInt(document.getElementById('pm-jualan').value) || 0;
   const category = document.getElementById('pm-category').value;
   const desc = document.getElementById('pm-desc').value.trim();
@@ -4279,8 +4322,6 @@ window.saveProduct = async function(){
   const active = document.getElementById('pm-active').checked;
   const preorder = document.getElementById('pm-preorder').checked;
   const preorderEta = document.getElementById('pm-preorder-eta').value.trim();
-  const shipBiasa = document.getElementById('pm-ship-biasa').checked;
-  const shipKurier = document.getElementById('pm-ship-kurier').checked;
   const images = [document.getElementById('pm-img1').value.trim(), document.getElementById('pm-img2').value.trim(), document.getElementById('pm-img3').value.trim()].filter(Boolean);
 
   const useSizes = document.getElementById('pm-use-sizes').checked;
@@ -4299,7 +4340,7 @@ window.saveProduct = async function(){
     showToast('Sila lengkapkan semua medan dengan betul','alert-circle'); return;
   }
   if(!id && !images.length){ showToast('Sila upload sekurang-kurangnya 1 gambar produk','alert-circle'); return; }
-  const product = { id:id||undefined, name, price:effectivePrice, modal,weight,stock,commissionPct,jualan,category,desc,sellerName,popular,active,preorder,preorderEta,shipBiasa,shipKurier,sizes,images, createdAt:new Date().toISOString() };
+  const product = { id:id||undefined, name, price:effectivePrice, modal,weight,stock,commissionPct,kawasanCommissionPct,jualan,category,desc,sellerName,popular,active,preorder,preorderEta,sizes,images, createdAt:new Date().toISOString() };
   try{
     await window.fbAdminSaveProduct(product);
     await refreshOwnProducts();
@@ -4357,7 +4398,7 @@ function renderAdminProducts(){
       </td>
       <td class="p-3 text-inksoft">${escapeHtml(cat.name)}</td>
       <td class="p-3"><span class="font-bold text-forest">${p.sizes && p.sizes.length ? 'dari '+formatRM(p.price) : formatRM(p.price)}</span><br><span class="text-inksoft text-[10px]">${p.weight} kg</span></td>
-      <td class="p-3 font-bold text-honeydeep">${p.commissionPct}%</td>
+      <td class="p-3 font-bold text-honeydeep">Ejen: ${p.commissionPct}%<br><span class="text-[10px] text-inksoft font-semibold">Kawasan: ${p.kawasanCommissionPct||0}%</span></td>
       <td class="p-3 font-bold ${p.stock>0?'text-ink':'text-red-500'}">${p.stock}</td>
       <td class="p-3">
         <div class="flex gap-1.5">
@@ -4420,7 +4461,12 @@ function renderAdminOrders(){
   document.getElementById('admin-order-count').innerText = list.length+' tempahan';
   tbody.innerHTML = list.map(o=>`
     <tr class="border-t border-sand">
-      <td class="p-3 font-bold text-ink">${o.orderId}<br><span class="text-[10px] text-inksoft font-normal">${formatDate(o.createdAt)}</span></td>
+      <td class="p-3 font-bold text-ink">
+        <button onclick="window.openOrderReceipt('${o.orderId}')" class="text-forest hover:underline">${o.orderId}</button><br>
+        <span class="text-[10px] text-inksoft font-normal">${formatDate(o.createdAt)}</span>
+        <div class="text-[10px] text-inksoft font-normal mt-1">${(o.items||[]).map(it=>`${it.qty}x ${escapeHtml(it.name)}`).join('<br>')}</div>
+        ${o.paymentTxnDate ? `<div class="text-[10px] text-inksoft font-normal mt-1">Bayar: ${escapeHtml(o.paymentTxnDate)} ${escapeHtml(o.paymentTxnTime||'')}</div>` : ''}
+      </td>
       <td class="p-3 text-inksoft">${escapeHtml(o.customerName)}<br><span class="text-[10px]">${escapeHtml(o.phone)}</span></td>
       <td class="p-3 text-inksoft">${o.agentCode?escapeHtml(o.agentCode):'<span class="italic">Tiada</span>'}${o.pickupKawasanCode ? `<br><span class="text-[10px]">Ambil: ${escapeHtml(o.pickupKawasanCode)}</span>` : ''}${o.bekalKawasanCode ? `<br><span class="text-[10px]">Bekal: ${escapeHtml(o.bekalKawasanCode)}</span>` : ''}</td>
       <td class="p-3 font-bold text-ink">${formatRM(o.total)}<br><span class="text-[10px] ${o.paymentStatus==='Disahkan'?'text-green-600':'text-amber-600'} font-bold">${escapeHtml(o.paymentStatus||'Belum Disahkan')}</span></td>
@@ -4429,10 +4475,14 @@ function renderAdminOrders(){
           ${['Baru','Diproses','Dihantar','Selesai','Dibatalkan'].map(s=>`<option value="${s}" ${o.status===s?'selected':''}>${s}</option>`).join('')}
         </select>
       </td>
-      <td class="p-3">${o.paymentStatus==='Disahkan' ? '<span class="text-[10px] text-green-600 font-bold">✓ Disahkan</span>' : `<button onclick="window.confirmOrderPayment('${o.orderId}')" class="bg-forest hover:bg-forestdark text-white text-[10px] font-bold px-3 py-2 rounded-lg">Sahkan Bayaran</button>`}</td>
+      <td class="p-3 space-y-1.5">
+        <div>${o.paymentStatus==='Disahkan' ? '<span class="text-[10px] text-green-600 font-bold">✓ Disahkan</span>' : `<button onclick="window.confirmOrderPayment('${o.orderId}')" class="bg-forest hover:bg-forestdark text-white text-[10px] font-bold px-3 py-2 rounded-lg">Sahkan Bayaran</button>`}</div>
+        ${o.pickupKawasanCode ? `<button onclick="window.forwardOrderToPic('${o.orderId}')" class="bg-leaflight hover:bg-forest hover:text-white text-forest text-[10px] font-bold px-3 py-2 rounded-lg flex items-center gap-1"><i data-lucide="send" class="w-3 h-3"></i> Forward PIC</button>` : ''}
+      </td>
       <td class="p-3 text-inksoft text-[10px]">${o.pickupKawasanCode ? escapeHtml(o.kawasanHandoverStatus||'-') + (o.busCompany ? `<br>${escapeHtml(o.busCompany)} · ${escapeHtml(o.busConsignmentNo||'-')}` : '') : '<span class="italic">-</span>'}</td>
       <td class="p-3 text-[10px]">${courierBookingCellHTML(o)}</td>
-    </tr>`).join('') || `<tr><td colspan="8" class="p-6 text-center text-inksoft italic">Tiada tempahan.</td></tr>`;
+      <td class="p-3"><button onclick="window.deleteOrder('${o.orderId}')" title="Padam Tempahan" class="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button></td>
+    </tr>`).join('') || `<tr><td colspan="9" class="p-6 text-center text-inksoft italic">Tiada tempahan.</td></tr>`;
   icons();
 }
 window.updateOrderStatus = async function(orderId, status){
@@ -4463,6 +4513,44 @@ window.confirmOrderPayment = async function(orderId){
     }
   }catch(e){
     showToast('Gagal sahkan bayaran','alert-circle');
+  }
+}
+window.openOrderReceipt = function(orderId){
+  const o = appKPOrders.find(x=>x.orderId===orderId);
+  document.getElementById('order-receipt-title').innerText = `Resit — ${orderId}`;
+  const img = document.getElementById('order-receipt-img');
+  const empty = document.getElementById('order-receipt-empty');
+  if(o && o.receiptImageUrl){
+    img.src = o.receiptImageUrl; img.classList.remove('hidden'); empty.classList.add('hidden');
+  } else {
+    img.classList.add('hidden'); empty.classList.remove('hidden');
+  }
+  document.getElementById('modal-order-receipt').classList.remove('hidden');
+}
+window.closeOrderReceipt = function(){ document.getElementById('modal-order-receipt').classList.add('hidden'); }
+window.forwardOrderToPic = async function(orderId){
+  const o = appKPOrders.find(x=>x.orderId===orderId);
+  if(!o || !o.pickupKawasanCode){ showToast('Tempahan ini tiada PASTI Kawasan dikaitkan','alert-circle'); return; }
+  try{
+    const list = window._kawasanListCache && window._kawasanListCache.length ? window._kawasanListCache : (await window.fbListKawasanPublic());
+    const kw = list.find(k=>k.code===o.pickupKawasanCode);
+    if(!kw || !kw.picPhone){ showToast('No. telefon PIC kawasan ini tiada','alert-circle'); return; }
+    const itemsText = (o.items||[]).map(it=>`- ${it.qty}x ${it.name}`).join('\n');
+    const msg = encodeURIComponent(`Assalamualaikum PASTI ${kw.namaKawasan}, ada tempahan baru untuk diambil di kawasan anda:\n\nID: ${orderId}\nPelanggan: ${o.customerName}\n${itemsText}\nJumlah: RM${(o.total||0).toFixed(2)}\nStatus Bayaran: ${o.paymentStatus||'Belum Disahkan'}\n\nSila buat persediaan.`);
+    window.open(`https://wa.me/${normalizePhoneClient(kw.picPhone)}?text=${msg}`, '_blank');
+  }catch(e){
+    showToast('Gagal dapatkan maklumat kawasan','alert-circle');
+  }
+}
+window.deleteOrder = async function(orderId){
+  if(!confirm(`Padam tempahan ${orderId}? Tindakan ini tidak boleh dibatalkan.`)) return;
+  try{
+    await window.fbAdminDeleteOrder(orderId);
+    appKPOrders = appKPOrders.filter(x=>x.orderId!==orderId);
+    renderAdminOrders();
+    showToast('Tempahan dipadam','trash-2');
+  }catch(e){
+    showToast('Gagal padam tempahan','alert-circle');
   }
 }
 
