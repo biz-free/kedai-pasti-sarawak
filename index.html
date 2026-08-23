@@ -1698,6 +1698,19 @@
     </div>
   </div>
 
+  <!-- MODAL: ZOOM GAMBAR PRODUK -->
+  <div id="modal-image-zoom" class="hidden fixed inset-0 z-[98] bg-black/90 flex items-center justify-center" onclick="if(event.target===this) window.closeImageZoom()">
+    <button onclick="window.closeImageZoom()" class="absolute top-4 right-4 w-10 h-10 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center text-white z-10"><i data-lucide="x" class="w-5 h-5"></i></button>
+    <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-white/10 rounded-full px-2 py-1.5 z-10">
+      <button onclick="window.zoomImageBy(-0.5)" class="w-9 h-9 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center text-white"><i data-lucide="minus" class="w-4 h-4"></i></button>
+      <button onclick="window.resetImageZoom()" class="text-white text-xs font-bold px-2">Reset</button>
+      <button onclick="window.zoomImageBy(0.5)" class="w-9 h-9 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center text-white"><i data-lucide="plus" class="w-4 h-4"></i></button>
+    </div>
+    <div id="image-zoom-viewport" class="w-full h-full overflow-hidden flex items-center justify-center touch-none">
+      <img id="image-zoom-img" src="" alt="Gambar produk diperbesar" class="max-w-none select-none" style="transform:scale(1) translate(0px,0px); transition:transform .15s ease-out;" draggable="false">
+    </div>
+  </div>
+
   <!-- MODAL: LOG MASUK/DAFTAR (Checkout) -->
   <div id="modal-checkout-login" class="hidden fixed inset-0 z-[97] flex items-end sm:items-center justify-center p-0 sm:p-4 modal-mask" onclick="if(event.target===this) window.closeCheckoutLogin()">
     <div class="bg-white rounded-t-[2rem] sm:rounded-[2rem] w-full sm:max-w-sm max-h-[92vh] overflow-y-auto shadow-2xl">
@@ -2501,6 +2514,7 @@ window.openQuickView = function(id){
   document.getElementById('qv-content').innerHTML = `
     <div class="relative">
       ${productGalleryHTML(qvProduct, 'h-48')}
+      <button onclick="window.openImageZoomFromQv()" title="Zoom gambar" class="absolute top-3 left-3 w-9 h-9 bg-white/70 hover:bg-white rounded-full flex items-center justify-center text-ink shadow z-10"><i data-lucide="zoom-in" class="w-4.5 h-4.5"></i></button>
       <button onclick="window.closeQuickView()" class="absolute top-3 right-3 w-9 h-9 bg-white/70 hover:bg-white rounded-full flex items-center justify-center text-ink shadow"><i data-lucide="x" class="w-5 h-5"></i></button>
     </div>
     <div class="p-5 sm:p-6">
@@ -2570,6 +2584,89 @@ window.qvAddToCart = function(){
   window.addToCart(qvProduct.id, qvQty, qvSelectedSize);
   window.closeQuickView();
 }
+
+/* ================= IMAGE ZOOM (product photos, desktop + mobile) ================= */
+let zoomScale = 1, zoomTx = 0, zoomTy = 0;
+let zoomDragging = false, zoomDragStartX = 0, zoomDragStartY = 0, zoomStartTx = 0, zoomStartTy = 0;
+let zoomPinchStartDist = 0, zoomPinchStartScale = 1;
+function applyImageZoomTransform(){
+  const img = document.getElementById('image-zoom-img');
+  if(img) img.style.transform = `scale(${zoomScale}) translate(${zoomTx}px, ${zoomTy}px)`;
+}
+window.openImageZoomFromQv = function(){
+  const track = document.getElementById('qv-gallery-track');
+  let idx = 0;
+  if(track) idx = Math.round(track.scrollLeft / track.clientWidth) || 0;
+  const imgs = Array.isArray(qvProduct.images) ? qvProduct.images.filter(Boolean) : [];
+  const url = imgs[idx] || imgs[0];
+  if(!url){ showToast('Tiada gambar untuk dizoom','alert-circle'); return; }
+  window.openImageZoom(url);
+}
+window.openImageZoom = function(url){
+  document.getElementById('image-zoom-img').src = url;
+  zoomScale = 1; zoomTx = 0; zoomTy = 0;
+  applyImageZoomTransform();
+  document.getElementById('modal-image-zoom').classList.remove('hidden');
+}
+window.closeImageZoom = function(){ document.getElementById('modal-image-zoom').classList.add('hidden'); }
+window.zoomImageBy = function(delta){
+  zoomScale = Math.min(5, Math.max(1, +(zoomScale + delta).toFixed(2)));
+  if(zoomScale===1){ zoomTx = 0; zoomTy = 0; }
+  applyImageZoomTransform();
+}
+window.resetImageZoom = function(){ zoomScale = 1; zoomTx = 0; zoomTy = 0; applyImageZoomTransform(); };
+(function initImageZoomGestures(){
+  document.addEventListener('DOMContentLoaded', ()=>{
+    const vp = document.getElementById('image-zoom-viewport');
+    if(!vp) return;
+    // Desktop: scroll wheel to zoom, drag to pan when zoomed, double-click to toggle zoom
+    vp.addEventListener('wheel', (e)=>{
+      e.preventDefault();
+      window.zoomImageBy(e.deltaY < 0 ? 0.25 : -0.25);
+    }, { passive:false });
+    vp.addEventListener('dblclick', ()=>{
+      if(zoomScale>1) window.resetImageZoom(); else { zoomScale=2.5; applyImageZoomTransform(); }
+    });
+    vp.addEventListener('mousedown', (e)=>{
+      if(zoomScale<=1) return;
+      zoomDragging = true; zoomDragStartX = e.clientX; zoomDragStartY = e.clientY; zoomStartTx = zoomTx; zoomStartTy = zoomTy;
+    });
+    window.addEventListener('mousemove', (e)=>{
+      if(!zoomDragging) return;
+      zoomTx = zoomStartTx + (e.clientX - zoomDragStartX) / zoomScale;
+      zoomTy = zoomStartTy + (e.clientY - zoomDragStartY) / zoomScale;
+      applyImageZoomTransform();
+    });
+    window.addEventListener('mouseup', ()=>{ zoomDragging = false; });
+    // Mobile: pinch to zoom, single-finger drag to pan when zoomed
+    vp.addEventListener('touchstart', (e)=>{
+      if(e.touches.length===2){
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        zoomPinchStartDist = Math.hypot(dx, dy);
+        zoomPinchStartScale = zoomScale;
+      } else if(e.touches.length===1 && zoomScale>1){
+        zoomDragging = true; zoomDragStartX = e.touches[0].clientX; zoomDragStartY = e.touches[0].clientY; zoomStartTx = zoomTx; zoomStartTy = zoomTy;
+      }
+    }, { passive:true });
+    vp.addEventListener('touchmove', (e)=>{
+      if(e.touches.length===2 && zoomPinchStartDist){
+        e.preventDefault();
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        const dist = Math.hypot(dx, dy);
+        zoomScale = Math.min(5, Math.max(1, +(zoomPinchStartScale * (dist / zoomPinchStartDist)).toFixed(2)));
+        applyImageZoomTransform();
+      } else if(e.touches.length===1 && zoomDragging){
+        e.preventDefault();
+        zoomTx = zoomStartTx + (e.touches[0].clientX - zoomDragStartX) / zoomScale;
+        zoomTy = zoomStartTy + (e.touches[0].clientY - zoomDragStartY) / zoomScale;
+        applyImageZoomTransform();
+      }
+    }, { passive:false });
+    vp.addEventListener('touchend', ()=>{ zoomDragging = false; zoomPinchStartDist = 0; });
+  });
+})();
 
 /* ================= CART CORE ================= */
 window.addToCart = function(productId, qty, size){
