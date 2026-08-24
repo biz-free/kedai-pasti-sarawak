@@ -42,7 +42,7 @@
   // Get your own key from Firebase Console -> Project Settings -> Cloud
   // Messaging -> Web configuration -> Web Push certificates -> Generate key
   // pair, then paste it here to enable the admin push-notification feature.
-  const FCM_VAPID_KEY = "";
+  const FCM_VAPID_KEY = "BBOpoqG8A-UQfn8tNWNWaUBO-Uh84R9_uq1IJQ9_mIBmevTiiZw0csszpb5Rb-LlSlv_DQf4R_uN4ZZxtCabEaU";
 
   const firebaseConfig = {
     apiKey: "AIzaSyCT4KG6B-PDe_G4q6RsPcNV47eGEt8_08s",
@@ -895,8 +895,8 @@
                   <div id="co-handling-row" class="hidden flex justify-between"><span class="text-inksoft">Kos Pengendalian PASTI Kawasan</span><span id="co-handling-fee" class="font-bold">RM 0.00</span></div>
                   <div class="flex justify-between text-base pt-2 border-t border-sand"><span class="font-bold">Jumlah</span><span id="co-total" class="font-display font-extrabold text-forest text-xl">RM 0.00</span></div>
                 </div>
-                <button onclick="window.submitOrder()" class="w-full mt-4 bg-forest hover:bg-forestdark text-white font-bold py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-colors">
-                  <i data-lucide="send" class="w-4 h-4"></i> Hantar Tempahan
+                <button id="co-submit-btn" onclick="window.submitOrder()" class="w-full mt-4 bg-forest hover:bg-forestdark disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-colors">
+                  <i data-lucide="send" class="w-4 h-4"></i> <span>Hantar Tempahan</span>
                 </button>
               </div>
             </div>
@@ -3159,6 +3159,9 @@ function renderCheckoutEnter(){
   if(pickupNote){ pickupNote.classList.add('hidden'); pickupNote.classList.remove('flex'); }
   document.getElementById('co-pay-receipt').value = '';
   setUploadStatusDisplay('co-pay-receipt', '', 'Upload resit dari peranti');
+  window._submittingOrder = false;
+  const submitBtn = document.getElementById('co-submit-btn');
+  if(submitBtn){ submitBtn.disabled = false; submitBtn.querySelector('span').innerText = 'Hantar Tempahan'; }
 
   const easyParcelOn = siteContent.easyParcelEnabled !== false;
   const allowedModes = getCartAllowedShipModes();
@@ -3329,6 +3332,7 @@ window.selectShipping = function(i){
 }
 
 window.submitOrder = async function(){
+  if(window._submittingOrder) return;
   const nama = document.getElementById('co-nama').value.trim();
   const phone = document.getElementById('co-phone').value.trim();
   const email = document.getElementById('co-email').value.trim();
@@ -3366,12 +3370,17 @@ window.submitOrder = async function(){
   };
 
   if(typeof window.fbSubmitOrder !== 'function'){ showToast('Sistem tempahan belum sedia, cuba lagi sebentar','alert-circle'); return; }
+  const submitBtn = document.getElementById('co-submit-btn');
+  window._submittingOrder = true;
+  if(submitBtn){ submitBtn.disabled = true; submitBtn.querySelector('span').innerText = 'Menghantar...'; }
   let result;
   try{
     result = await window.fbSubmitOrder(orderPayload);
   }catch(e){
     console.error('submitOrder failed:', e);
     showToast('Gagal hantar tempahan: ' + (e && (e.code || e.message) || 'ralat tidak diketahui'), 'alert-circle');
+    window._submittingOrder = false;
+    if(submitBtn){ submitBtn.disabled = false; submitBtn.querySelector('span').innerText = 'Hantar Tempahan'; }
     return;
   }
 
