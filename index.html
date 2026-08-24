@@ -37,6 +37,12 @@
   import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
   import { getFirestore, doc, getDoc, setDoc, collection, getDocs, deleteDoc, query, where, onSnapshot, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+  import { getMessaging, getToken as getFcmToken, onMessage, isSupported as isMessagingSupported } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging.js";
+
+  // Get your own key from Firebase Console -> Project Settings -> Cloud
+  // Messaging -> Web configuration -> Web Push certificates -> Generate key
+  // pair, then paste it here to enable the admin push-notification feature.
+  const FCM_VAPID_KEY = "";
 
   const firebaseConfig = {
     apiKey: "AIzaSyCT4KG6B-PDe_G4q6RsPcNV47eGEt8_08s",
@@ -109,6 +115,48 @@
   const callEasyParcelStatus = httpsCallable(fbFns, 'easyParcelStatus');
   const callEasyParcelGetQuotations = httpsCallable(fbFns, 'easyParcelGetQuotations');
   const callBookEasyParcelShipment = httpsCallable(fbFns, 'bookEasyParcelShipment');
+  const callAdminSaveFcmToken = httpsCallable(fbFns, 'adminSaveFcmToken');
+  const callAdminDeleteFcmToken = httpsCallable(fbFns, 'adminDeleteFcmToken');
+
+  // Admin push notifications for new orders (on top of the existing email
+  // queue) — best-effort: silently no-ops on unsupported browsers, missing
+  // VAPID key, or denied permission, so it can never break the rest of the
+  // site.
+  window.fbEnableAdminPush = async function(){
+    const statusEl = document.getElementById('admin-push-status');
+    const setStatus = (msg) => { if(statusEl) statusEl.innerText = msg; };
+    try{
+      if(!FCM_VAPID_KEY){
+        setStatus('Ciri ini belum disediakan sepenuhnya — perlu VAPID key dari Firebase Console (Project Settings -> Cloud Messaging).');
+        return;
+      }
+      if(!(await isMessagingSupported())){
+        setStatus('Browser ini tidak menyokong notifikasi push.');
+        return;
+      }
+      const permission = await Notification.requestPermission();
+      if(permission !== 'granted'){
+        setStatus('Kebenaran notifikasi ditolak. Sila benarkan notifikasi untuk laman ini di tetapan browser.');
+        return;
+      }
+      const swReg = await navigator.serviceWorker.ready;
+      const messaging = getMessaging(fbApp);
+      const token = await getFcmToken(messaging, { vapidKey: FCM_VAPID_KEY, serviceWorkerRegistration: swReg });
+      if(!token){
+        setStatus('Gagal dapatkan token notifikasi.');
+        return;
+      }
+      await callAdminSaveFcmToken({ token });
+      onMessage(messaging, (payload) => {
+        const n = payload.notification || {};
+        if(typeof showToast==='function') showToast(n.title || 'Tempahan Baru', 'bell');
+      });
+      setStatus('Notifikasi push diaktifkan di peranti ini.');
+    }catch(e){
+      console.error('fbEnableAdminPush failed:', e);
+      setStatus('Gagal aktifkan notifikasi push: ' + (e && e.message || 'ralat tidak diketahui'));
+    }
+  };
 
   let adminSignedIn = false;
   onAuthStateChanged(fbAuth, async (user) => {
@@ -1032,7 +1080,8 @@
           </div>
 
           <div id="kw-tab-tempahan" class="kw-tab-panel hidden">
-            <p class="text-inksoft text-xs mb-4">Tempahan yang pelanggan pilih untuk diambil di kawasan anda. Kemaskini status ketibaan &amp; penyerahan supaya pelanggan tahu perkembangan pesanan mereka.</p>
+            <p class="text-inksoft text-xs mb-3">Tempahan yang pelanggan pilih untuk diambil di kawasan anda. Kemaskini status ketibaan &amp; penyerahan supaya pelanggan tahu perkembangan pesanan mereka.</p>
+            <input id="kw-order-search" type="text" placeholder="Cari no. telefon / nama pelanggan" oninput="window.renderKwOrders()" class="bg-white border border-sand rounded-xl px-3 py-2 text-xs font-medium w-56 max-w-full mb-4">
             <div id="kw-orders-list" class="space-y-3"><p class="text-inksoft text-sm italic">Memuatkan...</p></div>
           </div>
 
@@ -1094,6 +1143,17 @@
             <div class="grid grid-cols-2 gap-3">
               <input id="kwpm-weight" type="number" step="0.01" placeholder="Berat (kg)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
               <input id="kwpm-comm" type="number" placeholder="Komisen Ejen (%)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <input id="kwpm-comm-kawasan" type="number" step="0.1" placeholder="Komisen PASTI Kawasan/Cawangan (%)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              <input id="kwpm-comm-negeri" type="number" step="0.1" placeholder="Komisen Negeri (%)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+            </div>
+            <div>
+              <p class="text-[11px] font-bold text-inksoft mb-1.5">Kaedah Penghantaran Dibenarkan</p>
+              <div class="grid grid-cols-2 gap-3">
+                <label class="flex items-center gap-2 bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium cursor-pointer"><input id="kwpm-ship-pickup" type="checkbox" checked class="w-4 h-4 accent-[#0B5D3B]"> Ambil di PASTI Kawasan</label>
+                <label class="flex items-center gap-2 bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium cursor-pointer"><input id="kwpm-ship-kurier" type="checkbox" checked class="w-4 h-4 accent-[#0B5D3B]"> Kurier</label>
+              </div>
             </div>
             <textarea id="kwpm-desc" placeholder="Penerangan produk" rows="2" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium"></textarea>
             <div>
@@ -1193,6 +1253,7 @@
           <div id="admin-tab-tempahan" class="admin-tab-panel hidden">
             <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
               <p class="text-xs font-bold text-inksoft" id="admin-order-count">0 tempahan</p>
+              <input id="admin-order-search" type="text" placeholder="Cari no. telefon / nama / ID tempahan" oninput="window.renderAdminOrders()" class="bg-white border border-sand rounded-xl px-3 py-2 text-xs font-medium w-56 max-w-full">
               <select id="admin-order-filter" onchange="window.renderAdminOrders()" class="bg-white border border-sand rounded-xl px-3 py-2 text-xs font-bold">
                 <option value="all">Semua Status</option>
                 <option value="Baru">Baru</option>
@@ -1212,8 +1273,9 @@
 
           <!-- TAB EJEN -->
           <div id="admin-tab-ejen" class="admin-tab-panel hidden">
-            <div class="flex justify-between items-center mb-4">
+            <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
               <p class="text-xs font-bold text-inksoft" id="admin-agent-count">0 ejen</p>
+              <input id="admin-agent-search" type="text" placeholder="Cari no. telefon / nama / kod" oninput="window.renderAdminAgents()" class="bg-white border border-sand rounded-xl px-3 py-2 text-xs font-medium w-56 max-w-full">
               <button onclick="window.openAgentModal()" class="bg-forest hover:bg-forestdark text-white text-sm font-bold px-4 py-2.5 rounded-xl flex items-center gap-2"><i data-lucide="user-plus" class="w-4 h-4"></i> Tambah Ejen</button>
             </div>
             <div class="overflow-x-auto bg-white border border-sand rounded-2xl">
@@ -1226,8 +1288,9 @@
 
           <!-- TAB KAWASAN -->
           <div id="admin-tab-kawasanadmin" class="admin-tab-panel hidden">
-            <div class="flex justify-between items-center mb-4">
+            <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
               <p class="text-xs font-bold text-inksoft" id="admin-kawasan-count">0 kawasan</p>
+              <input id="admin-kawasan-search" type="text" placeholder="Cari no. telefon PIC / nama / kod" oninput="window.renderAdminKawasan()" class="bg-white border border-sand rounded-xl px-3 py-2 text-xs font-medium w-56 max-w-full">
               <button onclick="window.openKawasanAdminModal()" class="bg-forest hover:bg-forestdark text-white text-sm font-bold px-4 py-2.5 rounded-xl flex items-center gap-2"><i data-lucide="store" class="w-4 h-4"></i> Tambah Kawasan</button>
             </div>
             <div class="overflow-x-auto bg-white border border-sand rounded-2xl">
@@ -1355,20 +1418,15 @@
                 <select id="ep-sender-state" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium"></select>
               </div>
             </div>
-            <div class="bg-white border border-sand rounded-3xl p-5 max-w-xl space-y-3 mb-5">
+            <div class="bg-white border border-sand rounded-3xl p-5 max-w-xl space-y-2 mb-5">
               <h3 class="font-display font-bold text-ink mb-1">Komisen</h3>
-              <p class="text-inksoft text-xs -mt-2 mb-1">Peratus komisen seragam untuk semua produk — dikira daripada subjumlah tempahan.</p>
-              <div class="grid sm:grid-cols-2 gap-3">
-                <div>
-                  <label class="text-[11px] font-bold text-inksoft mb-1 block">Komisen Ejen (%)</label>
-                  <input id="cms-comm-agent" type="number" step="0.1" min="0" max="100" placeholder="Cth: 10" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-                </div>
-                <div>
-                  <label class="text-[11px] font-bold text-inksoft mb-1 block">Komisen PASTI Kawasan (%)</label>
-                  <input id="cms-comm-kawasan" type="number" step="0.1" min="0" max="100" placeholder="Cth: 5" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-                </div>
-              </div>
-              <p class="text-inksoft text-[11px] leading-relaxed">Komisen ejen dikira jika tempahan ada ejen dikaitkan. Komisen kawasan dikira jika tempahan diambil di PASTI Kawasan (bukan EasyParcel).</p>
+              <p class="text-inksoft text-xs leading-relaxed">Komisen (Negeri, PASTI Kawasan/Cawangan &amp; Ejen) kini ditetapkan setiap produk secara berasingan — sila edit di tab <b>Produk</b> (atau Produk Saya untuk seller kawasan) semasa tambah/kemaskini produk.</p>
+            </div>
+            <div class="bg-white border border-sand rounded-3xl p-5 max-w-xl space-y-3 mb-5">
+              <h3 class="font-display font-bold text-ink mb-1">Notifikasi Push</h3>
+              <p class="text-inksoft text-xs leading-relaxed -mt-2 mb-1">Terima notifikasi push di peranti/browser ini setiap kali ada tempahan baru masuk (selain emel sedia ada).</p>
+              <button onclick="window.fbEnableAdminPush()" class="bg-forest hover:bg-forestdark text-white font-bold px-5 py-2.5 rounded-xl text-sm flex items-center gap-2 w-fit"><i data-lucide="bell" class="w-4 h-4"></i> Aktifkan Notifikasi Push di Peranti Ini</button>
+              <p id="admin-push-status" class="text-[11px] text-inksoft"></p>
             </div>
             <button onclick="window.saveSiteContentAdmin()" class="bg-forest hover:bg-forestdark text-white font-bold px-6 py-3 rounded-xl">Simpan Tetapan</button>
           </div>
@@ -1805,12 +1863,20 @@
             <input id="pm-modal" type="number" step="0.01" placeholder="Modal/Kos (RM)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
             <input id="pm-weight" type="number" step="0.01" placeholder="Berat (kg)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
             <input id="pm-stock" type="number" placeholder="Stok" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-            <input id="pm-comm" type="number" step="0.1" placeholder="Komisen Ejen (%)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+            <input id="pm-comm-negeri" type="number" step="0.1" placeholder="Komisen Negeri (%)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
             <input id="pm-comm-kawasan" type="number" step="0.1" placeholder="Komisen PASTI Kawasan/Cawangan (%)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+            <input id="pm-comm" type="number" step="0.1" placeholder="Komisen Ejen (%)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
             <input id="pm-jualan" type="number" placeholder="Jualan Direkod" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
           </div>
           <textarea id="pm-desc" rows="3" placeholder="Deskripsi produk" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium"></textarea>
           <input id="pm-seller" type="text" placeholder="Nama Penjual" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          <div class="border-t border-sand pt-3">
+            <p class="text-[11px] font-bold text-inksoft mb-1.5">Kaedah Penghantaran Dibenarkan</p>
+            <div class="grid grid-cols-2 gap-3">
+              <label class="flex items-center gap-2 bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium cursor-pointer"><input id="pm-ship-pickup" type="checkbox" checked class="w-4 h-4 accent-[#0B5D3B]"> Ambil di PASTI Kawasan</label>
+              <label class="flex items-center gap-2 bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium cursor-pointer"><input id="pm-ship-kurier" type="checkbox" checked class="w-4 h-4 accent-[#0B5D3B]"> Kurier</label>
+            </div>
+          </div>
           <div>
             <input id="pm-img1" type="hidden">
             <label class="flex items-center gap-1.5 text-[11px] font-bold text-forest cursor-pointer hover:underline w-fit mt-1"><i data-lucide="upload" class="w-3 h-3"></i><span id="pm-img1-upload-status">Upload Gambar 1 dari peranti</span><input type="file" accept="image/*" class="hidden" onchange="window.uploadImageToField(this,'pm-img1','products')"></label>
@@ -2723,7 +2789,7 @@ window.addToCart = function(productId, qty, size){
   const existing = cart.find(c=>c.id===productId && (c.size||'')===(size||''));
   const addQty = qty||1;
   if(existing){ existing.qty = Math.min(existing.qty+addQty, p.stock); }
-  else { cart.push({ id:p.id, name:p.name, price, weight:p.weight, commissionPct:p.commissionPct, kawasanCommissionPct:p.kawasanCommissionPct||0, bekalKawasan:p.pickupKawasan||'', size:size||'', qty:Math.min(addQty,p.stock) }); }
+  else { cart.push({ id:p.id, name:p.name, price, weight:p.weight, commissionPct:p.commissionPct, kawasanCommissionPct:p.kawasanCommissionPct||0, negeriCommissionPct:p.negeriCommissionPct||0, shipPickup:p.shipPickup!==false, shipKurier:p.shipKurier!==false, bekalKawasan:p.pickupKawasan||'', size:size||'', qty:Math.min(addQty,p.stock) }); }
   persistCart(); updateCartBadge(); showToast(p.name+(size?' ('+size+')':'')+' ditambah ke troli', 'shopping-bag');
   if(typeof renderCart==='function') renderCart();
 }
@@ -3059,6 +3125,21 @@ async function autoSelectKawasanForAgent(agentArea){
   }
 }
 
+function getCartAllowedShipModes(){
+  let pickup = true, kurier = true;
+  cart.forEach(c=>{
+    if(c.shipPickup===false) pickup = false;
+    if(c.shipKurier===false) kurier = false;
+  });
+  if(!pickup && !kurier){
+    // Cart mixes a pickup-only item with a kurier-only item — no common
+    // method. Fail open (allow both) rather than trap the customer, but
+    // flag it so admin/customer notices the conflict.
+    showToast('Troli anda ada produk dengan kaedah penghantaran berlainan — sila semak semula','alert-circle');
+    return { pickup:true, kurier:true };
+  }
+  return { pickup, kurier };
+}
 function renderCheckoutEnter(){
   if(cart.length===0){ showToast('Troli anda kosong','alert-circle'); window.showView('catalog'); return; }
   document.getElementById('checkout-form-wrap').classList.remove('hidden');
@@ -3080,8 +3161,14 @@ function renderCheckoutEnter(){
   setUploadStatusDisplay('co-pay-receipt', '', 'Upload resit dari peranti');
 
   const easyParcelOn = siteContent.easyParcelEnabled !== false;
-  document.getElementById('co-ship-mode-tabs').classList.toggle('hidden', !easyParcelOn);
-  window.setShipMode('pickup');
+  const allowedModes = getCartAllowedShipModes();
+  const pickupBtn = document.querySelector('.co-shipmode-btn[data-shipmode="pickup"]');
+  const kurierBtn = document.querySelector('.co-shipmode-btn[data-shipmode="kurier"]');
+  if(pickupBtn) pickupBtn.classList.toggle('hidden', !allowedModes.pickup);
+  if(kurierBtn) kurierBtn.classList.toggle('hidden', !(allowedModes.kurier && easyParcelOn));
+  document.getElementById('co-ship-mode-tabs').classList.toggle('hidden', !easyParcelOn || !allowedModes.pickup || !allowedModes.kurier);
+  const defaultMode = allowedModes.pickup ? 'pickup' : 'kurier';
+  window.setShipMode(defaultMode);
   populatePickupKawasan();
 
   const ref = (new URLSearchParams(window.location.search)).get('ref');
@@ -3267,7 +3354,7 @@ window.submitOrder = async function(){
     else showToast('Kod ejen tidak sah — diteruskan tanpa ejen','alert-circle');
   }
 
-  const items = cart.map(c=>({ productId:c.id, name:c.name, qty:c.qty, price:c.price, weight:c.weight, commissionPct:c.commissionPct, kawasanCommissionPct:c.kawasanCommissionPct||0, bekalKawasan:c.bekalKawasan||'', size:c.size||'' }));
+  const items = cart.map(c=>({ productId:c.id, name:c.name, qty:c.qty, price:c.price, weight:c.weight, commissionPct:c.commissionPct, kawasanCommissionPct:c.kawasanCommissionPct||0, negeriCommissionPct:c.negeriCommissionPct||0, bekalKawasan:c.bekalKawasan||'', size:c.size||'' }));
 
   const orderPayload = {
     customerName:nama, phone, email, address:alamat, postcode:poskod, city:bandar, state,
@@ -3346,7 +3433,7 @@ window.doAgentSignup = async function(){
     renderAgentView();
     showToast('Pendaftaran berjaya! Kod ejen anda: '+res.code,'check-circle-2');
   }catch(err){
-    showToast('Pendaftaran gagal, cuba lagi','alert-circle');
+    showToast(err && err.message ? err.message : 'Pendaftaran gagal, cuba lagi','alert-circle');
   }
 }
 let agentSessionPass = null;
@@ -3674,7 +3761,7 @@ window.doKawasanSignup = async function(){
     renderKawasanPortalView();
     showToast('Pendaftaran berjaya! Kod kawasan anda: '+res.code,'check-circle-2');
   }catch(err){
-    showToast('Pendaftaran gagal, cuba lagi','alert-circle');
+    showToast(err && err.message ? err.message : 'Pendaftaran gagal, cuba lagi','alert-circle');
   }
 }
 window.loginKawasan = async function(){
@@ -3762,7 +3849,18 @@ async function refreshKwOrders(){
   wrap.innerHTML = `<p class="text-inksoft text-sm italic">Memuatkan...</p>`;
   try{
     kwOrdersCache = await window.fbKawasanListMyOrders();
-    const orders = kwOrdersCache.incomingOrders || [];
+    window.renderKwOrders();
+  }catch(e){
+    wrap.innerHTML = `<p class="text-red-500 text-sm italic">Gagal muatkan tempahan.</p>`;
+  }
+}
+window.renderKwOrders = function(){
+  const wrap = document.getElementById('kw-orders-list');
+  if(!wrap) return;
+  try{
+    const search = (document.getElementById('kw-order-search').value||'').trim().toLowerCase();
+    let orders = kwOrdersCache.incomingOrders || [];
+    if(search) orders = orders.filter(o=>(o.phone||'').toLowerCase().includes(search) || (o.customerName||'').toLowerCase().includes(search));
     wrap.innerHTML = orders.length ? orders.map(o=>{
       const isBusOrder = !!o.bekalKawasanCode;
       const stageIdx = KW_HANDOVER_STAGES.indexOf(o.kawasanHandoverStatus);
@@ -3783,7 +3881,7 @@ async function refreshKwOrders(){
           <p class="font-mono font-bold text-forest text-sm">${escapeHtml(o.orderId)}</p>
           <span class="px-2 py-1 rounded-full text-[10px] font-bold bg-cream text-ink">${escapeHtml(o.kawasanHandoverStatus||'-')}</span>
         </div>
-        <p class="text-ink text-sm font-semibold">${escapeHtml(o.customerName)}</p>
+        <p class="text-ink text-sm font-semibold">${escapeHtml(o.customerName)} <span class="text-inksoft font-normal text-xs">${escapeHtml(o.phone||'')}</span></p>
         <p class="text-inksoft text-xs mt-0.5">${o.items?o.items.length:0} item · ${formatRM(o.total)} ${o.agentCode ? '· Ejen: '+escapeHtml(o.agentCode) : '· Tiada ejen'}</p>
         ${busNote}
         ${actionHtml}
@@ -3891,7 +3989,7 @@ function renderKwProducts(){
         </div>
       </div>
       <p class="text-forest font-bold text-sm mb-1">${formatRM(p.price)}</p>
-      <p class="text-inksoft text-xs mb-3">Modal: ${formatRM(p.modal||0)} · Komisen: ${p.commissionPct||0}%${p.preorder ? ` · Jangkaan: ${escapeHtml(p.preorderEta||'-')}` : ''}</p>
+      <p class="text-inksoft text-xs mb-3">Modal: ${formatRM(p.modal||0)} · Ejen: ${p.commissionPct||0}% · Kawasan: ${p.kawasanCommissionPct||0}% · Negeri: ${p.negeriCommissionPct||0}%${p.preorder ? ` · Jangkaan: ${escapeHtml(p.preorderEta||'-')}` : ''}</p>
       <div class="flex gap-1.5">
         <button onclick="window.toggleKwStock('${p.id}','${p.stockStatus==='ready'?'habis':'ready'}')" class="flex-1 bg-cream hover:bg-sand text-ink text-[11px] font-bold py-2 rounded-lg">${p.stockStatus==='ready' ? 'Tandakan Habis' : 'Tandakan Ready'}</button>
         <button onclick="window.openKwProductModal('${p.id}')" class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
@@ -3911,7 +4009,11 @@ window.openKwProductModal = function(id){
   document.getElementById('kwpm-price').value = editing ? editing.price : '';
   document.getElementById('kwpm-modal').value = editing ? (editing.modal||'') : '';
   document.getElementById('kwpm-weight').value = editing ? editing.weight : '';
-  document.getElementById('kwpm-comm').value = editing ? editing.commissionPct : 10;
+  document.getElementById('kwpm-comm').value = editing && editing.commissionPct != null ? editing.commissionPct : 5;
+  document.getElementById('kwpm-comm-kawasan').value = editing && editing.kawasanCommissionPct != null ? editing.kawasanCommissionPct : 5;
+  document.getElementById('kwpm-comm-negeri').value = editing && editing.negeriCommissionPct != null ? editing.negeriCommissionPct : 5;
+  document.getElementById('kwpm-ship-pickup').checked = editing ? editing.shipPickup !== false : true;
+  document.getElementById('kwpm-ship-kurier').checked = editing ? editing.shipKurier !== false : true;
   document.getElementById('kwpm-desc').value = editing ? (editing.desc||'') : '';
   const imgs = editing && Array.isArray(editing.images) ? editing.images : [];
   document.getElementById('kwpm-img1').value = imgs[0] || '';
@@ -3936,6 +4038,9 @@ window.saveKwProduct = async function(){
   if(!name){ showToast('Nama produk wajib diisi','alert-circle'); return; }
   const images = [document.getElementById('kwpm-img1').value.trim(), document.getElementById('kwpm-img2').value.trim(), document.getElementById('kwpm-img3').value.trim()].filter(Boolean);
   if(!id && !images.length){ showToast('Sila upload sekurang-kurangnya 1 gambar produk','alert-circle'); return; }
+  const shipPickup = document.getElementById('kwpm-ship-pickup').checked;
+  const shipKurier = document.getElementById('kwpm-ship-kurier').checked;
+  if(!shipPickup && !shipKurier){ showToast('Sila benarkan sekurang-kurangnya satu kaedah penghantaran','alert-circle'); return; }
   const payload = {
     id: id || undefined,
     name,
@@ -3943,7 +4048,10 @@ window.saveKwProduct = async function(){
     price: parseFloat(document.getElementById('kwpm-price').value) || 0,
     modal: parseFloat(document.getElementById('kwpm-modal').value) || 0,
     weight: parseFloat(document.getElementById('kwpm-weight').value) || 0.1,
-    commissionPct: parseFloat(document.getElementById('kwpm-comm').value) || 10,
+    commissionPct: parseFloat(document.getElementById('kwpm-comm').value) || 5,
+    kawasanCommissionPct: parseFloat(document.getElementById('kwpm-comm-kawasan').value) || 0,
+    negeriCommissionPct: parseFloat(document.getElementById('kwpm-comm-negeri').value) || 0,
+    shipPickup, shipKurier,
     desc: document.getElementById('kwpm-desc').value.trim(),
     images,
     stockStatus: document.getElementById('kwpm-ready').checked ? 'ready' : 'habis',
@@ -4087,8 +4195,6 @@ function loadSiteContentAdminForm(){
   document.getElementById('cms-qr').value = siteContent.paymentQrUrl || '';
   setUploadStatusDisplay('cms-qr', siteContent.paymentQrUrl);
   document.getElementById('cms-easyparcel').checked = siteContent.easyParcelEnabled !== false;
-  document.getElementById('cms-comm-agent').value = siteContent.agentCommissionPct != null ? siteContent.agentCommissionPct : 10;
-  document.getElementById('cms-comm-kawasan').value = siteContent.kawasanCommissionPct != null ? siteContent.kawasanCommissionPct : 5;
   const senderStateSel = document.getElementById('ep-sender-state');
   if(senderStateSel && !senderStateSel.options.length){
     senderStateSel.innerHTML = '<option value="">Pilih Negeri</option>' + STATES.map(s=>`<option value="${s}">${s}</option>`).join('');
@@ -4110,8 +4216,6 @@ window.saveSiteContentAdmin = async function(){
     aboutUsText: document.getElementById('cms-about').value.trim(),
     paymentQrUrl: document.getElementById('cms-qr').value.trim(),
     easyParcelEnabled: document.getElementById('cms-easyparcel').checked,
-    agentCommissionPct: parseFloat(document.getElementById('cms-comm-agent').value) || 0,
-    kawasanCommissionPct: parseFloat(document.getElementById('cms-comm-kawasan').value) || 0,
     senderName: document.getElementById('ep-sender-name').value.trim(),
     senderPhone: document.getElementById('ep-sender-phone').value.trim(),
     senderAddress: document.getElementById('ep-sender-address').value.trim(),
@@ -4147,8 +4251,10 @@ async function refreshAndRenderAdminKawasan(){
 function renderAdminKawasan(){
   const tbody = document.getElementById('admin-kawasan-body');
   if(!tbody) return;
-  document.getElementById('admin-kawasan-count').innerText = appKawasanList.length+' kawasan';
-  tbody.innerHTML = appKawasanList.map(k=>`
+  const search = (document.getElementById('admin-kawasan-search').value||'').trim().toLowerCase();
+  const list = search ? appKawasanList.filter(k=>(k.picPhone||'').toLowerCase().includes(search) || (k.namaKawasan||'').toLowerCase().includes(search) || (k.code||'').toLowerCase().includes(search)) : appKawasanList;
+  document.getElementById('admin-kawasan-count').innerText = list.length+' kawasan';
+  tbody.innerHTML = list.map(k=>`
     <tr class="border-t border-sand">
       <td class="p-3 font-mono font-bold text-forest">${escapeHtml(k.code)}</td>
       <td class="p-3 font-bold text-ink">PASTI ${escapeHtml(k.namaKawasan)}</td>
@@ -4212,7 +4318,7 @@ window.saveKawasanAdmin = async function(){
     await refreshAndRenderAdminKawasan();
     showToast('Kawasan berjaya disimpan','check-circle-2');
   }catch(e){
-    showToast('Gagal simpan kawasan','alert-circle');
+    showToast(e && e.message ? e.message : 'Gagal simpan kawasan','alert-circle');
   }
 }
 window.deleteKawasanAdmin = async function(code){
@@ -4302,8 +4408,11 @@ window.openProductModal = function(id){
   document.getElementById('pm-modal').value = editing ? (editing.modal||'') : '';
   document.getElementById('pm-weight').value = editing ? editing.weight : '';
   document.getElementById('pm-stock').value = editing ? editing.stock : '';
-  document.getElementById('pm-comm').value = editing ? editing.commissionPct : 10;
-  document.getElementById('pm-comm-kawasan').value = editing && editing.kawasanCommissionPct != null ? editing.kawasanCommissionPct : (siteContent.kawasanCommissionPct != null ? siteContent.kawasanCommissionPct : 5);
+  document.getElementById('pm-comm').value = editing && editing.commissionPct != null ? editing.commissionPct : 5;
+  document.getElementById('pm-comm-kawasan').value = editing && editing.kawasanCommissionPct != null ? editing.kawasanCommissionPct : 5;
+  document.getElementById('pm-comm-negeri').value = editing && editing.negeriCommissionPct != null ? editing.negeriCommissionPct : 5;
+  document.getElementById('pm-ship-pickup').checked = editing ? editing.shipPickup !== false : true;
+  document.getElementById('pm-ship-kurier').checked = editing ? editing.shipKurier !== false : true;
   document.getElementById('pm-jualan').value = editing ? (editing.jualan||0) : 0;
   document.getElementById('pm-desc').value = editing ? (editing.desc||'') : '';
   document.getElementById('pm-seller').value = editing ? editing.sellerName : 'PASTI Sarawak Mart Official';
@@ -4452,6 +4561,10 @@ window.saveProduct = async function(){
   const stock = parseInt(document.getElementById('pm-stock').value);
   const commissionPct = parseFloat(document.getElementById('pm-comm').value);
   const kawasanCommissionPct = parseFloat(document.getElementById('pm-comm-kawasan').value) || 0;
+  const negeriCommissionPct = parseFloat(document.getElementById('pm-comm-negeri').value) || 0;
+  const shipPickup = document.getElementById('pm-ship-pickup').checked;
+  const shipKurier = document.getElementById('pm-ship-kurier').checked;
+  if(!shipPickup && !shipKurier){ showToast('Sila benarkan sekurang-kurangnya satu kaedah penghantaran','alert-circle'); return; }
   const jualan = parseInt(document.getElementById('pm-jualan').value) || 0;
   const category = document.getElementById('pm-category').value;
   const desc = document.getElementById('pm-desc').value.trim();
@@ -4478,7 +4591,7 @@ window.saveProduct = async function(){
     showToast('Sila lengkapkan semua medan dengan betul','alert-circle'); return;
   }
   if(!id && !images.length){ showToast('Sila upload sekurang-kurangnya 1 gambar produk','alert-circle'); return; }
-  const product = { id:id||undefined, name, price:effectivePrice, modal,weight,stock,commissionPct,kawasanCommissionPct,jualan,category,desc,sellerName,popular,active,preorder,preorderEta,sizes,images, createdAt:new Date().toISOString() };
+  const product = { id:id||undefined, name, price:effectivePrice, modal,weight,stock,commissionPct,kawasanCommissionPct,negeriCommissionPct,shipPickup,shipKurier,jualan,category,desc,sellerName,popular,active,preorder,preorderEta,sizes,images, createdAt:new Date().toISOString() };
   try{
     await window.fbAdminSaveProduct(product);
     await refreshOwnProducts();
@@ -4536,7 +4649,7 @@ function renderAdminProducts(){
       </td>
       <td class="p-3 text-inksoft">${escapeHtml(cat.name)}</td>
       <td class="p-3"><span class="font-bold text-forest">${p.sizes && p.sizes.length ? 'dari '+formatRM(p.price) : formatRM(p.price)}</span><br><span class="text-inksoft text-[10px]">${p.weight} kg</span></td>
-      <td class="p-3 font-bold text-honeydeep">Ejen: ${p.commissionPct}%<br><span class="text-[10px] text-inksoft font-semibold">Kawasan: ${p.kawasanCommissionPct||0}%</span></td>
+      <td class="p-3 font-bold text-honeydeep">Ejen: ${p.commissionPct}%<br><span class="text-[10px] text-inksoft font-semibold">Kawasan: ${p.kawasanCommissionPct||0}% · Negeri: ${p.negeriCommissionPct||0}%</span></td>
       <td class="p-3 font-bold ${p.stock>0?'text-ink':'text-red-500'}">${p.stock}</td>
       <td class="p-3">
         <div class="flex gap-1.5">
@@ -4594,8 +4707,10 @@ function renderAdminOrders(){
   const tbody = document.getElementById('admin-order-body');
   if(!tbody) return;
   const filter = document.getElementById('admin-order-filter').value;
+  const search = (document.getElementById('admin-order-search').value||'').trim().toLowerCase();
   let list = appKPOrders.slice().sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
   if(filter!=='all') list = list.filter(o=>o.status===filter);
+  if(search) list = list.filter(o=>(o.phone||'').toLowerCase().includes(search) || (o.customerName||'').toLowerCase().includes(search) || (o.orderId||'').toLowerCase().includes(search));
   document.getElementById('admin-order-count').innerText = list.length+' tempahan';
   tbody.innerHTML = list.map(o=>`
     <tr class="border-t border-sand">
@@ -4744,7 +4859,7 @@ window.saveAgent = async function(){
     await refreshAndRenderAdminAgents();
     showToast('Ejen berjaya disimpan','check-circle-2');
   }catch(e){
-    showToast('Gagal simpan ejen','alert-circle');
+    showToast(e && e.message ? e.message : 'Gagal simpan ejen','alert-circle');
   }
 }
 window.deleteAgent = async function(code){
@@ -4762,8 +4877,10 @@ window.deleteAgent = async function(code){
 function renderAdminAgents(){
   const tbody = document.getElementById('admin-agent-body');
   if(!tbody) return;
-  document.getElementById('admin-agent-count').innerText = appAgents.length+' ejen';
-  tbody.innerHTML = appAgents.map(a=>{
+  const search = (document.getElementById('admin-agent-search').value||'').trim().toLowerCase();
+  const list = search ? appAgents.filter(a=>(a.phone||'').toLowerCase().includes(search) || (a.name||'').toLowerCase().includes(search) || (a.code||'').toLowerCase().includes(search)) : appAgents;
+  document.getElementById('admin-agent-count').innerText = list.length+' ejen';
+  tbody.innerHTML = list.map(a=>{
     const stats = statsForAgent(a.code);
     return `<tr class="border-t border-sand">
       <td class="p-3 font-mono font-bold text-forest">${escapeHtml(a.code)}</td>
