@@ -1145,7 +1145,8 @@
               <input id="kwpm-comm" type="number" placeholder="Komisen Ejen (%)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
             </div>
             <div class="grid grid-cols-2 gap-3">
-              <input id="kwpm-comm-kawasan" type="number" step="0.1" placeholder="Komisen PASTI Kawasan/Cawangan (%)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              <input id="kwpm-comm-kawasan" type="number" step="0.1" placeholder="Komisen PASTI Kawasan (%)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              <input id="kwpm-comm-cawangan" type="number" step="0.1" placeholder="Komisen PASTI Cawangan (%)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
               <input id="kwpm-comm-negeri" type="number" step="0.1" placeholder="Komisen Negeri (%)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
             </div>
             <div>
@@ -1864,7 +1865,8 @@
             <input id="pm-weight" type="number" step="0.01" placeholder="Berat (kg)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
             <input id="pm-stock" type="number" placeholder="Stok" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
             <input id="pm-comm-negeri" type="number" step="0.1" placeholder="Komisen Negeri (%)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-            <input id="pm-comm-kawasan" type="number" step="0.1" placeholder="Komisen PASTI Kawasan/Cawangan (%)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+            <input id="pm-comm-kawasan" type="number" step="0.1" placeholder="Komisen PASTI Kawasan (%)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+            <input id="pm-comm-cawangan" type="number" step="0.1" placeholder="Komisen PASTI Cawangan (%)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
             <input id="pm-comm" type="number" step="0.1" placeholder="Komisen Ejen (%)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
             <input id="pm-jualan" type="number" placeholder="Jualan Direkod" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
           </div>
@@ -2789,7 +2791,7 @@ window.addToCart = function(productId, qty, size){
   const existing = cart.find(c=>c.id===productId && (c.size||'')===(size||''));
   const addQty = qty||1;
   if(existing){ existing.qty = Math.min(existing.qty+addQty, p.stock); }
-  else { cart.push({ id:p.id, name:p.name, price, weight:p.weight, commissionPct:p.commissionPct, kawasanCommissionPct:p.kawasanCommissionPct||0, negeriCommissionPct:p.negeriCommissionPct||0, shipPickup:p.shipPickup!==false, shipKurier:p.shipKurier!==false, bekalKawasan:p.pickupKawasan||'', size:size||'', qty:Math.min(addQty,p.stock) }); }
+  else { cart.push({ id:p.id, name:p.name, price, weight:p.weight, commissionPct:p.commissionPct, kawasanCommissionPct:p.kawasanCommissionPct||0, cawanganCommissionPct:p.cawanganCommissionPct||0, negeriCommissionPct:p.negeriCommissionPct||0, shipPickup:p.shipPickup!==false, shipKurier:p.shipKurier!==false, bekalKawasan:p.pickupKawasan||'', size:size||'', qty:Math.min(addQty,p.stock) }); }
   persistCart(); updateCartBadge(); showToast(p.name+(size?' ('+size+')':'')+' ditambah ke troli', 'shopping-bag');
   if(typeof renderCart==='function') renderCart();
 }
@@ -3358,7 +3360,7 @@ window.submitOrder = async function(){
     else showToast('Kod ejen tidak sah — diteruskan tanpa ejen','alert-circle');
   }
 
-  const items = cart.map(c=>({ productId:c.id, name:c.name, qty:c.qty, price:c.price, weight:c.weight, commissionPct:c.commissionPct, kawasanCommissionPct:c.kawasanCommissionPct||0, negeriCommissionPct:c.negeriCommissionPct||0, bekalKawasan:c.bekalKawasan||'', size:c.size||'' }));
+  const items = cart.map(c=>({ productId:c.id, name:c.name, qty:c.qty, price:c.price, weight:c.weight, commissionPct:c.commissionPct, kawasanCommissionPct:c.kawasanCommissionPct||0, cawanganCommissionPct:c.cawanganCommissionPct||0, negeriCommissionPct:c.negeriCommissionPct||0, bekalKawasan:c.bekalKawasan||'', size:c.size||'' }));
 
   const orderPayload = {
     customerName:nama, phone, email, address:alamat, postcode:poskod, city:bandar, state,
@@ -3998,7 +4000,7 @@ function renderKwProducts(){
         </div>
       </div>
       <p class="text-forest font-bold text-sm mb-1">${formatRM(p.price)}</p>
-      <p class="text-inksoft text-xs mb-3">Modal: ${formatRM(p.modal||0)} · Ejen: ${p.commissionPct||0}% · Kawasan: ${p.kawasanCommissionPct||0}% · Negeri: ${p.negeriCommissionPct||0}%${p.preorder ? ` · Jangkaan: ${escapeHtml(p.preorderEta||'-')}` : ''}</p>
+      <p class="text-inksoft text-xs mb-3">Modal: ${formatRM(p.modal||0)} · Ejen: ${p.commissionPct||0}% · Kawasan: ${p.kawasanCommissionPct||0}% · Cawangan: ${p.cawanganCommissionPct||0}% · Negeri: ${p.negeriCommissionPct||0}%${p.preorder ? ` · Jangkaan: ${escapeHtml(p.preorderEta||'-')}` : ''}</p>
       <div class="flex gap-1.5">
         <button onclick="window.toggleKwStock('${p.id}','${p.stockStatus==='ready'?'habis':'ready'}')" class="flex-1 bg-cream hover:bg-sand text-ink text-[11px] font-bold py-2 rounded-lg">${p.stockStatus==='ready' ? 'Tandakan Habis' : 'Tandakan Ready'}</button>
         <button onclick="window.openKwProductModal('${p.id}')" class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
@@ -4020,6 +4022,7 @@ window.openKwProductModal = function(id){
   document.getElementById('kwpm-weight').value = editing ? editing.weight : '';
   document.getElementById('kwpm-comm').value = editing && editing.commissionPct != null ? editing.commissionPct : 5;
   document.getElementById('kwpm-comm-kawasan').value = editing && editing.kawasanCommissionPct != null ? editing.kawasanCommissionPct : 5;
+  document.getElementById('kwpm-comm-cawangan').value = editing && editing.cawanganCommissionPct != null ? editing.cawanganCommissionPct : 5;
   document.getElementById('kwpm-comm-negeri').value = editing && editing.negeriCommissionPct != null ? editing.negeriCommissionPct : 5;
   document.getElementById('kwpm-ship-pickup').checked = editing ? editing.shipPickup !== false : true;
   document.getElementById('kwpm-ship-kurier').checked = editing ? editing.shipKurier !== false : true;
@@ -4059,6 +4062,7 @@ window.saveKwProduct = async function(){
     weight: parseFloat(document.getElementById('kwpm-weight').value) || 0.1,
     commissionPct: parseFloat(document.getElementById('kwpm-comm').value) || 5,
     kawasanCommissionPct: parseFloat(document.getElementById('kwpm-comm-kawasan').value) || 0,
+    cawanganCommissionPct: parseFloat(document.getElementById('kwpm-comm-cawangan').value) || 0,
     negeriCommissionPct: parseFloat(document.getElementById('kwpm-comm-negeri').value) || 0,
     shipPickup, shipKurier,
     desc: document.getElementById('kwpm-desc').value.trim(),
@@ -4419,6 +4423,7 @@ window.openProductModal = function(id){
   document.getElementById('pm-stock').value = editing ? editing.stock : '';
   document.getElementById('pm-comm').value = editing && editing.commissionPct != null ? editing.commissionPct : 5;
   document.getElementById('pm-comm-kawasan').value = editing && editing.kawasanCommissionPct != null ? editing.kawasanCommissionPct : 5;
+  document.getElementById('pm-comm-cawangan').value = editing && editing.cawanganCommissionPct != null ? editing.cawanganCommissionPct : 5;
   document.getElementById('pm-comm-negeri').value = editing && editing.negeriCommissionPct != null ? editing.negeriCommissionPct : 5;
   document.getElementById('pm-ship-pickup').checked = editing ? editing.shipPickup !== false : true;
   document.getElementById('pm-ship-kurier').checked = editing ? editing.shipKurier !== false : true;
@@ -4571,6 +4576,7 @@ window.saveProduct = async function(){
   const commissionPct = parseFloat(document.getElementById('pm-comm').value);
   const kawasanCommissionPct = parseFloat(document.getElementById('pm-comm-kawasan').value) || 0;
   const negeriCommissionPct = parseFloat(document.getElementById('pm-comm-negeri').value) || 0;
+  const cawanganCommissionPct = parseFloat(document.getElementById('pm-comm-cawangan').value) || 0;
   const shipPickup = document.getElementById('pm-ship-pickup').checked;
   const shipKurier = document.getElementById('pm-ship-kurier').checked;
   if(!shipPickup && !shipKurier){ showToast('Sila benarkan sekurang-kurangnya satu kaedah penghantaran','alert-circle'); return; }
@@ -4600,7 +4606,7 @@ window.saveProduct = async function(){
     showToast('Sila lengkapkan semua medan dengan betul','alert-circle'); return;
   }
   if(!id && !images.length){ showToast('Sila upload sekurang-kurangnya 1 gambar produk','alert-circle'); return; }
-  const product = { id:id||undefined, name, price:effectivePrice, modal,weight,stock,commissionPct,kawasanCommissionPct,negeriCommissionPct,shipPickup,shipKurier,jualan,category,desc,sellerName,popular,active,preorder,preorderEta,sizes,images, createdAt:new Date().toISOString() };
+  const product = { id:id||undefined, name, price:effectivePrice, modal,weight,stock,commissionPct,kawasanCommissionPct,cawanganCommissionPct,negeriCommissionPct,shipPickup,shipKurier,jualan,category,desc,sellerName,popular,active,preorder,preorderEta,sizes,images, createdAt:new Date().toISOString() };
   try{
     await window.fbAdminSaveProduct(product);
     await refreshOwnProducts();
@@ -4658,7 +4664,7 @@ function renderAdminProducts(){
       </td>
       <td class="p-3 text-inksoft">${escapeHtml(cat.name)}</td>
       <td class="p-3"><span class="font-bold text-forest">${p.sizes && p.sizes.length ? 'dari '+formatRM(p.price) : formatRM(p.price)}</span><br><span class="text-inksoft text-[10px]">${p.weight} kg</span></td>
-      <td class="p-3 font-bold text-honeydeep">Ejen: ${p.commissionPct}%<br><span class="text-[10px] text-inksoft font-semibold">Kawasan: ${p.kawasanCommissionPct||0}% · Negeri: ${p.negeriCommissionPct||0}%</span></td>
+      <td class="p-3 font-bold text-honeydeep">Ejen: ${p.commissionPct}%<br><span class="text-[10px] text-inksoft font-semibold">Kawasan: ${p.kawasanCommissionPct||0}% · Cawangan: ${p.cawanganCommissionPct||0}% · Negeri: ${p.negeriCommissionPct||0}%</span></td>
       <td class="p-3 font-bold ${p.stock>0?'text-ink':'text-red-500'}">${p.stock}</td>
       <td class="p-3">
         <div class="flex gap-1.5">
