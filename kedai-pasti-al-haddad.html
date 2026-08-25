@@ -1134,20 +1134,47 @@
           </div>
           <div class="space-y-3">
             <input type="hidden" id="kwpm-id">
-            <input id="kwpm-name" type="text" placeholder="Nama Produk" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-            <select id="kwpm-category" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium"></select>
-            <div class="grid grid-cols-2 gap-3">
-              <input id="kwpm-price" type="number" step="0.01" placeholder="Harga Jualan (RM)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-              <input id="kwpm-modal" type="number" step="0.01" placeholder="Modal/Kos (RM)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+            <div>
+              <label class="text-[11px] font-bold text-inksoft mb-1 block">Nama Produk</label>
+              <input id="kwpm-name" type="text" placeholder="Nama Produk" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+            </div>
+            <div>
+              <label class="text-[11px] font-bold text-inksoft mb-1 block">Kategori</label>
+              <select id="kwpm-category" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium"></select>
             </div>
             <div class="grid grid-cols-2 gap-3">
-              <input id="kwpm-weight" type="number" step="0.01" placeholder="Berat (kg)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-              <input id="kwpm-comm" type="number" placeholder="Komisen Ejen (%)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              <div>
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">Harga Jualan (RM)</label>
+                <input id="kwpm-price" type="number" step="0.01" placeholder="Harga Jualan (RM)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              </div>
+              <div>
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">Modal/Kos (RM)</label>
+                <input id="kwpm-modal" type="number" step="0.01" placeholder="Modal/Kos (RM)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              </div>
             </div>
             <div class="grid grid-cols-2 gap-3">
-              <input id="kwpm-comm-kawasan" type="number" step="0.1" placeholder="Komisen PASTI Kawasan (%)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-              <input id="kwpm-comm-cawangan" type="number" step="0.1" placeholder="Komisen PASTI Cawangan (%)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-              <input id="kwpm-comm-negeri" type="number" step="0.1" placeholder="Komisen Negeri (%)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              <div>
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">Berat (kg)</label>
+                <input id="kwpm-weight" type="number" step="0.01" placeholder="Berat (kg)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              </div>
+              <div>
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">Komisen Ejen (%)</label>
+                <input id="kwpm-comm" type="number" placeholder="Komisen Ejen (%)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">Komisen Kawasan (%)</label>
+                <input id="kwpm-comm-kawasan" type="number" step="0.1" placeholder="Komisen PASTI Kawasan (%)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              </div>
+              <div>
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">Komisen Cawangan (%)</label>
+                <input id="kwpm-comm-cawangan" type="number" step="0.1" placeholder="Komisen PASTI Cawangan (%)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              </div>
+              <div>
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">Komisen Negeri (%)</label>
+                <input id="kwpm-comm-negeri" type="number" step="0.1" placeholder="Komisen Negeri (%)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              </div>
             </div>
             <div>
               <p class="text-[11px] font-bold text-inksoft mb-1.5">Kaedah Penghantaran Dibenarkan</p>
@@ -1156,7 +1183,10 @@
                 <label class="flex items-center gap-2 bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium cursor-pointer"><input id="kwpm-ship-kurier" type="checkbox" checked class="w-4 h-4 accent-[#0B5D3B]"> Kurier</label>
               </div>
             </div>
-            <textarea id="kwpm-desc" placeholder="Penerangan produk" rows="2" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium"></textarea>
+            <div>
+              <label class="text-[11px] font-bold text-inksoft mb-1 block">Penerangan Produk</label>
+              <textarea id="kwpm-desc" placeholder="Penerangan produk" rows="2" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium"></textarea>
+            </div>
             <div>
               <input id="kwpm-img1" type="hidden">
               <label class="flex items-center gap-1.5 text-[11px] font-bold text-forest cursor-pointer hover:underline w-fit mt-1"><i data-lucide="upload" class="w-3 h-3"></i><span id="kwpm-img1-upload-status">Upload Gambar 1 dari peranti</span><input type="file" accept="image/*" class="hidden" onchange="window.uploadImageToField(this,'kwpm-img1','kawasan-products')"></label>
@@ -1857,21 +1887,60 @@
         </div>
         <div class="space-y-3">
           <input type="hidden" id="pm-id">
-          <input id="pm-name" type="text" placeholder="Nama Produk" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-          <select id="pm-category" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium"></select>
-          <div class="grid grid-cols-2 gap-3">
-            <input id="pm-price" type="number" step="0.01" placeholder="Harga Jualan (RM)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-            <input id="pm-modal" type="number" step="0.01" placeholder="Modal/Kos (RM)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-            <input id="pm-weight" type="number" step="0.01" placeholder="Berat (kg)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-            <input id="pm-stock" type="number" placeholder="Stok" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-            <input id="pm-comm-negeri" type="number" step="0.1" placeholder="Komisen Negeri (%)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-            <input id="pm-comm-kawasan" type="number" step="0.1" placeholder="Komisen PASTI Kawasan (%)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-            <input id="pm-comm-cawangan" type="number" step="0.1" placeholder="Komisen PASTI Cawangan (%)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-            <input id="pm-comm" type="number" step="0.1" placeholder="Komisen Ejen (%)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-            <input id="pm-jualan" type="number" placeholder="Jualan Direkod" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          <div>
+            <label class="text-[11px] font-bold text-inksoft mb-1 block">Nama Produk</label>
+            <input id="pm-name" type="text" placeholder="Nama Produk" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
           </div>
-          <textarea id="pm-desc" rows="3" placeholder="Deskripsi produk" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium"></textarea>
-          <input id="pm-seller" type="text" placeholder="Nama Penjual" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          <div>
+            <label class="text-[11px] font-bold text-inksoft mb-1 block">Kategori</label>
+            <select id="pm-category" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium"></select>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-[11px] font-bold text-inksoft mb-1 block">Harga Jualan (RM)</label>
+              <input id="pm-price" type="number" step="0.01" placeholder="Harga Jualan (RM)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+            </div>
+            <div>
+              <label class="text-[11px] font-bold text-inksoft mb-1 block">Modal/Kos (RM)</label>
+              <input id="pm-modal" type="number" step="0.01" placeholder="Modal/Kos (RM)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+            </div>
+            <div>
+              <label class="text-[11px] font-bold text-inksoft mb-1 block">Berat (kg)</label>
+              <input id="pm-weight" type="number" step="0.01" placeholder="Berat (kg)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+            </div>
+            <div>
+              <label class="text-[11px] font-bold text-inksoft mb-1 block">Stok</label>
+              <input id="pm-stock" type="number" placeholder="Stok" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+            </div>
+            <div>
+              <label class="text-[11px] font-bold text-inksoft mb-1 block">Komisen Negeri (%)</label>
+              <input id="pm-comm-negeri" type="number" step="0.1" placeholder="Komisen Negeri (%)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+            </div>
+            <div>
+              <label class="text-[11px] font-bold text-inksoft mb-1 block">Komisen Kawasan (%)</label>
+              <input id="pm-comm-kawasan" type="number" step="0.1" placeholder="Komisen PASTI Kawasan (%)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+            </div>
+            <div>
+              <label class="text-[11px] font-bold text-inksoft mb-1 block">Komisen Cawangan (%)</label>
+              <input id="pm-comm-cawangan" type="number" step="0.1" placeholder="Komisen PASTI Cawangan (%)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+            </div>
+            <div>
+              <label class="text-[11px] font-bold text-inksoft mb-1 block">Komisen Ejen (%)</label>
+              <input id="pm-comm" type="number" step="0.1" placeholder="Komisen Ejen (%)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+            </div>
+            <div>
+              <label class="text-[11px] font-bold text-inksoft mb-1 block">Jualan Direkod</label>
+              <input id="pm-jualan" type="number" placeholder="Jualan Direkod" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+            </div>
+          </div>
+          <div>
+            <label class="text-[11px] font-bold text-inksoft mb-1 block">Deskripsi Produk</label>
+            <textarea id="pm-desc" rows="3" placeholder="Deskripsi produk" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium"></textarea>
+          </div>
+          <div>
+            <label class="text-[11px] font-bold text-inksoft mb-1 block">Nama Penjual</label>
+            <input id="pm-seller" type="text" placeholder="Nama Penjual" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          </div>
           <div class="border-t border-sand pt-3">
             <p class="text-[11px] font-bold text-inksoft mb-1.5">Kaedah Penghantaran Dibenarkan</p>
             <div class="grid grid-cols-2 gap-3">
