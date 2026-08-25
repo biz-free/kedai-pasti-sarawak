@@ -807,15 +807,36 @@
               <div class="bg-white border border-sand rounded-3xl p-5 shadow-sm">
                 <h3 class="font-display font-bold text-ink mb-4 flex items-center gap-2"><i data-lucide="user" class="w-4 h-4 text-forest"></i> Maklumat Pelanggan</h3>
                 <div class="grid sm:grid-cols-2 gap-3">
-                  <input id="co-nama" type="text" placeholder="Nama Penuh *" class="sm:col-span-2 bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-                  <input id="co-phone" type="tel" placeholder="No. Telefon *" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-                  <input id="co-email" type="email" placeholder="Emel" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-                  <textarea id="co-alamat" placeholder="Alamat Penuh *" rows="2" class="sm:col-span-2 bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium"></textarea>
-                  <input id="co-poskod" type="text" placeholder="Poskod *" oninput="window.autofillStateFromPostcode(this.value)" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-                  <input id="co-bandar" type="text" placeholder="Bandar *" oninput="window.suggestKawasanByBandar()" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-                  <select id="co-negeri" class="sm:col-span-2 bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                  <div class="sm:col-span-2">
+                    <label class="text-[11px] font-bold text-inksoft mb-1 block">Nama Penuh *</label>
+                    <input id="co-nama" type="text" placeholder="Nama Penuh *" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                  </div>
+                  <div>
+                    <label class="text-[11px] font-bold text-inksoft mb-1 block">No. Telefon *</label>
+                    <input id="co-phone" type="tel" placeholder="No. Telefon *" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                  </div>
+                  <div>
+                    <label class="text-[11px] font-bold text-inksoft mb-1 block">Emel</label>
+                    <input id="co-email" type="email" placeholder="Emel" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                  </div>
+                  <div class="sm:col-span-2">
+                    <label class="text-[11px] font-bold text-inksoft mb-1 block">Alamat Penuh *</label>
+                    <textarea id="co-alamat" placeholder="Alamat Penuh *" rows="2" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium"></textarea>
+                  </div>
+                  <div>
+                    <label class="text-[11px] font-bold text-inksoft mb-1 block">Poskod *</label>
+                    <input id="co-poskod" type="text" placeholder="Poskod *" oninput="window.autofillStateFromPostcode(this.value)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                  </div>
+                  <div>
+                    <label class="text-[11px] font-bold text-inksoft mb-1 block">Bandar *</label>
+                    <input id="co-bandar" type="text" placeholder="Bandar *" oninput="window.suggestKawasanByBandar()" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                  </div>
+                  <div class="sm:col-span-2">
+                    <label class="text-[11px] font-bold text-inksoft mb-1 block">Negeri *</label>
+                  <select id="co-negeri" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
                     <option value="">-- Pilih Negeri * --</option>
                   </select>
+                  </div>
                   <div class="sm:col-span-2">
                     <p class="text-xs font-bold text-inksoft mb-1.5">Ejen Pilihan Anda (Pilihan)</p>
                     <div id="co-agent-selected" class="hidden items-center justify-between bg-leaflight border border-forest/20 rounded-xl px-4 py-3 mb-2">
@@ -876,10 +897,17 @@
                 </div>
                 <p class="text-inksoft text-xs mb-3">Selepas bayar, sila isi butiran transaksi di bawah supaya admin boleh sahkan tempahan anda.</p>
                 <div class="grid grid-cols-2 gap-3">
-                  <input id="co-pay-date" type="date" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-                  <input id="co-pay-time" type="time" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                  <div>
+                    <label class="text-[11px] font-bold text-inksoft mb-1 block">Tarikh Bayaran</label>
+                    <input id="co-pay-date" type="date" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                  </div>
+                  <div>
+                    <label class="text-[11px] font-bold text-inksoft mb-1 block">Masa Bayaran</label>
+                    <input id="co-pay-time" type="time" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                  </div>
                 </div>
-                <input id="co-pay-amount" type="number" step="0.01" placeholder="Jumlah Dibayar (RM) *" class="w-full mt-3 bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                <label class="text-[11px] font-bold text-inksoft mb-1 mt-3 block">Jumlah Dibayar (RM) *</label>
+                <input id="co-pay-amount" type="number" step="0.01" placeholder="Jumlah Dibayar (RM) *" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
                 <input id="co-pay-receipt" type="hidden">
                 <label class="flex items-center gap-1.5 text-[11px] font-bold text-forest cursor-pointer hover:underline w-fit mt-1"><i data-lucide="upload" class="w-3 h-3"></i><span id="co-pay-receipt-upload-status">Upload resit dari peranti</span><input type="file" accept="image/*" class="hidden" onchange="window.uploadImageToField(this,'co-pay-receipt','payment-receipts')"></label>
               </div>
@@ -942,18 +970,42 @@
               </div>
 
               <div id="agent-tab-login" class="space-y-3">
-                <input id="agent-login-code" type="text" placeholder="Kod Ejen (Cth: AG001)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-bold uppercase">
-                <input id="agent-login-pass" type="password" placeholder="Kata Laluan" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                <div>
+                  <label class="text-[11px] font-bold text-inksoft mb-1 block">Kod Ejen</label>
+                  <input id="agent-login-code" type="text" placeholder="Kod Ejen (Cth: AG001)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-bold uppercase">
+                </div>
+                <div>
+                  <label class="text-[11px] font-bold text-inksoft mb-1 block">Kata Laluan</label>
+                  <input id="agent-login-pass" type="password" placeholder="Kata Laluan" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                </div>
                 <button onclick="window.loginAgent()" class="w-full bg-forest hover:bg-forestdark text-white font-bold py-3 rounded-xl transition-colors">Log Masuk</button>
               </div>
 
               <div id="agent-tab-signup" class="hidden space-y-3">
-                <input id="agent-signup-name" type="text" placeholder="Nama Penuh" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-                <input id="agent-signup-phone" type="tel" placeholder="No. Telefon" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-                <input id="agent-signup-area" type="text" placeholder="PASTI Kawasan (Cth: MUKAH)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium uppercase">
-                <input id="agent-signup-branch" type="text" placeholder="Nama Tadika/Cabang (Pilihan)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-                <input id="agent-signup-email" type="email" placeholder="Emel (untuk notifikasi tempahan)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-                <input id="agent-signup-pass" type="password" placeholder="Kata Laluan (min. 6 aksara)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                <div>
+                  <label class="text-[11px] font-bold text-inksoft mb-1 block">Nama Penuh</label>
+                  <input id="agent-signup-name" type="text" placeholder="Nama Penuh" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                </div>
+                <div>
+                  <label class="text-[11px] font-bold text-inksoft mb-1 block">No. Telefon</label>
+                  <input id="agent-signup-phone" type="tel" placeholder="No. Telefon" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                </div>
+                <div>
+                  <label class="text-[11px] font-bold text-inksoft mb-1 block">PASTI Kawasan</label>
+                  <input id="agent-signup-area" type="text" placeholder="PASTI Kawasan (Cth: MUKAH)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium uppercase">
+                </div>
+                <div>
+                  <label class="text-[11px] font-bold text-inksoft mb-1 block">Nama Tadika/Cabang (Pilihan)</label>
+                  <input id="agent-signup-branch" type="text" placeholder="Nama Tadika/Cabang (Pilihan)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                </div>
+                <div>
+                  <label class="text-[11px] font-bold text-inksoft mb-1 block">Emel</label>
+                  <input id="agent-signup-email" type="email" placeholder="Emel (untuk notifikasi tempahan)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                </div>
+                <div>
+                  <label class="text-[11px] font-bold text-inksoft mb-1 block">Kata Laluan</label>
+                  <input id="agent-signup-pass" type="password" placeholder="Kata Laluan (min. 6 aksara)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                </div>
                 <button onclick="window.doAgentSignup()" class="w-full bg-forest hover:bg-forestdark text-white font-bold py-3 rounded-xl transition-colors">Daftar Jadi Ejen</button>
               </div>
             </div>
@@ -998,9 +1050,18 @@
           <div class="bg-white border border-sand rounded-2xl p-4 mb-6">
             <p class="font-display font-bold text-ink text-sm mb-3">Butiran Pembayaran Komisen (Bank/QR)</p>
             <div class="grid sm:grid-cols-2 gap-2.5 mb-2.5">
-              <input id="agent-po-bankname" type="text" placeholder="Nama Bank" class="bg-cream border border-sand rounded-xl px-3 py-2.5 text-sm">
-              <input id="agent-po-bankacc" type="text" placeholder="No. Akaun Bank" class="bg-cream border border-sand rounded-xl px-3 py-2.5 text-sm">
-              <input id="agent-po-bankaccname" type="text" placeholder="Nama Pemilik Akaun" class="bg-cream border border-sand rounded-xl px-3 py-2.5 text-sm">
+              <div>
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">Nama Bank</label>
+                <input id="agent-po-bankname" type="text" placeholder="Nama Bank" class="w-full bg-cream border border-sand rounded-xl px-3 py-2.5 text-sm">
+              </div>
+              <div>
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">No. Akaun Bank</label>
+                <input id="agent-po-bankacc" type="text" placeholder="No. Akaun Bank" class="w-full bg-cream border border-sand rounded-xl px-3 py-2.5 text-sm">
+              </div>
+              <div>
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">Nama Pemilik Akaun</label>
+                <input id="agent-po-bankaccname" type="text" placeholder="Nama Pemilik Akaun" class="w-full bg-cream border border-sand rounded-xl px-3 py-2.5 text-sm">
+              </div>
               <input id="agent-po-qrurl" type="hidden">
             </div>
             <label class="flex items-center gap-1.5 text-[11px] font-bold text-forest cursor-pointer hover:underline w-fit mb-3"><i data-lucide="upload" class="w-3 h-3"></i><span id="agent-po-qrurl-upload-status">Upload dari peranti</span><input type="file" accept="image/*" class="hidden" onchange="window.uploadImageToField(this,'agent-po-qrurl','agent-qr')"></label>
@@ -1037,17 +1098,38 @@
               </div>
 
               <div id="kw-tab-login" class="space-y-3">
-                <input id="kw-login-code" type="text" placeholder="Kod Kawasan (Cth: KW001)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-bold uppercase">
-                <input id="kw-login-pass" type="password" placeholder="Kata Laluan" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                <div>
+                  <label class="text-[11px] font-bold text-inksoft mb-1 block">Kod Kawasan</label>
+                  <input id="kw-login-code" type="text" placeholder="Kod Kawasan (Cth: KW001)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-bold uppercase">
+                </div>
+                <div>
+                  <label class="text-[11px] font-bold text-inksoft mb-1 block">Kata Laluan</label>
+                  <input id="kw-login-pass" type="password" placeholder="Kata Laluan" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                </div>
                 <button onclick="window.loginKawasan()" class="w-full bg-forest hover:bg-forestdark text-white font-bold py-3 rounded-xl transition-colors">Log Masuk</button>
               </div>
 
               <div id="kw-tab-signup" class="hidden space-y-3">
-                <input id="kw-signup-nama" type="text" placeholder="Nama PASTI Kawasan (Cth: MUKAH)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium uppercase">
-                <input id="kw-signup-pic-name" type="text" placeholder="Nama PIC/Penyelaras" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-                <input id="kw-signup-pic-phone" type="tel" placeholder="No. Telefon PIC" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-                <input id="kw-signup-pic-email" type="email" placeholder="Emel PIC (Pilihan)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-                <input id="kw-signup-pass" type="password" placeholder="Kata Laluan (min. 6 aksara)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                <div>
+                  <label class="text-[11px] font-bold text-inksoft mb-1 block">Nama PASTI Kawasan</label>
+                  <input id="kw-signup-nama" type="text" placeholder="Nama PASTI Kawasan (Cth: MUKAH)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium uppercase">
+                </div>
+                <div>
+                  <label class="text-[11px] font-bold text-inksoft mb-1 block">Nama PIC/Penyelaras</label>
+                  <input id="kw-signup-pic-name" type="text" placeholder="Nama PIC/Penyelaras" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                </div>
+                <div>
+                  <label class="text-[11px] font-bold text-inksoft mb-1 block">No. Telefon PIC</label>
+                  <input id="kw-signup-pic-phone" type="tel" placeholder="No. Telefon PIC" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                </div>
+                <div>
+                  <label class="text-[11px] font-bold text-inksoft mb-1 block">Emel PIC (Pilihan)</label>
+                  <input id="kw-signup-pic-email" type="email" placeholder="Emel PIC (Pilihan)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                </div>
+                <div>
+                  <label class="text-[11px] font-bold text-inksoft mb-1 block">Kata Laluan</label>
+                  <input id="kw-signup-pass" type="password" placeholder="Kata Laluan (min. 6 aksara)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                </div>
                 <button onclick="window.doKawasanSignup()" class="w-full bg-forest hover:bg-forestdark text-white font-bold py-3 rounded-xl transition-colors">Daftar PASTI Kawasan</button>
               </div>
             </div>
@@ -1094,14 +1176,32 @@
             <div class="bg-white border border-sand rounded-3xl p-5 max-w-lg space-y-3">
               <h3 class="font-display font-bold text-ink mb-1">Butiran PIC &amp; Bayaran Komisen</h3>
               <p class="text-inksoft text-xs mb-3">Maklumat ini digunakan admin untuk hubungi kawasan anda dan buat bayaran komisen.</p>
-              <input id="kw-pic-name" type="text" placeholder="Nama PIC" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-              <input id="kw-pic-phone" type="text" placeholder="No. Telefon PIC" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-              <input id="kw-pic-email" type="email" placeholder="Emel PIC" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-              <div class="grid grid-cols-2 gap-3">
-                <input id="kw-bank-name" type="text" placeholder="Nama Bank" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-                <input id="kw-bank-acc" type="text" placeholder="No. Akaun" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              <div>
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">Nama PIC</label>
+                <input id="kw-pic-name" type="text" placeholder="Nama PIC" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
               </div>
-              <input id="kw-bank-acc-name" type="text" placeholder="Nama Pemilik Akaun" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              <div>
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">No. Telefon PIC</label>
+                <input id="kw-pic-phone" type="text" placeholder="No. Telefon PIC" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              </div>
+              <div>
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">Emel PIC</label>
+                <input id="kw-pic-email" type="email" placeholder="Emel PIC" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="text-[11px] font-bold text-inksoft mb-1 block">Nama Bank</label>
+                  <input id="kw-bank-name" type="text" placeholder="Nama Bank" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                </div>
+                <div>
+                  <label class="text-[11px] font-bold text-inksoft mb-1 block">No. Akaun</label>
+                  <input id="kw-bank-acc" type="text" placeholder="No. Akaun" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                </div>
+              </div>
+              <div>
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">Nama Pemilik Akaun</label>
+                <input id="kw-bank-acc-name" type="text" placeholder="Nama Pemilik Akaun" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              </div>
               <input id="kw-qr-url" type="hidden">
               <label class="flex items-center gap-1.5 text-[11px] font-bold text-forest cursor-pointer hover:underline w-fit"><i data-lucide="upload" class="w-3 h-3"></i><span id="kw-qr-url-upload-status">Upload dari peranti</span><input type="file" accept="image/*" class="hidden" onchange="window.uploadImageToField(this,'kw-qr-url','kawasan-qr')"></label>
               <button onclick="window.saveKwPayout()" class="w-full bg-forest hover:bg-forestdark text-white font-bold py-3 rounded-xl">Simpan Butiran</button>
@@ -1109,13 +1209,31 @@
             <div class="bg-white border border-sand rounded-3xl p-5 max-w-lg space-y-3 mt-5">
               <h3 class="font-display font-bold text-ink mb-1">Alamat Penghantaran</h3>
               <p class="text-inksoft text-xs mb-3">Alamat ini digunakan bila pelanggan pilih hantar produk kawasan anda melalui kurier untuk kira kadar & buat label penghantaran sebenar.</p>
-              <input id="kw-sender-name" type="text" placeholder="Nama Penghantar (cth: PASTI KW001)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-              <input id="kw-sender-phone" type="text" placeholder="No. Telefon Penghantar (cth: 60123456789)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-              <input id="kw-sender-address" type="text" placeholder="Alamat Penuh Ambilan" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              <div>
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">Nama Penghantar</label>
+                <input id="kw-sender-name" type="text" placeholder="Nama Penghantar (cth: PASTI KW001)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              </div>
+              <div>
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">No. Telefon Penghantar</label>
+                <input id="kw-sender-phone" type="text" placeholder="No. Telefon Penghantar (cth: 60123456789)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              </div>
+              <div>
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">Alamat Penuh Ambilan</label>
+                <input id="kw-sender-address" type="text" placeholder="Alamat Penuh Ambilan" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              </div>
               <div class="grid grid-cols-3 gap-3">
-                <input id="kw-sender-postcode" type="text" placeholder="Poskod" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-                <input id="kw-sender-city" type="text" placeholder="Bandar" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-                <select id="kw-sender-state" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium"></select>
+                <div>
+                  <label class="text-[11px] font-bold text-inksoft mb-1 block">Poskod</label>
+                  <input id="kw-sender-postcode" type="text" placeholder="Poskod" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                </div>
+                <div>
+                  <label class="text-[11px] font-bold text-inksoft mb-1 block">Bandar</label>
+                  <input id="kw-sender-city" type="text" placeholder="Bandar" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                </div>
+                <div>
+                  <label class="text-[11px] font-bold text-inksoft mb-1 block">Negeri</label>
+                  <select id="kw-sender-state" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium"></select>
+                </div>
               </div>
               <button onclick="window.saveKwPayout()" class="w-full bg-forest hover:bg-forestdark text-white font-bold py-3 rounded-xl">Simpan Alamat Pengambilan</button>
             </div>
@@ -1417,12 +1535,30 @@
           <div id="admin-tab-tetapan" class="admin-tab-panel hidden">
             <div class="bg-white border border-sand rounded-3xl p-5 max-w-xl space-y-3 mb-5">
               <h3 class="font-display font-bold text-ink mb-1">Maklumat Hubungi &amp; Kandungan</h3>
-              <input id="cms-phone" type="text" placeholder="No. Telefon (papar di footer)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-              <input id="cms-email" type="email" placeholder="Emel Hubungi" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-              <input id="cms-address" type="text" placeholder="Alamat/Lokasi" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-              <input id="cms-whatsapp" type="text" placeholder="No. WhatsApp Utama (format 60...)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-              <textarea id="cms-hadihuda" rows="2" placeholder="Mesej pembuka HadiHuda (WhatsApp)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium"></textarea>
-              <textarea id="cms-about" rows="3" placeholder="Teks Tentang Kami" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium"></textarea>
+              <div>
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">No. Telefon (papar di footer)</label>
+                <input id="cms-phone" type="text" placeholder="No. Telefon (papar di footer)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              </div>
+              <div>
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">Emel Hubungi</label>
+                <input id="cms-email" type="email" placeholder="Emel Hubungi" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              </div>
+              <div>
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">Alamat/Lokasi</label>
+                <input id="cms-address" type="text" placeholder="Alamat/Lokasi" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              </div>
+              <div>
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">No. WhatsApp Utama (format 60...)</label>
+                <input id="cms-whatsapp" type="text" placeholder="No. WhatsApp Utama (format 60...)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              </div>
+              <div>
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">Mesej Pembuka HadiHuda (WhatsApp)</label>
+                <textarea id="cms-hadihuda" rows="2" placeholder="Mesej pembuka HadiHuda (WhatsApp)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium"></textarea>
+              </div>
+              <div>
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">Teks Tentang Kami</label>
+                <textarea id="cms-about" rows="3" placeholder="Teks Tentang Kami" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium"></textarea>
+              </div>
             </div>
             <div class="bg-white border border-sand rounded-3xl p-5 max-w-xl space-y-3 mb-5">
               <h3 class="font-display font-bold text-ink mb-1">Bayaran &amp; Penghantaran</h3>
@@ -1440,13 +1576,31 @@
               </div>
               <button onclick="window.easyParcelConnect()" class="bg-forest hover:bg-forestdark text-white font-bold px-5 py-2.5 rounded-xl text-sm flex items-center gap-2 w-fit"><i data-lucide="link" class="w-4 h-4"></i> Sambung / Sambung Semula EasyParcel</button>
               <p class="text-inksoft text-[11px] leading-relaxed pt-1 border-t border-sand mt-1">Alamat ambilan (sender) di bawah digunakan untuk kira kadar penghantaran sebenar. Jika tidak diisi, sistem guna anggaran kadar sedia ada.</p>
-              <input id="ep-sender-name" type="text" placeholder="Nama Penghantar (cth: PASTI Sarawak Mart Official)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-              <input id="ep-sender-phone" type="text" placeholder="No. Telefon Penghantar (cth: 60123456789)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-              <input id="ep-sender-address" type="text" placeholder="Alamat Penuh Ambilan" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              <div>
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">Nama Penghantar</label>
+                <input id="ep-sender-name" type="text" placeholder="Nama Penghantar (cth: PASTI Sarawak Mart Official)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              </div>
+              <div>
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">No. Telefon Penghantar</label>
+                <input id="ep-sender-phone" type="text" placeholder="No. Telefon Penghantar (cth: 60123456789)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              </div>
+              <div>
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">Alamat Penuh Ambilan</label>
+                <input id="ep-sender-address" type="text" placeholder="Alamat Penuh Ambilan" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              </div>
               <div class="grid sm:grid-cols-3 gap-3">
-                <input id="ep-sender-postcode" type="text" placeholder="Poskod" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-                <input id="ep-sender-city" type="text" placeholder="Bandar" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-                <select id="ep-sender-state" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium"></select>
+                <div>
+                  <label class="text-[11px] font-bold text-inksoft mb-1 block">Poskod</label>
+                  <input id="ep-sender-postcode" type="text" placeholder="Poskod" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                </div>
+                <div>
+                  <label class="text-[11px] font-bold text-inksoft mb-1 block">Bandar</label>
+                  <input id="ep-sender-city" type="text" placeholder="Bandar" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                </div>
+                <div>
+                  <label class="text-[11px] font-bold text-inksoft mb-1 block">Negeri</label>
+                  <select id="ep-sender-state" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium"></select>
+                </div>
               </div>
             </div>
             <div class="bg-white border border-sand rounded-3xl p-5 max-w-xl space-y-2 mb-5">
@@ -1731,12 +1885,30 @@
           <div class="bg-white border border-sand rounded-3xl p-5 shadow-sm mb-6">
             <h3 class="font-display font-bold text-ink mb-3 text-sm">Maklumat Penghantaran Tersimpan</h3>
             <div class="grid sm:grid-cols-2 gap-2.5">
-              <input id="akaun-nama" type="text" placeholder="Nama Penuh" class="bg-cream border border-sand rounded-xl px-3 py-2.5 text-sm sm:col-span-2">
-              <input id="akaun-phone" type="text" placeholder="No. Telefon" class="bg-cream border border-sand rounded-xl px-3 py-2.5 text-sm">
-              <input id="akaun-poskod" type="text" placeholder="Poskod" maxlength="5" oninput="window.autofillAkaunState(this.value)" class="bg-cream border border-sand rounded-xl px-3 py-2.5 text-sm">
-              <input id="akaun-alamat" type="text" placeholder="Alamat" class="bg-cream border border-sand rounded-xl px-3 py-2.5 text-sm sm:col-span-2">
-              <input id="akaun-bandar" type="text" placeholder="Bandar" class="bg-cream border border-sand rounded-xl px-3 py-2.5 text-sm">
-              <select id="akaun-state" class="bg-cream border border-sand rounded-xl px-3 py-2.5 text-sm"></select>
+              <div class="sm:col-span-2">
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">Nama Penuh</label>
+                <input id="akaun-nama" type="text" placeholder="Nama Penuh" class="w-full bg-cream border border-sand rounded-xl px-3 py-2.5 text-sm">
+              </div>
+              <div>
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">No. Telefon</label>
+                <input id="akaun-phone" type="text" placeholder="No. Telefon" class="w-full bg-cream border border-sand rounded-xl px-3 py-2.5 text-sm">
+              </div>
+              <div>
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">Poskod</label>
+                <input id="akaun-poskod" type="text" placeholder="Poskod" maxlength="5" oninput="window.autofillAkaunState(this.value)" class="w-full bg-cream border border-sand rounded-xl px-3 py-2.5 text-sm">
+              </div>
+              <div class="sm:col-span-2">
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">Alamat</label>
+                <input id="akaun-alamat" type="text" placeholder="Alamat" class="w-full bg-cream border border-sand rounded-xl px-3 py-2.5 text-sm">
+              </div>
+              <div>
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">Bandar</label>
+                <input id="akaun-bandar" type="text" placeholder="Bandar" class="w-full bg-cream border border-sand rounded-xl px-3 py-2.5 text-sm">
+              </div>
+              <div>
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">Negeri</label>
+                <select id="akaun-state" class="w-full bg-cream border border-sand rounded-xl px-3 py-2.5 text-sm"></select>
+              </div>
             </div>
             <button onclick="window.saveCustomerProfile()" class="mt-3 bg-forest hover:bg-forestdark text-white text-xs font-bold px-5 py-2.5 rounded-xl">Simpan Profil</button>
           </div>
@@ -1992,11 +2164,16 @@
         <div class="space-y-3">
           <input type="hidden" id="catm-key-orig">
           <div>
+            <label class="text-[11px] font-bold text-inksoft mb-1 block">Kod Kategori</label>
             <input id="catm-key" type="text" placeholder="Kod Kategori (cth: pakaian)" oninput="window.updateCategoryPreview()" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
             <p class="text-[10px] text-inksoft mt-1">Kod ringkas huruf/nombor sahaja, tidak boleh ditukar selepas disimpan.</p>
           </div>
-          <input id="catm-name" type="text" placeholder="Nama Kategori (cth: Pakaian &amp; Fesyen)" oninput="window.updateCategoryPreview()" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
           <div>
+            <label class="text-[11px] font-bold text-inksoft mb-1 block">Nama Kategori</label>
+            <input id="catm-name" type="text" placeholder="Nama Kategori (cth: Pakaian &amp; Fesyen)" oninput="window.updateCategoryPreview()" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          </div>
+          <div>
+            <label class="text-[11px] font-bold text-inksoft mb-1 block">Nama Ikon</label>
             <input id="catm-icon" type="text" placeholder="Nama Ikon (cth: shirt)" oninput="window.updateCategoryPreview()" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
             <p class="text-[10px] text-inksoft mt-1">Lihat senarai ikon di <a href="https://lucide.dev/icons" target="_blank" class="text-forest font-bold underline">lucide.dev/icons</a></p>
           </div>
@@ -2033,15 +2210,36 @@
         </div>
         <div class="space-y-3">
           <input type="hidden" id="am-code-orig">
-          <input id="am-code" type="text" readonly placeholder="Kod Ejen (auto-jana untuk ejen baru)" class="w-full bg-sand/60 border border-sand rounded-xl px-4 py-3 text-sm font-bold uppercase text-inksoft cursor-not-allowed">
-          <input id="am-name" type="text" placeholder="Nama Penuh" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-          <div class="grid grid-cols-2 gap-3">
-            <input id="am-phone" type="text" placeholder="No. Telefon" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-            <input id="am-area" type="text" placeholder="Kawasan" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          <div>
+            <label class="text-[11px] font-bold text-inksoft mb-1 block">Kod Ejen</label>
+            <input id="am-code" type="text" readonly placeholder="Kod Ejen (auto-jana untuk ejen baru)" class="w-full bg-sand/60 border border-sand rounded-xl px-4 py-3 text-sm font-bold uppercase text-inksoft cursor-not-allowed">
           </div>
-          <input id="am-email" type="email" placeholder="Emel" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-          <input id="am-branch" type="text" placeholder="Cawangan PASTI" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-          <input id="am-pass" type="text" placeholder="Kata Laluan" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          <div>
+            <label class="text-[11px] font-bold text-inksoft mb-1 block">Nama Penuh</label>
+            <input id="am-name" type="text" placeholder="Nama Penuh" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-[11px] font-bold text-inksoft mb-1 block">No. Telefon</label>
+              <input id="am-phone" type="text" placeholder="No. Telefon" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+            </div>
+            <div>
+              <label class="text-[11px] font-bold text-inksoft mb-1 block">Kawasan</label>
+              <input id="am-area" type="text" placeholder="Kawasan" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+            </div>
+          </div>
+          <div>
+            <label class="text-[11px] font-bold text-inksoft mb-1 block">Emel</label>
+            <input id="am-email" type="email" placeholder="Emel" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          </div>
+          <div>
+            <label class="text-[11px] font-bold text-inksoft mb-1 block">Cawangan PASTI</label>
+            <input id="am-branch" type="text" placeholder="Cawangan PASTI" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          </div>
+          <div>
+            <label class="text-[11px] font-bold text-inksoft mb-1 block">Kata Laluan</label>
+            <input id="am-pass" type="text" placeholder="Kata Laluan" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          </div>
         </div>
         <div class="flex gap-3 mt-5">
           <button onclick="window.closeAgentModal()" class="flex-1 bg-cream text-ink font-bold py-3 rounded-xl">Batal</button>
@@ -2060,23 +2258,59 @@
         </div>
         <div class="space-y-3">
           <input type="hidden" id="akm-code-orig">
-          <input id="akm-code" type="text" readonly placeholder="Kod Kawasan (auto-jana untuk kawasan baru)" class="w-full bg-sand/60 border border-sand rounded-xl px-4 py-3 text-sm font-bold uppercase text-inksoft cursor-not-allowed">
-          <input id="akm-nama" type="text" placeholder="Nama Kawasan (Cth: Kuching)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-          <input id="akm-pic-name" type="text" placeholder="Nama PIC" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-          <input id="akm-pic-phone" type="text" placeholder="No. Telefon PIC" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-          <input id="akm-pic-email" type="email" placeholder="Emel PIC" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-          <input id="akm-pass" type="text" placeholder="Kata Laluan" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          <div>
+            <label class="text-[11px] font-bold text-inksoft mb-1 block">Kod Kawasan</label>
+            <input id="akm-code" type="text" readonly placeholder="Kod Kawasan (auto-jana untuk kawasan baru)" class="w-full bg-sand/60 border border-sand rounded-xl px-4 py-3 text-sm font-bold uppercase text-inksoft cursor-not-allowed">
+          </div>
+          <div>
+            <label class="text-[11px] font-bold text-inksoft mb-1 block">Nama Kawasan</label>
+            <input id="akm-nama" type="text" placeholder="Nama Kawasan (Cth: Kuching)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          </div>
+          <div>
+            <label class="text-[11px] font-bold text-inksoft mb-1 block">Nama PIC</label>
+            <input id="akm-pic-name" type="text" placeholder="Nama PIC" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          </div>
+          <div>
+            <label class="text-[11px] font-bold text-inksoft mb-1 block">No. Telefon PIC</label>
+            <input id="akm-pic-phone" type="text" placeholder="No. Telefon PIC" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          </div>
+          <div>
+            <label class="text-[11px] font-bold text-inksoft mb-1 block">Emel PIC</label>
+            <input id="akm-pic-email" type="email" placeholder="Emel PIC" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          </div>
+          <div>
+            <label class="text-[11px] font-bold text-inksoft mb-1 block">Kata Laluan</label>
+            <input id="akm-pass" type="text" placeholder="Kata Laluan" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          </div>
           <label class="flex items-center gap-2 bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium cursor-pointer">
             <input id="akm-active" type="checkbox" checked class="w-4 h-4"> Akaun Aktif
           </label>
           <p class="text-[10px] font-bold text-inksoft uppercase tracking-wide pt-2 border-t border-sand">Alamat Pengambilan (Sender) Penghantaran</p>
-          <input id="akm-sender-name" type="text" placeholder="Nama Penghantar" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-          <input id="akm-sender-phone" type="text" placeholder="No. Telefon Penghantar" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-          <input id="akm-sender-address" type="text" placeholder="Alamat Penuh Ambilan" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          <div>
+            <label class="text-[11px] font-bold text-inksoft mb-1 block">Nama Penghantar</label>
+            <input id="akm-sender-name" type="text" placeholder="Nama Penghantar" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          </div>
+          <div>
+            <label class="text-[11px] font-bold text-inksoft mb-1 block">No. Telefon Penghantar</label>
+            <input id="akm-sender-phone" type="text" placeholder="No. Telefon Penghantar" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          </div>
+          <div>
+            <label class="text-[11px] font-bold text-inksoft mb-1 block">Alamat Penuh Ambilan</label>
+            <input id="akm-sender-address" type="text" placeholder="Alamat Penuh Ambilan" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          </div>
           <div class="grid grid-cols-3 gap-3">
-            <input id="akm-sender-postcode" type="text" placeholder="Poskod" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-            <input id="akm-sender-city" type="text" placeholder="Bandar" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-            <select id="akm-sender-state" class="bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium"></select>
+            <div>
+              <label class="text-[11px] font-bold text-inksoft mb-1 block">Poskod</label>
+              <input id="akm-sender-postcode" type="text" placeholder="Poskod" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+            </div>
+            <div>
+              <label class="text-[11px] font-bold text-inksoft mb-1 block">Bandar</label>
+              <input id="akm-sender-city" type="text" placeholder="Bandar" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+            </div>
+            <div>
+              <label class="text-[11px] font-bold text-inksoft mb-1 block">Negeri</label>
+              <select id="akm-sender-state" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium"></select>
+            </div>
           </div>
         </div>
         <div class="flex gap-3 mt-5">
