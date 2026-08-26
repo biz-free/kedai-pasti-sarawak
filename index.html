@@ -108,6 +108,7 @@
   const callAdminUpdateOrderStatus = httpsCallable(fbFns, 'adminUpdateOrderStatus');
   const callAdminConfirmPayment = httpsCallable(fbFns, 'adminConfirmPayment');
   const callAdminDeleteOrder = httpsCallable(fbFns, 'adminDeleteOrder');
+  const callAdminMarkKawasanPayout = httpsCallable(fbFns, 'adminMarkKawasanPayout');
   const callAgentOrderStats = httpsCallable(fbFns, 'agentOrderStats');
   const callAgentSavePayout = httpsCallable(fbFns, 'agentSavePayout');
   const callAgentConfirmDelivery = httpsCallable(fbFns, 'agentConfirmDelivery');
@@ -386,6 +387,11 @@
 
   window.fbAdminDeleteOrder = async function(orderId) {
     const res = await callAdminDeleteOrder({ orderId });
+    return res.data;
+  };
+
+  window.fbAdminMarkKawasanPayout = async function(orderId) {
+    const res = await callAdminMarkKawasanPayout({ orderId });
     return res.data;
   };
 
@@ -5007,6 +5013,32 @@ function courierBookingCellHTML(o){
   if(!(o.courier && o.courier.serviceId)) return '<span class="italic text-inksoft">Guna anggaran kadar (tiada kadar sebenar)</span>';
   return `<button onclick="window.bookShipment('${o.orderId}')" class="bg-honeydeep hover:bg-honey text-white text-[10px] font-bold px-3 py-2 rounded-lg flex items-center gap-1"><i data-lucide="truck" class="w-3 h-3"></i> Book Penghantaran</button>`;
 }
+function kawasanPayoutCellHTML(o){
+  if(!o.pickupKawasanCode || o.paymentStatus!=='Disahkan') return '';
+  if(o.kawasanPayoutStatus==='Dibayar') return '<div class="text-[10px] text-green-600 font-bold mt-1.5 flex items-center gap-1"><i data-lucide="check-circle-2" class="w-3 h-3"></i> Kawasan Dibayar</div>';
+  if(o.status!=='Selesai') return '<div class="text-[10px] text-inksoft italic mt-1.5">Tunggu ejen sahkan penghantaran</div>';
+  return `<button onclick="window.markKawasanPayout('${o.orderId}')" class="bg-honeydeep hover:bg-honey text-white text-[10px] font-bold px-3 py-2 rounded-lg mt-1.5 flex items-center gap-1"><i data-lucide="banknote" class="w-3 h-3"></i> Bayar Kawasan ${formatRM(o.kawasanCommission||0)}</button>`;
+}
+window.markKawasanPayout = async function(orderId){
+  const o = appKPOrders.find(x=>x.orderId===orderId);
+  if(!o || !o.pickupKawasanCode) return;
+  let bankInfo = '';
+  try{
+    const list = await window.fbAdminListKawasan();
+    const kw = list.find(k=>k.code===o.pickupKawasanCode);
+    if(kw && kw.bankName){ bankInfo = `\n\nBank: ${kw.bankName}\nNo. Akaun: ${kw.bankAccountNo}\nNama Pemilik: ${kw.bankAccountName}`; }
+    else { bankInfo = '\n\n(Butiran bank kawasan ini belum diisi — sila hubungi PIC terus)'; }
+  }catch(e){}
+  if(!confirm(`Sahkan bayaran komisen kawasan ${formatRM(o.kawasanCommission||0)} untuk tempahan ${orderId} telah dibuat ke akaun bank PASTI Kawasan?${bankInfo}`)) return;
+  try{
+    await window.fbAdminMarkKawasanPayout(orderId);
+    o.kawasanPayoutStatus = 'Dibayar';
+    renderAdminOrders();
+    showToast('Bayaran kawasan ditandakan selesai','check-circle-2');
+  }catch(e){
+    showToast('Gagal: ' + (e && (e.code || e.message) || 'ralat tidak diketahui'), 'alert-circle');
+  }
+}
 window.bookShipment = async function(orderId){
   const o = appKPOrders.find(x=>x.orderId===orderId);
   const courierName = o && o.courier ? o.courier.name : 'kurier';
@@ -5049,6 +5081,7 @@ function renderAdminOrders(){
       <td class="p-3 space-y-1.5">
         <div>${o.paymentStatus==='Disahkan' ? '<span class="text-[10px] text-green-600 font-bold">✓ Disahkan</span>' : `<button onclick="window.confirmOrderPayment('${o.orderId}')" class="bg-forest hover:bg-forestdark text-white text-[10px] font-bold px-3 py-2 rounded-lg">Sahkan Bayaran</button>`}</div>
         ${o.pickupKawasanCode ? `<button onclick="window.forwardOrderToPic('${o.orderId}')" class="bg-leaflight hover:bg-forest hover:text-white text-forest text-[10px] font-bold px-3 py-2 rounded-lg flex items-center gap-1"><i data-lucide="send" class="w-3 h-3"></i> Forward PIC</button>` : ''}
+        ${kawasanPayoutCellHTML(o)}
       </td>
       <td class="p-3 text-inksoft text-[10px]">${o.pickupKawasanCode ? escapeHtml(o.kawasanHandoverStatus||'-') + (o.busCompany ? `<br>${escapeHtml(o.busCompany)} · ${escapeHtml(o.busConsignmentNo||'-')}` : '') : '<span class="italic">-</span>'}</td>
       <td class="p-3 text-[10px]">${courierBookingCellHTML(o)}</td>
