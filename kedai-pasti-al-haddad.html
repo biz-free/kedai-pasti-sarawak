@@ -179,8 +179,8 @@
     }
   });
 
-  window.fbAgentLogin = async function(code, password) {
-    const res = await callAgentLogin({ code, password });
+  window.fbAgentLogin = async function(identifier, password) {
+    const res = await callAgentLogin({ identifier, password });
     return res.data;
   };
 
@@ -1004,8 +1004,8 @@
 
               <div id="agent-tab-login" class="space-y-3">
                 <div>
-                  <label class="text-[11px] font-bold text-inksoft mb-1 block">Kod Ejen</label>
-                  <input id="agent-login-code" type="text" placeholder="Kod Ejen (Cth: AG001)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-bold uppercase">
+                  <label class="text-[11px] font-bold text-inksoft mb-1 block">Emel atau No. Telefon</label>
+                  <input id="agent-login-identifier" type="text" placeholder="Emel atau No. Telefon" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-bold">
                 </div>
                 <div>
                   <label class="text-[11px] font-bold text-inksoft mb-1 block">Kata Laluan</label>
@@ -3848,12 +3848,12 @@ window.doAgentSignup = async function(){
 }
 let agentSessionPass = null;
 window.loginAgent = async function(){
-  const code = document.getElementById('agent-login-code').value.trim().toUpperCase();
+  const identifier = document.getElementById('agent-login-identifier').value.trim();
   const pass = document.getElementById('agent-login-pass').value;
-  if(!code || !pass){ showToast('Sila isi kod & kata laluan','alert-circle'); return; }
+  if(!identifier || !pass){ showToast('Sila isi emel/no. telefon & kata laluan','alert-circle'); return; }
   if(typeof window.fbAgentLogin !== 'function'){ showToast('Sistem log masuk belum sedia, cuba lagi sebentar','alert-circle'); return; }
   try{
-    const profile = await window.fbAgentLogin(code, pass);
+    const profile = await window.fbAgentLogin(identifier, pass);
     currentAgent = profile;
     agentSessionPass = pass;
     try{ sessionStorage.setItem('alhaddad:agentpass', pass); }catch(e){}
@@ -3861,7 +3861,7 @@ window.loginAgent = async function(){
     renderAgentView();
     showToast('Selamat kembali, '+profile.name+'!','check-circle-2');
   }catch(err){
-    const msg = (err && err.code==='functions/not-found') ? 'Kod ejen tidak dijumpai'
+    const msg = (err && err.code==='functions/not-found') ? 'Akaun ejen tidak dijumpai'
       : (err && err.code==='functions/unauthenticated') ? 'Kata laluan salah'
       : 'Log masuk gagal, cuba lagi';
     showToast(msg,'alert-circle');
