@@ -113,6 +113,17 @@
   const callAgentSavePayout = httpsCallable(fbFns, 'agentSavePayout');
   const callAgentChangePassword = httpsCallable(fbFns, 'agentChangePassword');
   const callKawasanChangePassword = httpsCallable(fbFns, 'kawasanChangePassword');
+  const callKawasanOrderStats = httpsCallable(fbFns, 'kawasanOrderStats');
+  const callAdminListKawasanProducts = httpsCallable(fbFns, 'adminListKawasanProducts');
+  const callAdminReviewKawasanProduct = httpsCallable(fbFns, 'adminReviewKawasanProduct');
+  const callCawanganLogin = httpsCallable(fbFns, 'cawanganLogin');
+  const callCawanganSelfRegister = httpsCallable(fbFns, 'cawanganSelfRegister');
+  const callListCawanganPublic = httpsCallable(fbFns, 'listCawanganPublic');
+  const callAdminListCawangan = httpsCallable(fbFns, 'adminListCawangan');
+  const callAdminSaveCawangan = httpsCallable(fbFns, 'adminSaveCawangan');
+  const callAdminDeleteCawangan = httpsCallable(fbFns, 'adminDeleteCawangan');
+  const callCawanganChangePassword = httpsCallable(fbFns, 'cawanganChangePassword');
+  const callCawanganOrderStats = httpsCallable(fbFns, 'cawanganOrderStats');
   const callAgentConfirmDelivery = httpsCallable(fbFns, 'agentConfirmDelivery');
   const callEasyParcelOAuthStart = httpsCallable(fbFns, 'easyParcelOAuthStart');
   const callEasyParcelStatus = httpsCallable(fbFns, 'easyParcelStatus');
@@ -422,6 +433,74 @@
     const res = await callKawasanChangePassword({ ...kwSession, newPassword });
     kwSession = { ...kwSession, password: newPassword };
     return res.data;
+  };
+
+  window.fbKawasanOrderStats = async function() {
+    if(!kwSession) throw new Error('not-logged-in');
+    const res = await callKawasanOrderStats(kwSession);
+    return res.data.orders;
+  };
+
+  window.fbAdminListKawasanProducts = async function() {
+    const res = await callAdminListKawasanProducts();
+    return res.data.products;
+  };
+
+  window.fbAdminReviewKawasanProduct = async function(id, approvalStatus) {
+    const res = await callAdminReviewKawasanProduct({ id, approvalStatus });
+    return res.data;
+  };
+
+  // Cawangan actions re-send {code, password} with every call, same pattern
+  // as kwSession above — no Firebase Auth session, kept in memory only.
+  let cwSession = null;
+
+  window.fbCawanganLogin = async function(code, password) {
+    const res = await callCawanganLogin({ code, password });
+    cwSession = { code, password };
+    return res.data.profile;
+  };
+
+  window.fbCawanganSelfRegister = async function(profile) {
+    const res = await callCawanganSelfRegister(profile);
+    return res.data;
+  };
+
+  window.fbCawanganLogout = async function() {
+    cwSession = null;
+  };
+
+  window.fbListCawanganPublic = async function() {
+    const res = await callListCawanganPublic();
+    return res.data.cawanganList;
+  };
+
+  window.fbAdminListCawangan = async function() {
+    const res = await callAdminListCawangan();
+    return res.data.cawanganList;
+  };
+
+  window.fbAdminSaveCawangan = async function(cawangan) {
+    const res = await callAdminSaveCawangan(cawangan);
+    return res.data;
+  };
+
+  window.fbAdminDeleteCawangan = async function(code) {
+    const res = await callAdminDeleteCawangan({ code });
+    return res.data;
+  };
+
+  window.fbCawanganChangePassword = async function(newPassword) {
+    if(!cwSession) throw new Error('not-logged-in');
+    const res = await callCawanganChangePassword({ ...cwSession, newPassword });
+    cwSession = { ...cwSession, password: newPassword };
+    return res.data;
+  };
+
+  window.fbCawanganOrderStats = async function() {
+    if(!cwSession) throw new Error('not-logged-in');
+    const res = await callCawanganOrderStats(cwSession);
+    return res.data.orders;
   };
 
   window.fbSelfChangePassword = async function(currentPassword, newPassword) {
@@ -747,6 +826,7 @@
               <button onclick="window.showView('catalog')" class="text-left hover:text-honey w-fit">Katalog Produk</button>
               <button onclick="window.showView('senaraiejen')" class="text-left hover:text-honey w-fit">Senarai Ejen</button>
               <button onclick="window.showView('kawasanportal')" class="text-left hover:text-honey w-fit">Portal PASTI Kawasan</button>
+              <button onclick="window.showView('cawanganportal')" class="text-left hover:text-honey w-fit">Portal PASTI Cawangan</button>
               <button onclick="window.showView('semak')" class="text-left hover:text-honey w-fit">Semak Tempahan</button>
               <button onclick="window.showView('kawasan')" class="text-left hover:text-honey w-fit">PASTI Kawasan</button>
               <button onclick="window.showView('pengurusan')" class="text-left hover:text-honey w-fit">Pengurusan</button>
@@ -1025,11 +1105,11 @@
                 </div>
                 <div>
                   <label class="text-[11px] font-bold text-inksoft mb-1 block">PASTI Kawasan</label>
-                  <input id="agent-signup-area" type="text" placeholder="PASTI Kawasan (Cth: MUKAH)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium uppercase">
+                  <select id="agent-signup-area" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium"><option value="">Pilih PASTI Kawasan...</option></select>
                 </div>
                 <div>
-                  <label class="text-[11px] font-bold text-inksoft mb-1 block">Nama Tadika/Cabang (Pilihan)</label>
-                  <input id="agent-signup-branch" type="text" placeholder="Nama Tadika/Cabang (Pilihan)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                  <label class="text-[11px] font-bold text-inksoft mb-1 block">PASTI Cawangan</label>
+                  <select id="agent-signup-branch" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium"><option value="">Pilih PASTI Cawangan...</option></select>
                 </div>
                 <div>
                   <label class="text-[11px] font-bold text-inksoft mb-1 block">Emel</label>
@@ -1194,11 +1274,37 @@
             <button onclick="window.logoutKawasan()" class="shrink-0 bg-cream hover:bg-sand text-ink text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2"><i data-lucide="log-out" class="w-3.5 h-3.5"></i> Log Keluar</button>
           </div>
 
+          <div id="kw-must-change-pass-banner" class="hidden bg-honey/20 border border-honey text-honeydeep text-xs font-bold rounded-2xl px-4 py-3 mb-4 flex items-center gap-2"><i data-lucide="alert-triangle" class="w-4 h-4 shrink-0"></i> Sila tukar kata laluan default anda di bawah sebelum teruskan.</div>
+
           <div class="flex gap-2 overflow-x-auto no-scrollbar mb-6 border-b border-sand pb-px">
+            <button data-kwtab="komisen" onclick="window.setKawasanTab('komisen')" class="kw-tab-btn px-4 py-2.5 rounded-t-xl text-sm font-bold shrink-0 bg-cream text-inksoft">Komisen &amp; Jualan</button>
             <button data-kwtab="produk" onclick="window.setKawasanTab('produk')" class="kw-tab-btn px-4 py-2.5 rounded-t-xl text-sm font-bold shrink-0 bg-forest text-white">Produk Saya</button>
             <button data-kwtab="tempahan" onclick="window.setKawasanTab('tempahan')" class="kw-tab-btn px-4 py-2.5 rounded-t-xl text-sm font-bold shrink-0 bg-cream text-inksoft">Tempahan Masuk</button>
             <button data-kwtab="bekalan" onclick="window.setKawasanTab('bekalan')" class="kw-tab-btn px-4 py-2.5 rounded-t-xl text-sm font-bold shrink-0 bg-cream text-inksoft">Bekalan Keluar</button>
             <button data-kwtab="butiran" onclick="window.setKawasanTab('butiran')" class="kw-tab-btn px-4 py-2.5 rounded-t-xl text-sm font-bold shrink-0 bg-cream text-inksoft">Butiran &amp; Bayaran</button>
+          </div>
+
+          <div id="kw-tab-komisen" class="kw-tab-panel hidden">
+            <div class="grid sm:grid-cols-2 gap-4 mb-5">
+              <div class="bg-gradient-to-br from-forest to-leaf rounded-2xl p-5 text-white shadow-md">
+                <p class="text-[10px] uppercase tracking-widest font-bold text-white/70 mb-1">Jumlah Jualan</p>
+                <p id="kw-stat-sales" class="font-display font-extrabold text-2xl">RM 0.00</p>
+              </div>
+              <div class="bg-white border border-sand rounded-2xl p-5">
+                <p class="text-[10px] uppercase tracking-widest font-bold text-inksoft mb-1">Jumlah Komisen</p>
+                <p id="kw-stat-comm" class="font-display font-extrabold text-2xl text-honeydeep">RM 0.00</p>
+              </div>
+            </div>
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+              <select id="kw-comm-month-filter" onchange="window.renderKwCommission()" class="bg-white border border-sand rounded-xl px-3 py-2 text-xs font-bold"></select>
+              <button onclick="window.exportKwCommissionExcel()" class="bg-forest hover:bg-forestdark text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2"><i data-lucide="download" class="w-3.5 h-3.5"></i> Muat Turun Excel</button>
+            </div>
+            <div class="overflow-x-auto bg-white border border-sand rounded-2xl">
+              <table class="w-full text-left text-xs whitespace-nowrap">
+                <thead><tr class="bg-cream text-inksoft uppercase text-[10px]"><th class="p-3">ID</th><th class="p-3">Tarikh</th><th class="p-3">Jumlah</th><th class="p-3">Komisen</th><th class="p-3">Status</th></tr></thead>
+                <tbody id="kw-commission-body"></tbody>
+              </table>
+            </div>
           </div>
 
           <div id="kw-tab-produk" class="kw-tab-panel">
@@ -1302,6 +1408,135 @@
       </div>
     </section>
 
+    <section id="view-cawanganportal" class="hidden">
+      <div class="max-w-4xl mx-auto px-4 sm:px-6 pt-8 pb-16">
+
+        <div id="cw-login-wrap">
+          <div class="max-w-sm mx-auto">
+            <div class="text-center mb-6">
+              <div class="w-14 h-14 bg-leaflight rounded-2xl flex items-center justify-center mx-auto mb-3"><i data-lucide="landmark" class="w-7 h-7 text-forest"></i></div>
+              <h1 class="font-display font-bold text-xl text-ink">Portal PASTI Cawangan</h1>
+              <p class="text-inksoft text-sm mt-1">Log masuk atau daftar untuk lihat komisen &amp; jualan cawangan anda</p>
+            </div>
+            <div class="bg-white border border-sand rounded-3xl p-6 shadow-sm">
+              <div class="flex bg-cream rounded-xl p-1 mb-4">
+                <button id="cw-tab-login-btn" onclick="window.setCawanganAuthTab('login')" class="flex-1 py-2 rounded-lg text-xs font-bold bg-forest text-white">Log Masuk</button>
+                <button id="cw-tab-signup-btn" onclick="window.setCawanganAuthTab('signup')" class="flex-1 py-2 rounded-lg text-xs font-bold text-inksoft">Daftar</button>
+              </div>
+
+              <div id="cw-tab-login" class="space-y-3">
+                <div>
+                  <label class="text-[11px] font-bold text-inksoft mb-1 block">Kod Cawangan</label>
+                  <input id="cw-login-code" type="text" placeholder="Kod Cawangan" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-bold uppercase">
+                </div>
+                <div>
+                  <label class="text-[11px] font-bold text-inksoft mb-1 block">Kata Laluan</label>
+                  <input id="cw-login-pass" type="password" placeholder="Kata Laluan" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                </div>
+                <button onclick="window.loginCawangan()" class="w-full bg-forest hover:bg-forestdark text-white font-bold py-3 rounded-xl transition-colors">Log Masuk</button>
+              </div>
+
+              <div id="cw-tab-signup" class="hidden space-y-3">
+                <div>
+                  <label class="text-[11px] font-bold text-inksoft mb-1 block">Nama PASTI Cawangan</label>
+                  <input id="cw-signup-nama" type="text" placeholder="Nama PASTI Cawangan (tanpa space)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium uppercase">
+                </div>
+                <div>
+                  <label class="text-[11px] font-bold text-inksoft mb-1 block">Nama PIC/Penyelaras</label>
+                  <input id="cw-signup-pic-name" type="text" placeholder="Nama PIC/Penyelaras" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                </div>
+                <div>
+                  <label class="text-[11px] font-bold text-inksoft mb-1 block">No. Telefon PIC</label>
+                  <input id="cw-signup-pic-phone" type="tel" placeholder="No. Telefon PIC" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                </div>
+                <div>
+                  <label class="text-[11px] font-bold text-inksoft mb-1 block">Emel PIC (Pilihan)</label>
+                  <input id="cw-signup-pic-email" type="email" placeholder="Emel PIC (Pilihan)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                </div>
+                <div>
+                  <label class="text-[11px] font-bold text-inksoft mb-1 block">Kata Laluan</label>
+                  <input id="cw-signup-pass" type="password" placeholder="Kata Laluan (min. 6 aksara)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                </div>
+                <button onclick="window.doCawanganSignup()" class="w-full bg-forest hover:bg-forestdark text-white font-bold py-3 rounded-xl transition-colors">Daftar PASTI Cawangan</button>
+              </div>
+            </div>
+            <p class="text-center text-xs text-inksoft mt-4">Perlu bantuan? <a href="https://wa.me/60134636383?text=Saya%20mahu%20daftarkan%20PASTI%20Cawangan%20saya" target="_blank" class="text-forest font-bold hover:underline">Hubungi kami via WhatsApp</a></p>
+          </div>
+        </div>
+
+        <div id="cw-dashboard-wrap" class="hidden">
+          <div class="flex items-center justify-between mb-6 gap-3">
+            <div>
+              <p class="text-inksoft text-xs font-bold uppercase tracking-widest">Portal Cawangan</p>
+              <h1 id="cw-dash-name" class="font-display font-bold text-xl sm:text-2xl text-ink">-</h1>
+            </div>
+            <button onclick="window.logoutCawangan()" class="shrink-0 bg-cream hover:bg-sand text-ink text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2"><i data-lucide="log-out" class="w-3.5 h-3.5"></i> Log Keluar</button>
+          </div>
+
+          <div id="cw-must-change-pass-banner" class="hidden bg-honey/20 border border-honey text-honeydeep text-xs font-bold rounded-2xl px-4 py-3 mb-4 flex items-center gap-2"><i data-lucide="alert-triangle" class="w-4 h-4 shrink-0"></i> Sila tukar kata laluan default anda di bawah sebelum teruskan.</div>
+
+          <div class="flex gap-2 overflow-x-auto no-scrollbar mb-6 border-b border-sand pb-px">
+            <button data-cwtab="komisen" onclick="window.setCawanganTab('komisen')" class="cw-tab-btn px-4 py-2.5 rounded-t-xl text-sm font-bold shrink-0 bg-forest text-white">Komisen &amp; Jualan</button>
+            <button data-cwtab="butiran" onclick="window.setCawanganTab('butiran')" class="cw-tab-btn px-4 py-2.5 rounded-t-xl text-sm font-bold shrink-0 bg-cream text-inksoft">Butiran &amp; Kata Laluan</button>
+          </div>
+
+          <div id="cw-tab-komisen" class="cw-tab-panel">
+            <div class="grid sm:grid-cols-2 gap-4 mb-5">
+              <div class="bg-gradient-to-br from-forest to-leaf rounded-2xl p-5 text-white shadow-md">
+                <p class="text-[10px] uppercase tracking-widest font-bold text-white/70 mb-1">Jumlah Jualan</p>
+                <p id="cw-stat-sales" class="font-display font-extrabold text-2xl">RM 0.00</p>
+              </div>
+              <div class="bg-white border border-sand rounded-2xl p-5">
+                <p class="text-[10px] uppercase tracking-widest font-bold text-inksoft mb-1">Jumlah Komisen</p>
+                <p id="cw-stat-comm" class="font-display font-extrabold text-2xl text-honeydeep">RM 0.00</p>
+              </div>
+            </div>
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+              <select id="cw-comm-month-filter" onchange="window.renderCwCommission()" class="bg-white border border-sand rounded-xl px-3 py-2 text-xs font-bold"></select>
+              <button onclick="window.exportCwCommissionExcel()" class="bg-forest hover:bg-forestdark text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2"><i data-lucide="download" class="w-3.5 h-3.5"></i> Muat Turun Excel</button>
+            </div>
+            <div class="overflow-x-auto bg-white border border-sand rounded-2xl">
+              <table class="w-full text-left text-xs whitespace-nowrap">
+                <thead><tr class="bg-cream text-inksoft uppercase text-[10px]"><th class="p-3">ID</th><th class="p-3">Tarikh</th><th class="p-3">Jumlah</th><th class="p-3">Komisen</th><th class="p-3">Status</th></tr></thead>
+                <tbody id="cw-commission-body"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div id="cw-tab-butiran" class="cw-tab-panel hidden">
+            <div class="bg-white border border-sand rounded-3xl p-5 max-w-lg space-y-3">
+              <h3 class="font-display font-bold text-ink mb-1">Butiran PIC</h3>
+              <div>
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">Nama PIC</label>
+                <input id="cw-pic-name" type="text" disabled class="w-full bg-sand/40 border border-sand rounded-xl px-4 py-3 text-sm font-medium text-inksoft">
+              </div>
+              <div>
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">No. Telefon PIC</label>
+                <input id="cw-pic-phone" type="text" disabled class="w-full bg-sand/40 border border-sand rounded-xl px-4 py-3 text-sm font-medium text-inksoft">
+              </div>
+              <div>
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">Emel PIC</label>
+                <input id="cw-pic-email" type="email" disabled class="w-full bg-sand/40 border border-sand rounded-xl px-4 py-3 text-sm font-medium text-inksoft">
+              </div>
+              <p class="text-[11px] text-inksoft italic">Hubungi admin untuk kemaskini butiran PIC.</p>
+            </div>
+            <div class="bg-white border border-sand rounded-3xl p-5 max-w-lg space-y-3 mt-5">
+              <h3 class="font-display font-bold text-ink mb-1">Tukar Kata Laluan</h3>
+              <div>
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">Kata Laluan Baharu</label>
+                <input id="cw-pass-new" type="password" placeholder="Kata Laluan Baharu (min. 6 aksara)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              </div>
+              <div>
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">Sahkan Kata Laluan Baharu</label>
+                <input id="cw-pass-confirm" type="password" placeholder="Sahkan Kata Laluan Baharu" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              </div>
+              <button onclick="window.changeCawanganPassword()" class="w-full bg-forest hover:bg-forestdark text-white font-bold py-3 rounded-xl">Tukar Kata Laluan</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- KAWASAN PRODUCT MODAL -->
     <div id="modal-kw-product" class="hidden fixed inset-0 z-50 modal-mask flex items-center justify-center p-4">
       <div class="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
@@ -1320,40 +1555,18 @@
               <label class="text-[11px] font-bold text-inksoft mb-1 block">Kategori</label>
               <select id="kwpm-category" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium"></select>
             </div>
+            <div id="kwpm-approval-status" class="hidden rounded-xl px-4 py-2.5 text-xs font-bold"></div>
             <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="text-[11px] font-bold text-inksoft mb-1 block">Harga Jualan (RM)</label>
-                <input id="kwpm-price" type="number" step="0.01" placeholder="Harga Jualan (RM)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-              </div>
               <div>
                 <label class="text-[11px] font-bold text-inksoft mb-1 block">Modal/Kos (RM)</label>
-                <input id="kwpm-modal" type="number" step="0.01" placeholder="Modal/Kos (RM)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+                <input id="kwpm-modal" type="number" step="0.01" placeholder="Modal/Kos (RM)" oninput="window.updateKwPricePreview()" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
               </div>
-            </div>
-            <div class="grid grid-cols-2 gap-3">
               <div>
                 <label class="text-[11px] font-bold text-inksoft mb-1 block">Berat (kg)</label>
                 <input id="kwpm-weight" type="number" step="0.01" placeholder="Berat (kg)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
               </div>
-              <div>
-                <label class="text-[11px] font-bold text-inksoft mb-1 block">Komisen Ejen (%)</label>
-                <input id="kwpm-comm" type="number" placeholder="Komisen Ejen (%)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-              </div>
             </div>
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="text-[11px] font-bold text-inksoft mb-1 block">Komisen Kawasan (%)</label>
-                <input id="kwpm-comm-kawasan" type="number" step="0.1" placeholder="Komisen PASTI Kawasan (%)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-              </div>
-              <div>
-                <label class="text-[11px] font-bold text-inksoft mb-1 block">Komisen Cawangan (%)</label>
-                <input id="kwpm-comm-cawangan" type="number" step="0.1" placeholder="Komisen PASTI Cawangan (%)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-              </div>
-              <div>
-                <label class="text-[11px] font-bold text-inksoft mb-1 block">Komisen Negeri (%)</label>
-                <input id="kwpm-comm-negeri" type="number" step="0.1" placeholder="Komisen Negeri (%)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
-              </div>
-            </div>
+            <p class="text-xs text-inksoft bg-cream rounded-xl px-4 py-3">Harga jualan (auto, modal + 10%, bundar ke 10 sen terdekat): <span id="kwpm-price-preview" class="font-bold text-forest">RM 0.00</span></p>
             <div>
               <p class="text-[11px] font-bold text-inksoft mb-1.5">Kaedah Penghantaran Dibenarkan</p>
               <div class="grid grid-cols-2 gap-3">
@@ -1427,6 +1640,8 @@
             <button data-tab="tempahan" onclick="window.setAdminTab('tempahan')" class="admin-tab-btn px-4 py-2.5 rounded-t-xl text-sm font-bold shrink-0 bg-cream text-inksoft">Tempahan</button>
             <button data-tab="ejen" onclick="window.setAdminTab('ejen')" class="admin-tab-btn px-4 py-2.5 rounded-t-xl text-sm font-bold shrink-0 bg-cream text-inksoft">Ejen</button>
             <button data-tab="kawasanadmin" onclick="window.setAdminTab('kawasanadmin')" class="admin-tab-btn px-4 py-2.5 rounded-t-xl text-sm font-bold shrink-0 bg-cream text-inksoft">Kawasan</button>
+            <button data-tab="cawanganadmin" onclick="window.setAdminTab('cawanganadmin')" class="admin-tab-btn px-4 py-2.5 rounded-t-xl text-sm font-bold shrink-0 bg-cream text-inksoft">Cawangan</button>
+            <button data-tab="kwreview" onclick="window.setAdminTab('kwreview')" class="admin-tab-btn px-4 py-2.5 rounded-t-xl text-sm font-bold shrink-0 bg-cream text-inksoft">Semakan Produk Kawasan</button>
             <button data-tab="laporan" onclick="window.setAdminTab('laporan')" class="admin-tab-btn px-4 py-2.5 rounded-t-xl text-sm font-bold shrink-0 bg-cream text-inksoft">Laporan</button>
             <button data-tab="tetapan" onclick="window.setAdminTab('tetapan')" class="admin-tab-btn px-4 py-2.5 rounded-t-xl text-sm font-bold shrink-0 bg-cream text-inksoft">Tetapan</button>
           </div>
@@ -1506,6 +1721,40 @@
               <table class="w-full text-left text-xs whitespace-nowrap">
                 <thead><tr class="bg-cream text-inksoft uppercase text-[10px]"><th class="p-3">Kod</th><th class="p-3">Nama Kawasan</th><th class="p-3">PIC</th><th class="p-3">Status</th><th class="p-3">Tindakan</th></tr></thead>
                 <tbody id="admin-kawasan-body"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- TAB CAWANGAN -->
+          <div id="admin-tab-cawanganadmin" class="admin-tab-panel hidden">
+            <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+              <p class="text-xs font-bold text-inksoft" id="admin-cawangan-count">0 cawangan</p>
+              <input id="admin-cawangan-search" type="text" placeholder="Cari no. telefon PIC / nama / kod" oninput="window.renderAdminCawangan()" class="bg-white border border-sand rounded-xl px-3 py-2 text-xs font-medium w-56 max-w-full">
+              <button onclick="window.openCawanganAdminModal()" class="bg-forest hover:bg-forestdark text-white text-sm font-bold px-4 py-2.5 rounded-xl flex items-center gap-2"><i data-lucide="landmark" class="w-4 h-4"></i> Tambah Cawangan</button>
+            </div>
+            <div class="overflow-x-auto bg-white border border-sand rounded-2xl">
+              <table class="w-full text-left text-xs whitespace-nowrap">
+                <thead><tr class="bg-cream text-inksoft uppercase text-[10px]"><th class="p-3">Kod</th><th class="p-3">Nama Cawangan</th><th class="p-3">PIC</th><th class="p-3">Status</th><th class="p-3">Tindakan</th></tr></thead>
+                <tbody id="admin-cawangan-body"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- TAB SEMAKAN PRODUK KAWASAN -->
+          <div id="admin-tab-kwreview" class="admin-tab-panel hidden">
+            <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+              <p class="text-xs font-bold text-inksoft" id="admin-kwreview-count">0 produk</p>
+              <select id="admin-kwreview-filter" onchange="window.renderAdminKwReview()" class="bg-white border border-sand rounded-xl px-3 py-2 text-xs font-bold">
+                <option value="Menunggu">Menunggu Semakan</option>
+                <option value="Diluluskan">Diluluskan</option>
+                <option value="Ditolak">Ditolak</option>
+                <option value="">Semua</option>
+              </select>
+            </div>
+            <div class="overflow-x-auto bg-white border border-sand rounded-2xl">
+              <table class="w-full text-left text-xs whitespace-nowrap">
+                <thead><tr class="bg-cream text-inksoft uppercase text-[10px]"><th class="p-3">Gambar</th><th class="p-3">Nama Produk</th><th class="p-3">Kawasan</th><th class="p-3">Harga</th><th class="p-3">Status</th><th class="p-3">Tindakan</th></tr></thead>
+                <tbody id="admin-kwreview-body"></tbody>
               </table>
             </div>
           </div>
@@ -2417,6 +2666,51 @@
     </div>
   </div>
 
+  <div id="modal-admin-cawangan" class="hidden fixed inset-0 z-[95] flex items-end sm:items-center justify-center p-0 sm:p-4 modal-mask">
+    <div class="bg-white rounded-t-[2rem] sm:rounded-[2rem] w-full sm:max-w-md max-h-[92vh] overflow-y-auto shadow-2xl">
+      <div class="p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h3 id="acm-title" class="font-display font-bold text-lg text-ink">Tambah Cawangan</h3>
+          <button onclick="window.closeCawanganAdminModal()" class="w-8 h-8 rounded-full bg-cream flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        <div class="space-y-3">
+          <input type="hidden" id="acm-code-orig">
+          <div>
+            <label class="text-[11px] font-bold text-inksoft mb-1 block">Kod Cawangan</label>
+            <input id="acm-code" type="text" readonly placeholder="Kod Cawangan (auto-jana untuk cawangan baru)" class="w-full bg-sand/60 border border-sand rounded-xl px-4 py-3 text-sm font-bold uppercase text-inksoft cursor-not-allowed">
+          </div>
+          <div>
+            <label class="text-[11px] font-bold text-inksoft mb-1 block">Nama Cawangan</label>
+            <input id="acm-nama" type="text" placeholder="Nama Cawangan (tanpa space, cth: KUCHINGUTARA)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          </div>
+          <div>
+            <label class="text-[11px] font-bold text-inksoft mb-1 block">Nama PIC</label>
+            <input id="acm-pic-name" type="text" placeholder="Nama PIC" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          </div>
+          <div>
+            <label class="text-[11px] font-bold text-inksoft mb-1 block">No. Telefon PIC</label>
+            <input id="acm-pic-phone" type="text" placeholder="No. Telefon PIC" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          </div>
+          <div>
+            <label class="text-[11px] font-bold text-inksoft mb-1 block">Emel PIC</label>
+            <input id="acm-pic-email" type="email" placeholder="Emel PIC" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          </div>
+          <div>
+            <label class="text-[11px] font-bold text-inksoft mb-1 block">Kata Laluan</label>
+            <input id="acm-pass" type="text" placeholder="Kata Laluan" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+          </div>
+          <label class="flex items-center gap-2 bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium cursor-pointer">
+            <input id="acm-active" type="checkbox" checked class="w-4 h-4"> Akaun Aktif
+          </label>
+        </div>
+        <div class="flex gap-3 mt-5">
+          <button onclick="window.closeCawanganAdminModal()" class="flex-1 bg-cream text-ink font-bold py-3 rounded-xl">Batal</button>
+          <button onclick="window.saveCawanganAdmin()" class="flex-1 bg-forest hover:bg-forestdark text-white font-bold py-3 rounded-xl">Simpan</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -2520,6 +2814,7 @@ let appOrders = [];
 let cart = [];
 let currentAgent = null;
 let currentKawasan = null;
+let currentCawangan = null;
 let currentCustomer = null;
 let isAdminIn = false;
 let siteContent = {};
@@ -3012,7 +3307,7 @@ function renderCatalog(){
 let qvSelectedSize = null;
 window.openQuickView = function(id){
   qvProduct = appProducts.find(p=>p.id===id);
-  if(!qvProduct){ showToast('Produk tidak dijumpai','alert-circle'); return; }
+  if(!qvProduct || qvProduct.active===false){ qvProduct=null; showToast('Produk tidak dijumpai','alert-circle'); return; }
   qvQty = 1;
   qvSelectedSize = null;
   const cat = CATEGORIES[qvProduct.category] || fallbackCategory();
@@ -3179,7 +3474,7 @@ window.resetImageZoom = function(){ zoomScale = 1; zoomTx = 0; zoomTy = 0; apply
 /* ================= CART CORE ================= */
 window.addToCart = function(productId, qty, size){
   const p = appProducts.find(x=>x.id===productId);
-  if(!p || p.stock<=0) return;
+  if(!p || p.active===false || p.stock<=0) return;
   const hasSizes = Array.isArray(p.sizes) && p.sizes.length > 0;
   let price = p.price;
   if(hasSizes){
@@ -3205,7 +3500,7 @@ function updateCartBadge(){
 }
 
 /* ================= NAV / VIEW SWITCH ================= */
-const VIEW_IDS = ['home','catalog','cart','checkout','agent','admin','kawasan','senaraiejen','pengurusan','tentang','faq','terma','privasi','semak','kawasanportal','akaun'];
+const VIEW_IDS = ['home','catalog','cart','checkout','agent','admin','kawasan','senaraiejen','pengurusan','tentang','faq','terma','privasi','semak','kawasanportal','cawanganportal','akaun'];
 // Views excluded from URL hash routing — kept reachable only via their
 // existing in-app trigger (e.g. the disguised footer click for admin),
 // never via a direct/shareable link or browser history.
@@ -3229,6 +3524,7 @@ window.showView = function(name, pushHistory){
   if(name==='agent' && typeof renderAgentView==='function') renderAgentView();
   if(name==='admin' && typeof renderAdminView==='function') renderAdminView();
   if(name==='kawasanportal' && typeof renderKawasanPortalView==='function') renderKawasanPortalView();
+  if(name==='cawanganportal' && typeof renderCawanganPortalView==='function') renderCawanganPortalView();
   if(name==='kawasan' && typeof renderKawasanPublicList==='function') renderKawasanPublicList();
   if(name==='senaraiejen' && typeof renderSenaraiEjen==='function') renderSenaraiEjen();
   if(name==='akaun' && typeof renderAkaunView==='function') renderAkaunView();
@@ -3822,6 +4118,26 @@ window.setAgentAuthTab = function(tab){
   const signupBtn = document.getElementById('agent-tab-signup-btn');
   loginBtn.classList.toggle('bg-forest', tab==='login'); loginBtn.classList.toggle('text-white', tab==='login'); loginBtn.classList.toggle('text-inksoft', tab!=='login');
   signupBtn.classList.toggle('bg-forest', tab==='signup'); signupBtn.classList.toggle('text-white', tab==='signup'); signupBtn.classList.toggle('text-inksoft', tab!=='signup');
+  if(tab==='signup') populateAgentSignupDropdowns();
+}
+let agentSignupDropdownsLoaded = false;
+async function populateAgentSignupDropdowns(){
+  if(agentSignupDropdownsLoaded) return;
+  agentSignupDropdownsLoaded = true;
+  const areaSel = document.getElementById('agent-signup-area');
+  const branchSel = document.getElementById('agent-signup-branch');
+  try{
+    if(typeof window.fbListKawasanPublic === 'function'){
+      const kawasanList = await window.fbListKawasanPublic();
+      areaSel.innerHTML = '<option value="">Pilih PASTI Kawasan...</option>' + kawasanList.map(k=>`<option value="${k.code}">${k.namaKawasan || k.code}</option>`).join('');
+    }
+  }catch(e){}
+  try{
+    if(typeof window.fbListCawanganPublic === 'function'){
+      const cawanganList = await window.fbListCawanganPublic();
+      branchSel.innerHTML = '<option value="">Pilih PASTI Cawangan...</option>' + cawanganList.map(c=>`<option value="${c.code}">${c.namaCawangan || c.code}</option>`).join('');
+    }
+  }catch(e){}
 }
 window.doAgentSignup = async function(){
   const name = document.getElementById('agent-signup-name').value.trim();
@@ -4247,6 +4563,162 @@ async function restoreKawasanSession(){
     currentKawasan = profile;
   }catch(e){ try{ sessionStorage.removeItem('alhaddad:kwsession'); }catch(e2){} }
 }
+
+/* ================= PORTAL CAWANGAN ================= */
+window.cwCurrentTab = 'komisen';
+window.cawanganAuthTab = 'login';
+window.setCawanganAuthTab = function(tab){
+  cawanganAuthTab = tab;
+  document.getElementById('cw-tab-login').classList.toggle('hidden', tab!=='login');
+  document.getElementById('cw-tab-signup').classList.toggle('hidden', tab!=='signup');
+  const loginBtn = document.getElementById('cw-tab-login-btn');
+  const signupBtn = document.getElementById('cw-tab-signup-btn');
+  loginBtn.classList.toggle('bg-forest', tab==='login'); loginBtn.classList.toggle('text-white', tab==='login'); loginBtn.classList.toggle('text-inksoft', tab!=='login');
+  signupBtn.classList.toggle('bg-forest', tab==='signup'); signupBtn.classList.toggle('text-white', tab==='signup'); signupBtn.classList.toggle('text-inksoft', tab!=='signup');
+}
+window.doCawanganSignup = async function(){
+  const namaCawangan = document.getElementById('cw-signup-nama').value.trim().toUpperCase();
+  const picName = document.getElementById('cw-signup-pic-name').value.trim();
+  const picPhone = document.getElementById('cw-signup-pic-phone').value.trim();
+  const picEmail = document.getElementById('cw-signup-pic-email').value.trim();
+  const pass = document.getElementById('cw-signup-pass').value;
+  if(!namaCawangan || !picName || !picPhone || !pass){ showToast('Sila lengkapkan semua medan wajib','alert-circle'); return; }
+  if(pass.length < 6){ showToast('Kata laluan mesti sekurang-kurangnya 6 aksara','alert-circle'); return; }
+  if(typeof window.fbCawanganSelfRegister !== 'function'){ showToast('Sistem belum sedia, cuba lagi sebentar','alert-circle'); return; }
+  try{
+    const res = await window.fbCawanganSelfRegister({ namaCawangan, picName, picPhone, picEmail, password:pass });
+    const profile = await window.fbCawanganLogin(res.code, pass);
+    currentCawangan = profile;
+    try{ sessionStorage.setItem('alhaddad:cwsession', JSON.stringify({code:res.code, pass})); }catch(e){}
+    renderCawanganPortalView();
+    showToast('Pendaftaran berjaya! Kod cawangan anda: '+res.code,'check-circle-2');
+  }catch(err){
+    showToast(err && err.message ? err.message : 'Pendaftaran gagal, cuba lagi','alert-circle');
+  }
+}
+window.loginCawangan = async function(){
+  const code = document.getElementById('cw-login-code').value.trim().toUpperCase();
+  const pass = document.getElementById('cw-login-pass').value;
+  if(!code || !pass){ showToast('Sila isi kod & kata laluan','alert-circle'); return; }
+  if(typeof window.fbCawanganLogin !== 'function'){ showToast('Sistem belum sedia, cuba lagi sebentar','alert-circle'); return; }
+  try{
+    const profile = await window.fbCawanganLogin(code, pass);
+    currentCawangan = profile;
+    try{ sessionStorage.setItem('alhaddad:cwsession', JSON.stringify({code, pass})); }catch(e){}
+    renderCawanganPortalView();
+    showToast('Selamat kembali, PASTI '+profile.namaCawangan+'!','check-circle-2');
+  }catch(err){
+    const msg = (err && err.code==='functions/not-found') ? 'Kod cawangan tidak dijumpai'
+      : (err && err.code==='functions/unauthenticated') ? 'Kata laluan salah'
+      : 'Log masuk gagal, cuba lagi';
+    showToast(msg,'alert-circle');
+  }
+}
+window.logoutCawangan = async function(){
+  currentCawangan = null;
+  try{ sessionStorage.removeItem('alhaddad:cwsession'); }catch(e){}
+  try{ await window.fbCawanganLogout(); }catch(e){}
+  renderCawanganPortalView();
+  showToast('Berjaya log keluar','log-out');
+}
+async function restoreCawanganSession(){
+  let saved = null;
+  try{ saved = JSON.parse(sessionStorage.getItem('alhaddad:cwsession')||'null'); }catch(e){}
+  if(!saved || !saved.code || !saved.pass) return;
+  try{
+    const profile = await window.fbCawanganLogin(saved.code, saved.pass);
+    currentCawangan = profile;
+  }catch(e){ try{ sessionStorage.removeItem('alhaddad:cwsession'); }catch(e2){} }
+}
+function renderCawanganPortalView(){
+  const loginWrap = document.getElementById('cw-login-wrap');
+  const dashWrap = document.getElementById('cw-dashboard-wrap');
+  if(!loginWrap) return;
+  if(!currentCawangan){ loginWrap.classList.remove('hidden'); dashWrap.classList.add('hidden'); return; }
+  loginWrap.classList.add('hidden'); dashWrap.classList.remove('hidden');
+  document.getElementById('cw-dash-name').innerText = 'PASTI ' + currentCawangan.namaCawangan;
+  document.getElementById('cw-pic-name').value = currentCawangan.picName || '';
+  document.getElementById('cw-pic-phone').value = currentCawangan.picPhone || '';
+  document.getElementById('cw-pic-email').value = currentCawangan.picEmail || '';
+  const mustChangeBanner = document.getElementById('cw-must-change-pass-banner');
+  if(mustChangeBanner) mustChangeBanner.classList.toggle('hidden', currentCawangan.mustChangePassword !== true);
+  if(currentCawangan.mustChangePassword === true) cwCurrentTab = 'butiran';
+  window.setCawanganTab(cwCurrentTab);
+}
+window.setCawanganTab = function(tab){
+  if(currentCawangan && currentCawangan.mustChangePassword === true && tab !== 'butiran'){
+    showToast('Sila tukar kata laluan default dahulu','alert-circle');
+    tab = 'butiran';
+  }
+  cwCurrentTab = tab;
+  ['komisen','butiran'].forEach(t=>{
+    const panel = document.getElementById('cw-tab-'+t);
+    if(panel) panel.classList.toggle('hidden', t!==tab);
+  });
+  document.querySelectorAll('.cw-tab-btn').forEach(btn=>{
+    const active = btn.getAttribute('data-cwtab')===tab;
+    btn.classList.toggle('bg-forest', active); btn.classList.toggle('text-white', active);
+    btn.classList.toggle('bg-cream', !active); btn.classList.toggle('text-inksoft', !active);
+  });
+  if(tab==='komisen') refreshCwCommission();
+}
+let cwCommissionOrders = [];
+async function refreshCwCommission(){
+  try{ cwCommissionOrders = await window.fbCawanganOrderStats(); }catch(e){ cwCommissionOrders = []; }
+  const monthSel = document.getElementById('cw-comm-month-filter');
+  const months = Array.from(new Set(cwCommissionOrders.filter(o=>o.createdAt).map(o=>o.createdAt.slice(0,7)))).sort().reverse();
+  if(monthSel){
+    const prev = monthSel.value;
+    monthSel.innerHTML = '<option value="">Semua Bulan</option>' + months.map(m=>`<option value="${m}">${m}</option>`).join('');
+    if(months.includes(prev)) monthSel.value = prev;
+  }
+  window.renderCwCommission();
+}
+window.renderCwCommission = function(){
+  const monthSel = document.getElementById('cw-comm-month-filter');
+  const month = monthSel ? monthSel.value : '';
+  const rows = cwCommissionOrders.filter(o => !month || (o.createdAt && o.createdAt.slice(0,7)===month));
+  const totalSales = rows.reduce((s,o)=>s+(o.total||0),0);
+  const totalComm = rows.reduce((s,o)=>s+(o.commission||0),0);
+  document.getElementById('cw-stat-sales').innerText = formatRM(totalSales);
+  document.getElementById('cw-stat-comm').innerText = formatRM(totalComm);
+  const body = document.getElementById('cw-commission-body');
+  if(body){
+    body.innerHTML = rows.length ? rows.map(o=>`<tr class="border-t border-sand"><td class="p-3">${o.orderId}</td><td class="p-3">${o.createdAt ? o.createdAt.slice(0,10) : '-'}</td><td class="p-3">${formatRM(o.total)}</td><td class="p-3 font-bold text-honeydeep">${formatRM(o.commission)}</td><td class="p-3">${o.status||'-'}</td></tr>`).join('')
+      : '<tr><td colspan="5" class="p-4 text-center text-inksoft/60">Tiada tempahan</td></tr>';
+  }
+}
+window.exportCwCommissionExcel = function(){
+  const monthSel = document.getElementById('cw-comm-month-filter');
+  const month = monthSel ? monthSel.value : '';
+  const rows = cwCommissionOrders.filter(o => !month || (o.createdAt && o.createdAt.slice(0,7)===month));
+  let csv = 'ID Tempahan,Tarikh,Jumlah (RM),Komisen (RM),Status\n';
+  rows.forEach(o=>{ csv += `${o.orderId},${o.createdAt?o.createdAt.slice(0,10):''},${(o.total||0).toFixed(2)},${(o.commission||0).toFixed(2)},${o.status||''}\n`; });
+  const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'komisen-cawangan' + (month?'-'+month:'') + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+window.changeCawanganPassword = async function(){
+  const newPass = document.getElementById('cw-pass-new').value;
+  const confirmPass = document.getElementById('cw-pass-confirm').value;
+  if(!newPass || newPass.length < 6){ showToast('Kata laluan baharu mesti sekurang-kurangnya 6 aksara','alert-circle'); return; }
+  if(newPass !== confirmPass){ showToast('Kata laluan tidak sepadan','alert-circle'); return; }
+  try{
+    await window.fbCawanganChangePassword(newPass);
+    document.getElementById('cw-pass-new').value = '';
+    document.getElementById('cw-pass-confirm').value = '';
+    if(currentCawangan) currentCawangan.mustChangePassword = false;
+    const mustChangeBanner = document.getElementById('cw-must-change-pass-banner');
+    if(mustChangeBanner) mustChangeBanner.classList.add('hidden');
+    showToast('Kata laluan berjaya ditukar','check-circle-2');
+  }catch(e){
+    showToast('Gagal tukar kata laluan: ' + (e && (e.code || e.message) || 'ralat tidak diketahui'), 'alert-circle');
+  }
+}
+
 function renderKawasanPortalView(){
   const loginWrap = document.getElementById('kw-login-wrap');
   const dashWrap = document.getElementById('kw-dashboard-wrap');
@@ -4272,11 +4744,18 @@ function renderKawasanPortalView(){
   document.getElementById('kw-sender-postcode').value = currentKawasan.senderPostcode || '';
   document.getElementById('kw-sender-city').value = currentKawasan.senderCity || '';
   if(kwSenderStateSel) kwSenderStateSel.value = currentKawasan.senderState || '';
+  const mustChangeBanner = document.getElementById('kw-must-change-pass-banner');
+  if(mustChangeBanner) mustChangeBanner.classList.toggle('hidden', currentKawasan.mustChangePassword !== true);
+  if(currentKawasan.mustChangePassword === true) kwCurrentTab = 'butiran';
   window.setKawasanTab(kwCurrentTab);
 }
 window.setKawasanTab = function(tab){
+  if(currentKawasan && currentKawasan.mustChangePassword === true && tab !== 'butiran'){
+    showToast('Sila tukar kata laluan default dahulu','alert-circle');
+    tab = 'butiran';
+  }
   kwCurrentTab = tab;
-  ['produk','tempahan','bekalan','butiran'].forEach(t=>{
+  ['komisen','produk','tempahan','bekalan','butiran'].forEach(t=>{
     const panel = document.getElementById('kw-tab-'+t);
     if(panel) panel.classList.toggle('hidden', t!==tab);
   });
@@ -4285,9 +4764,49 @@ window.setKawasanTab = function(tab){
     btn.classList.toggle('bg-forest', active); btn.classList.toggle('text-white', active);
     btn.classList.toggle('bg-cream', !active); btn.classList.toggle('text-inksoft', !active);
   });
+  if(tab==='komisen') refreshKwCommission();
   if(tab==='produk') refreshKwProducts();
   if(tab==='tempahan') refreshKwOrders();
   if(tab==='bekalan') refreshKwBekalan();
+}
+let kwCommissionOrders = [];
+async function refreshKwCommission(){
+  try{ kwCommissionOrders = await window.fbKawasanOrderStats(); }catch(e){ kwCommissionOrders = []; }
+  const monthSel = document.getElementById('kw-comm-month-filter');
+  const months = Array.from(new Set(kwCommissionOrders.filter(o=>o.createdAt).map(o=>o.createdAt.slice(0,7)))).sort().reverse();
+  if(monthSel){
+    const prev = monthSel.value;
+    monthSel.innerHTML = '<option value="">Semua Bulan</option>' + months.map(m=>`<option value="${m}">${m}</option>`).join('');
+    if(months.includes(prev)) monthSel.value = prev;
+  }
+  window.renderKwCommission();
+}
+window.renderKwCommission = function(){
+  const monthSel = document.getElementById('kw-comm-month-filter');
+  const month = monthSel ? monthSel.value : '';
+  const rows = kwCommissionOrders.filter(o => !month || (o.createdAt && o.createdAt.slice(0,7)===month));
+  const totalSales = rows.reduce((s,o)=>s+(o.total||0),0);
+  const totalComm = rows.reduce((s,o)=>s+(o.commission||0),0);
+  document.getElementById('kw-stat-sales').innerText = formatRM(totalSales);
+  document.getElementById('kw-stat-comm').innerText = formatRM(totalComm);
+  const body = document.getElementById('kw-commission-body');
+  if(body){
+    body.innerHTML = rows.length ? rows.map(o=>`<tr class="border-t border-sand"><td class="p-3">${o.orderId}</td><td class="p-3">${o.createdAt ? o.createdAt.slice(0,10) : '-'}</td><td class="p-3">${formatRM(o.total)}</td><td class="p-3 font-bold text-honeydeep">${formatRM(o.commission)}</td><td class="p-3">${o.status||'-'}</td></tr>`).join('')
+      : '<tr><td colspan="5" class="p-4 text-center text-inksoft/60">Tiada tempahan</td></tr>';
+  }
+}
+window.exportKwCommissionExcel = function(){
+  const monthSel = document.getElementById('kw-comm-month-filter');
+  const month = monthSel ? monthSel.value : '';
+  const rows = kwCommissionOrders.filter(o => !month || (o.createdAt && o.createdAt.slice(0,7)===month));
+  let csv = 'ID Tempahan,Tarikh,Jumlah (RM),Komisen (RM),Status\n';
+  rows.forEach(o=>{ csv += `${o.orderId},${o.createdAt?o.createdAt.slice(0,10):''},${(o.total||0).toFixed(2)},${(o.commission||0).toFixed(2)},${o.status||''}\n`; });
+  const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'komisen-kawasan' + (month?'-'+month:'') + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 const KW_HANDOVER_STAGES = ["Belum Dihantar", "Dalam Perjalanan", "Sampai di Kawasan", "Diserahkan kepada Pelanggan"];
 let kwOrdersCache = { incomingOrders: [], outgoingOrders: [] };
@@ -4427,7 +4946,9 @@ async function refreshKwProducts(){
 function renderKwProducts(){
   document.getElementById('kw-product-count').innerText = kwProducts.length+' produk';
   const grid = document.getElementById('kw-product-grid');
-  grid.innerHTML = kwProducts.map(p=>`
+  grid.innerHTML = kwProducts.map(p=>{
+    const badge = KW_APPROVAL_BADGE[p.approvalStatus || 'Menunggu'];
+    return `
     <div class="bg-white border border-sand rounded-2xl p-4">
       <div class="flex items-start justify-between gap-2 mb-2">
         <p class="font-display font-bold text-sm text-ink">${escapeHtml(p.name)}</p>
@@ -4437,15 +4958,29 @@ function renderKwProducts(){
         </div>
       </div>
       <p class="text-forest font-bold text-sm mb-1">${formatRM(p.price)}</p>
-      <p class="text-inksoft text-xs mb-3">Modal: ${formatRM(p.modal||0)} · Ejen: ${p.commissionPct||0}% · Kawasan: ${p.kawasanCommissionPct||0}% · Cawangan: ${p.cawanganCommissionPct||0}% · Negeri: ${p.negeriCommissionPct||0}%${p.preorder ? ` · Jangkaan: ${escapeHtml(p.preorderEta||'-')}` : ''}</p>
+      <p class="text-inksoft text-xs mb-2">Modal: ${formatRM(p.modal||0)}${p.preorder ? ` · Jangkaan: ${escapeHtml(p.preorderEta||'-')}` : ''}</p>
+      <span class="inline-block px-2 py-1 rounded-full text-[10px] font-bold mb-3 ${badge.cls}">${badge.text}</span>
       <div class="flex gap-1.5">
         <button onclick="window.toggleKwStock('${p.id}','${p.stockStatus==='ready'?'habis':'ready'}')" class="flex-1 bg-cream hover:bg-sand text-ink text-[11px] font-bold py-2 rounded-lg">${p.stockStatus==='ready' ? 'Tandakan Habis' : 'Tandakan Ready'}</button>
         <button onclick="window.openKwProductModal('${p.id}')" class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
         <button onclick="window.deleteKwProduct('${p.id}')" class="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center shrink-0"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
       </div>
-    </div>`).join('') || `<p class="text-inksoft text-sm italic col-span-full text-center py-6">Belum ada produk. Klik "Tambah Produk" untuk mula.</p>`;
+    </div>`;
+  }).join('') || `<p class="text-inksoft text-sm italic col-span-full text-center py-6">Belum ada produk. Klik "Tambah Produk" untuk mula.</p>`;
   icons();
 }
+function computeKwSalePrice(modal){
+  return Math.round(modal * 1.10 * 10) / 10;
+}
+window.updateKwPricePreview = function(){
+  const modal = parseFloat(document.getElementById('kwpm-modal').value) || 0;
+  document.getElementById('kwpm-price-preview').innerText = formatRM(computeKwSalePrice(modal));
+}
+const KW_APPROVAL_BADGE = {
+  'Menunggu': { cls:'bg-honey/20 text-honeydeep', text:'⏳ Menunggu semakan admin — belum dipaparkan di laman awam' },
+  'Diluluskan': { cls:'bg-green-100 text-green-700', text:'✓ Diluluskan — dipaparkan di laman awam' },
+  'Ditolak': { cls:'bg-red-100 text-red-600', text:'✗ Ditolak oleh admin — sila semak & kemaskini produk ini' },
+};
 window.openKwProductModal = function(id){
   const editing = id ? kwProducts.find(p=>p.id===id) : null;
   document.getElementById('kwpm-title').innerText = editing ? 'Edit Produk' : 'Tambah Produk';
@@ -4454,13 +4989,9 @@ window.openKwProductModal = function(id){
   const catSel = document.getElementById('kwpm-category');
   catSel.innerHTML = Object.keys(CATEGORIES).map(k=>`<option value="${k}">${escapeHtml(CATEGORIES[k].name)}</option>`).join('');
   catSel.value = editing ? editing.category : Object.keys(CATEGORIES)[0];
-  document.getElementById('kwpm-price').value = editing ? editing.price : '';
   document.getElementById('kwpm-modal').value = editing ? (editing.modal||'') : '';
   document.getElementById('kwpm-weight').value = editing ? editing.weight : '';
-  document.getElementById('kwpm-comm').value = editing && editing.commissionPct != null ? editing.commissionPct : 5;
-  document.getElementById('kwpm-comm-kawasan').value = editing && editing.kawasanCommissionPct != null ? editing.kawasanCommissionPct : 5;
-  document.getElementById('kwpm-comm-cawangan').value = editing && editing.cawanganCommissionPct != null ? editing.cawanganCommissionPct : 5;
-  document.getElementById('kwpm-comm-negeri').value = editing && editing.negeriCommissionPct != null ? editing.negeriCommissionPct : 5;
+  window.updateKwPricePreview();
   document.getElementById('kwpm-ship-pickup').checked = editing ? editing.shipPickup !== false : true;
   document.getElementById('kwpm-ship-kurier').checked = editing ? editing.shipKurier !== false : true;
   document.getElementById('kwpm-desc').value = editing ? (editing.desc||'') : '';
@@ -4475,6 +5006,14 @@ window.openKwProductModal = function(id){
   document.getElementById('kwpm-preorder').checked = editing ? !!editing.preorder : false;
   document.getElementById('kwpm-preorder-eta').value = editing ? (editing.preorderEta||'') : '';
   window.toggleKwPreorderField();
+  const statusEl = document.getElementById('kwpm-approval-status');
+  const badge = editing ? KW_APPROVAL_BADGE[editing.approvalStatus || 'Menunggu'] : null;
+  if(badge){
+    statusEl.className = 'rounded-xl px-4 py-2.5 text-xs font-bold ' + badge.cls;
+    statusEl.innerText = badge.text;
+  } else {
+    statusEl.className = 'hidden';
+  }
   document.getElementById('modal-kw-product').classList.remove('hidden');
 }
 window.toggleKwPreorderField = function(){
@@ -4484,26 +5023,24 @@ window.closeKwProductModal = function(){ document.getElementById('modal-kw-produ
 window.saveKwProduct = async function(){
   const id = document.getElementById('kwpm-id').value;
   const name = document.getElementById('kwpm-name').value.trim();
-  if(!name){ showToast('Nama produk wajib diisi','alert-circle'); return; }
+  const category = document.getElementById('kwpm-category').value;
+  const modal = parseFloat(document.getElementById('kwpm-modal').value);
+  const weight = parseFloat(document.getElementById('kwpm-weight').value);
+  const desc = document.getElementById('kwpm-desc').value.trim();
   const images = [document.getElementById('kwpm-img1').value.trim(), document.getElementById('kwpm-img2').value.trim(), document.getElementById('kwpm-img3').value.trim()].filter(Boolean);
-  if(!id && !images.length){ showToast('Sila upload sekurang-kurangnya 1 gambar produk','alert-circle'); return; }
   const shipPickup = document.getElementById('kwpm-ship-pickup').checked;
   const shipKurier = document.getElementById('kwpm-ship-kurier').checked;
-  if(!shipPickup && !shipKurier){ showToast('Sila benarkan sekurang-kurangnya satu kaedah penghantaran','alert-circle'); return; }
+  if(!name){ showToast('Nama produk wajib diisi','alert-circle'); return; }
+  if(!category){ showToast('Sila pilih kategori','alert-circle'); return; }
+  if(isNaN(modal) || modal<=0){ showToast('Sila isi modal (mesti lebih daripada 0)','alert-circle'); return; }
+  if(isNaN(weight) || weight<=0){ showToast('Sila isi berat (mesti lebih daripada 0)','alert-circle'); return; }
+  if(!shipPickup && !shipKurier){ showToast('Sila pilih sekurang-kurangnya satu kaedah penghantaran','alert-circle'); return; }
+  if(!desc){ showToast('Sila isi penerangan produk','alert-circle'); return; }
+  if(!images.length){ showToast('Sila upload sekurang-kurangnya 1 gambar produk','alert-circle'); return; }
   const payload = {
     id: id || undefined,
-    name,
-    category: document.getElementById('kwpm-category').value,
-    price: parseFloat(document.getElementById('kwpm-price').value) || 0,
-    modal: parseFloat(document.getElementById('kwpm-modal').value) || 0,
-    weight: parseFloat(document.getElementById('kwpm-weight').value) || 0.1,
-    commissionPct: parseFloat(document.getElementById('kwpm-comm').value) || 5,
-    kawasanCommissionPct: parseFloat(document.getElementById('kwpm-comm-kawasan').value) || 0,
-    cawanganCommissionPct: parseFloat(document.getElementById('kwpm-comm-cawangan').value) || 0,
-    negeriCommissionPct: parseFloat(document.getElementById('kwpm-comm-negeri').value) || 0,
-    shipPickup, shipKurier,
-    desc: document.getElementById('kwpm-desc').value.trim(),
-    images,
+    name, category, modal, weight,
+    shipPickup, shipKurier, desc, images,
     stockStatus: document.getElementById('kwpm-ready').checked ? 'ready' : 'habis',
     preorder: document.getElementById('kwpm-preorder').checked,
     preorderEta: document.getElementById('kwpm-preorder-eta').value.trim(),
@@ -4512,7 +5049,7 @@ window.saveKwProduct = async function(){
     await window.fbKawasanSaveProduct(payload);
     window.closeKwProductModal();
     await refreshKwProducts();
-    showToast('Produk berjaya disimpan','check-circle-2');
+    showToast('Produk berjaya disimpan — menunggu semakan admin sebelum dipaparkan','check-circle-2');
   }catch(e){
     console.error('saveKwProduct failed:', e);
     showToast('Gagal simpan produk: ' + (e && (e.code || e.message) || 'ralat tidak diketahui'), 'alert-circle');
@@ -4570,6 +5107,9 @@ window.changeKawasanPassword = async function(){
     await window.fbKawasanChangePassword(newPass);
     document.getElementById('kw-pass-new').value = '';
     document.getElementById('kw-pass-confirm').value = '';
+    if(currentKawasan) currentKawasan.mustChangePassword = false;
+    const mustChangeBanner = document.getElementById('kw-must-change-pass-banner');
+    if(mustChangeBanner) mustChangeBanner.classList.add('hidden');
     showToast('Kata laluan berjaya ditukar','check-circle-2');
   }catch(e){
     showToast('Gagal tukar kata laluan: ' + (e && (e.code || e.message) || 'ralat tidak diketahui'), 'alert-circle');
@@ -4603,7 +5143,7 @@ window.logoutAdmin = async function(){
 }
 window.setAdminTab = function(tab){
   adminCurrentTab = tab;
-  ['produk','kategori','tempahan','ejen','kawasanadmin','laporan','tetapan'].forEach(t=>{
+  ['produk','kategori','tempahan','ejen','kawasanadmin','cawanganadmin','kwreview','laporan','tetapan'].forEach(t=>{
     const panel = document.getElementById('admin-tab-'+t);
     if(panel) panel.classList.toggle('hidden', t!==tab);
   });
@@ -4617,6 +5157,8 @@ window.setAdminTab = function(tab){
   if(tab==='tempahan') refreshAndRenderAdminOrders();
   if(tab==='ejen') refreshAndRenderAdminAgents();
   if(tab==='kawasanadmin') refreshAndRenderAdminKawasan();
+  if(tab==='cawanganadmin') refreshAndRenderAdminCawangan();
+  if(tab==='kwreview') refreshAndRenderAdminKwReview();
   if(tab==='laporan' && typeof renderReports==='function') refreshAndRenderReports();
   if(tab==='tetapan'){ loadSiteContentAdminForm(); window.refreshEasyParcelStatus(); }
 }
@@ -4759,7 +5301,7 @@ window.openKawasanAdminModal = function(code){
   document.getElementById('akm-pic-name').value = editing ? (editing.picName||'') : '';
   document.getElementById('akm-pic-phone').value = editing ? (editing.picPhone||'') : '';
   document.getElementById('akm-pic-email').value = editing ? (editing.picEmail||'') : '';
-  document.getElementById('akm-pass').value = editing ? editing.password : 'demo123';
+  document.getElementById('akm-pass').value = editing ? editing.password : 'pasti2026';
   document.getElementById('akm-active').checked = editing ? editing.active!==false : true;
   const akmStateSel = document.getElementById('akm-sender-state');
   if(akmStateSel && !akmStateSel.options.length){
@@ -4784,7 +5326,7 @@ window.saveKawasanAdmin = async function(){
     picName: document.getElementById('akm-pic-name').value.trim(),
     picPhone: document.getElementById('akm-pic-phone').value.trim(),
     picEmail: document.getElementById('akm-pic-email').value.trim(),
-    password: document.getElementById('akm-pass').value.trim() || 'demo123',
+    password: document.getElementById('akm-pass').value.trim() || 'pasti2026',
     active: document.getElementById('akm-active').checked,
     senderName: document.getElementById('akm-sender-name').value.trim(),
     senderPhone: document.getElementById('akm-sender-phone').value.trim(),
@@ -4810,6 +5352,133 @@ window.deleteKawasanAdmin = async function(code){
     showToast('Kawasan dipadam','trash-2');
   }catch(e){
     showToast('Gagal padam kawasan','alert-circle');
+  }
+}
+let appCawanganList = [];
+async function refreshAndRenderAdminCawangan(){
+  const tbody = document.getElementById('admin-cawangan-body');
+  if(tbody) tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-inksoft italic">Memuatkan senarai cawangan...</td></tr>`;
+  try{
+    appCawanganList = await window.fbAdminListCawangan();
+  }catch(e){
+    appCawanganList = [];
+    showToast('Gagal muatkan senarai cawangan: ' + (e && (e.code || e.message) || 'ralat tidak diketahui'), 'alert-circle');
+  }
+  window.renderAdminCawangan();
+}
+window.renderAdminCawangan = function(){
+  const tbody = document.getElementById('admin-cawangan-body');
+  if(!tbody) return;
+  const search = (document.getElementById('admin-cawangan-search').value||'').trim().toLowerCase();
+  const list = search ? appCawanganList.filter(c=>(c.picPhone||'').toLowerCase().includes(search) || (c.namaCawangan||'').toLowerCase().includes(search) || (c.code||'').toLowerCase().includes(search)) : appCawanganList;
+  document.getElementById('admin-cawangan-count').innerText = list.length+' cawangan';
+  tbody.innerHTML = list.map(c=>`
+    <tr class="border-t border-sand">
+      <td class="p-3 font-mono font-bold text-forest">${escapeHtml(c.code)}</td>
+      <td class="p-3 font-bold text-ink">PASTI ${escapeHtml(c.namaCawangan)}</td>
+      <td class="p-3 text-inksoft">${escapeHtml(c.picName||'-')}<br><span class="text-[10px]">${escapeHtml(c.picPhone||'')}</span></td>
+      <td class="p-3"><span class="px-2 py-1 rounded-full text-[10px] font-bold ${c.active!==false ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}">${c.active!==false ? 'Aktif' : 'Tidak Aktif'}</span></td>
+      <td class="p-3">
+        <div class="flex gap-1.5">
+          <button onclick="window.openCawanganAdminModal('${c.code}')" class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+          <button onclick="window.deleteCawanganAdmin('${c.code}')" class="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+        </div>
+      </td>
+    </tr>`).join('') || `<tr><td colspan="5" class="p-6 text-center text-inksoft italic">Tiada cawangan berdaftar.</td></tr>`;
+  icons();
+}
+window.openCawanganAdminModal = function(code){
+  const editing = code ? appCawanganList.find(c=>c.code===code) : null;
+  document.getElementById('acm-title').innerText = editing ? 'Edit Cawangan' : 'Tambah Cawangan';
+  document.getElementById('acm-code-orig').value = editing ? editing.code : '';
+  document.getElementById('acm-code').value = editing ? editing.code : '(auto)';
+  document.getElementById('acm-nama').value = editing ? editing.namaCawangan : '';
+  document.getElementById('acm-pic-name').value = editing ? (editing.picName||'') : '';
+  document.getElementById('acm-pic-phone').value = editing ? (editing.picPhone||'') : '';
+  document.getElementById('acm-pic-email').value = editing ? (editing.picEmail||'') : '';
+  document.getElementById('acm-pass').value = editing ? editing.password : 'pasti sarawak';
+  document.getElementById('acm-active').checked = editing ? editing.active!==false : true;
+  document.getElementById('modal-admin-cawangan').classList.remove('hidden');
+}
+window.closeCawanganAdminModal = function(){ document.getElementById('modal-admin-cawangan').classList.add('hidden'); }
+window.saveCawanganAdmin = async function(){
+  const code = document.getElementById('acm-code-orig').value;
+  const namaCawangan = document.getElementById('acm-nama').value.trim();
+  if(!namaCawangan){ showToast('Nama cawangan wajib diisi','alert-circle'); return; }
+  const payload = {
+    code: code || '',
+    namaCawangan,
+    picName: document.getElementById('acm-pic-name').value.trim(),
+    picPhone: document.getElementById('acm-pic-phone').value.trim(),
+    picEmail: document.getElementById('acm-pic-email').value.trim(),
+    password: document.getElementById('acm-pass').value.trim() || 'pasti sarawak',
+    active: document.getElementById('acm-active').checked,
+  };
+  try{
+    await window.fbAdminSaveCawangan(payload);
+    window.closeCawanganAdminModal();
+    await refreshAndRenderAdminCawangan();
+    showToast('Cawangan berjaya disimpan','check-circle-2');
+  }catch(e){
+    showToast(e && e.message ? e.message : 'Gagal simpan cawangan','alert-circle');
+  }
+}
+window.deleteCawanganAdmin = async function(code){
+  if(!confirm('Padam akaun cawangan ini?')) return;
+  try{
+    await window.fbAdminDeleteCawangan(code);
+    await refreshAndRenderAdminCawangan();
+    showToast('Cawangan dipadam','trash-2');
+  }catch(e){
+    showToast('Gagal padam cawangan','alert-circle');
+  }
+}
+let appKwReviewList = [];
+async function refreshAndRenderAdminKwReview(){
+  const tbody = document.getElementById('admin-kwreview-body');
+  if(tbody) tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-inksoft italic">Memuatkan senarai produk...</td></tr>`;
+  try{
+    appKwReviewList = await window.fbAdminListKawasanProducts();
+  }catch(e){
+    appKwReviewList = [];
+    showToast('Gagal muatkan senarai produk kawasan: ' + (e && (e.code || e.message) || 'ralat tidak diketahui'), 'alert-circle');
+  }
+  window.renderAdminKwReview();
+}
+window.renderAdminKwReview = function(){
+  const tbody = document.getElementById('admin-kwreview-body');
+  if(!tbody) return;
+  const filter = document.getElementById('admin-kwreview-filter').value;
+  const list = filter ? appKwReviewList.filter(p=>(p.approvalStatus||'Menunggu')===filter) : appKwReviewList;
+  document.getElementById('admin-kwreview-count').innerText = list.length+' produk';
+  tbody.innerHTML = list.map(p=>{
+    const status = p.approvalStatus || 'Menunggu';
+    const badgeCls = status==='Diluluskan' ? 'bg-green-100 text-green-700' : status==='Ditolak' ? 'bg-red-100 text-red-600' : 'bg-honey/20 text-honeydeep';
+    const img = (Array.isArray(p.images) && p.images[0]) ? p.images[0] : '';
+    return `
+    <tr class="border-t border-sand">
+      <td class="p-3">${img ? `<img src="${img}" class="w-10 h-10 rounded-lg object-cover">` : '-'}</td>
+      <td class="p-3 font-bold text-ink">${escapeHtml(p.name||'')}</td>
+      <td class="p-3 text-inksoft">${escapeHtml(p.ownerKawasan||'-')}</td>
+      <td class="p-3">${formatRM(p.price)}</td>
+      <td class="p-3"><span class="px-2 py-1 rounded-full text-[10px] font-bold ${badgeCls}">${status}</span></td>
+      <td class="p-3">
+        <div class="flex gap-1.5">
+          <button onclick="window.reviewKwProduct('${p.id}','Diluluskan')" class="px-3 py-1.5 rounded-lg bg-green-50 text-green-700 text-[10px] font-bold">Luluskan</button>
+          <button onclick="window.reviewKwProduct('${p.id}','Ditolak')" class="px-3 py-1.5 rounded-lg bg-red-50 text-red-600 text-[10px] font-bold">Tolak</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="6" class="p-6 text-center text-inksoft italic">Tiada produk.</td></tr>`;
+  icons();
+}
+window.reviewKwProduct = async function(id, approvalStatus){
+  try{
+    await window.fbAdminReviewKawasanProduct(id, approvalStatus);
+    await refreshAndRenderAdminKwReview();
+    showToast(approvalStatus==='Diluluskan' ? 'Produk diluluskan' : 'Produk ditolak','check-circle-2');
+  }catch(e){
+    showToast(e && e.message ? e.message : 'Gagal kemaskini status','alert-circle');
   }
 }
 function renderAdminView(){
@@ -4890,9 +5559,9 @@ window.openProductModal = function(id){
   document.getElementById('pm-weight').value = editing ? editing.weight : '';
   document.getElementById('pm-stock').value = editing ? editing.stock : '';
   document.getElementById('pm-comm').value = editing && editing.commissionPct != null ? editing.commissionPct : 5;
-  document.getElementById('pm-comm-kawasan').value = editing && editing.kawasanCommissionPct != null ? editing.kawasanCommissionPct : 5;
-  document.getElementById('pm-comm-cawangan').value = editing && editing.cawanganCommissionPct != null ? editing.cawanganCommissionPct : 5;
-  document.getElementById('pm-comm-negeri').value = editing && editing.negeriCommissionPct != null ? editing.negeriCommissionPct : 5;
+  document.getElementById('pm-comm-kawasan').value = editing && editing.kawasanCommissionPct != null ? editing.kawasanCommissionPct : 2;
+  document.getElementById('pm-comm-cawangan').value = editing && editing.cawanganCommissionPct != null ? editing.cawanganCommissionPct : 2;
+  document.getElementById('pm-comm-negeri').value = editing && editing.negeriCommissionPct != null ? editing.negeriCommissionPct : 1;
   document.getElementById('pm-ship-pickup').checked = editing ? editing.shipPickup !== false : true;
   document.getElementById('pm-ship-kurier').checked = editing ? editing.shipKurier !== false : true;
   document.getElementById('pm-jualan').value = editing ? (editing.jualan||0) : 0;
@@ -4925,7 +5594,13 @@ window.togglePmPreorderField = function(){
 }
 async function refreshOwnProducts(){
   try{
-    const own = await window.fbListProductsPublic();
+    // Exclude any stray "KWP-" doc that might exist in the main products
+    // collection (a leftover artifact from an admin accidentally saving a
+    // kawasan-owned row through the admin product modal) — the KWP- entries
+    // in appProducts are always rebuilt fresh from the live kawasanProducts
+    // collection below, never trusted from the main collection, or every
+    // refresh would double-count them.
+    const own = (await window.fbListProductsPublic()).filter(p => !String(p.id).startsWith('KWP-'));
     const kwp = appProducts.filter(p=>String(p.id).startsWith('KWP-'));
     appProducts = own.concat(kwp);
   }catch(e){ /* keep whatever was already loaded */ }
@@ -5658,6 +6333,7 @@ window.exportReportCsv = function(){
 document.addEventListener('DOMContentLoaded', async () => {
   await loadAllData();
   await restoreKawasanSession();
+  await restoreCawanganSession();
   renderHome();
   renderCatalog();
   renderCart();
