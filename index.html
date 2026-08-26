@@ -33,7 +33,7 @@
 </script>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getAuth, signInAnonymously, signInWithEmailAndPassword, signInWithCustomToken, signOut, onAuthStateChanged, createUserWithEmailAndPassword, sendPasswordResetEmail, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import { getAuth, signInAnonymously, signInWithEmailAndPassword, signInWithCustomToken, signOut, onAuthStateChanged, createUserWithEmailAndPassword, sendPasswordResetEmail, GoogleAuthProvider, signInWithPopup, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
   import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
   import { getFirestore, doc, getDoc, setDoc, collection, getDocs, deleteDoc, query, where, onSnapshot, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
@@ -111,6 +111,8 @@
   const callAdminMarkKawasanPayout = httpsCallable(fbFns, 'adminMarkKawasanPayout');
   const callAgentOrderStats = httpsCallable(fbFns, 'agentOrderStats');
   const callAgentSavePayout = httpsCallable(fbFns, 'agentSavePayout');
+  const callAgentChangePassword = httpsCallable(fbFns, 'agentChangePassword');
+  const callKawasanChangePassword = httpsCallable(fbFns, 'kawasanChangePassword');
   const callAgentConfirmDelivery = httpsCallable(fbFns, 'agentConfirmDelivery');
   const callEasyParcelOAuthStart = httpsCallable(fbFns, 'easyParcelOAuthStart');
   const callEasyParcelStatus = httpsCallable(fbFns, 'easyParcelStatus');
@@ -408,6 +410,31 @@
   window.fbAgentConfirmDelivery = async function(code, password, orderId) {
     const res = await callAgentConfirmDelivery({ code, password, orderId });
     return res.data;
+  };
+
+  window.fbAgentChangePassword = async function(code, password, newPassword) {
+    const res = await callAgentChangePassword({ code, password, newPassword });
+    return res.data;
+  };
+
+  window.fbKawasanChangePassword = async function(newPassword) {
+    if(!kwSession) throw new Error('not-logged-in');
+    const res = await callKawasanChangePassword({ ...kwSession, newPassword });
+    kwSession = { ...kwSession, password: newPassword };
+    return res.data;
+  };
+
+  window.fbSelfChangePassword = async function(currentPassword, newPassword) {
+    const user = fbAuth.currentUser;
+    if(!user || !user.email) throw new Error('not-logged-in');
+    const cred = EmailAuthProvider.credential(user.email, currentPassword);
+    await reauthenticateWithCredential(user, cred);
+    await updatePassword(user, newPassword);
+  };
+
+  window.fbCustomerHasPasswordProvider = function() {
+    const user = fbAuth.currentUser;
+    return !!(user && user.providerData && user.providerData.some(p => p.providerId === 'password'));
   };
 
   // --- Direct Firestore access (rules-gated) for products, site content,
@@ -1075,6 +1102,21 @@
             <p class="text-[10px] text-inksoft mt-1.5">Butiran ini digunakan oleh admin untuk membayar komisen anda.</p>
           </div>
 
+          <div class="bg-white border border-sand rounded-2xl p-4 mb-6">
+            <p class="font-display font-bold text-ink text-sm mb-3">Tukar Kata Laluan</p>
+            <div class="grid sm:grid-cols-2 gap-2.5 mb-3">
+              <div>
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">Kata Laluan Baharu</label>
+                <input id="agent-pass-new" type="password" placeholder="Kata Laluan Baharu (min. 6 aksara)" class="w-full bg-cream border border-sand rounded-xl px-3 py-2.5 text-sm">
+              </div>
+              <div>
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">Sahkan Kata Laluan Baharu</label>
+                <input id="agent-pass-confirm" type="password" placeholder="Sahkan Kata Laluan Baharu" class="w-full bg-cream border border-sand rounded-xl px-3 py-2.5 text-sm">
+              </div>
+            </div>
+            <button onclick="window.changeAgentPassword()" class="w-full sm:w-auto bg-forest hover:bg-forestdark text-white text-xs font-bold px-5 py-2.5 rounded-xl">Tukar Kata Laluan</button>
+          </div>
+
           <h3 class="font-display font-bold text-ink mb-3">Sejarah Tempahan Saya</h3>
           <div class="overflow-x-auto bg-white border border-sand rounded-2xl">
             <table class="w-full text-left text-xs whitespace-nowrap">
@@ -1242,6 +1284,18 @@
                 </div>
               </div>
               <button onclick="window.saveKwPayout()" class="w-full bg-forest hover:bg-forestdark text-white font-bold py-3 rounded-xl">Simpan Alamat Pengambilan</button>
+            </div>
+            <div class="bg-white border border-sand rounded-3xl p-5 max-w-lg space-y-3 mt-5">
+              <h3 class="font-display font-bold text-ink mb-1">Tukar Kata Laluan</h3>
+              <div>
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">Kata Laluan Baharu</label>
+                <input id="kw-pass-new" type="password" placeholder="Kata Laluan Baharu (min. 6 aksara)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              </div>
+              <div>
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">Sahkan Kata Laluan Baharu</label>
+                <input id="kw-pass-confirm" type="password" placeholder="Sahkan Kata Laluan Baharu" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              </div>
+              <button onclick="window.changeKawasanPassword()" class="w-full bg-forest hover:bg-forestdark text-white font-bold py-3 rounded-xl">Tukar Kata Laluan</button>
             </div>
           </div>
         </div>
@@ -1565,6 +1619,22 @@
                 <label class="text-[11px] font-bold text-inksoft mb-1 block">Teks Tentang Kami</label>
                 <textarea id="cms-about" rows="3" placeholder="Teks Tentang Kami" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium"></textarea>
               </div>
+            </div>
+            <div class="bg-white border border-sand rounded-3xl p-5 max-w-xl space-y-3 mb-5">
+              <h3 class="font-display font-bold text-ink mb-1">Tukar Kata Laluan Admin</h3>
+              <div>
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">Kata Laluan Semasa</label>
+                <input id="admin-pass-current" type="password" placeholder="Kata Laluan Semasa" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              </div>
+              <div>
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">Kata Laluan Baharu</label>
+                <input id="admin-pass-new" type="password" placeholder="Kata Laluan Baharu (min. 6 aksara)" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              </div>
+              <div>
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">Sahkan Kata Laluan Baharu</label>
+                <input id="admin-pass-confirm" type="password" placeholder="Sahkan Kata Laluan Baharu" class="w-full bg-cream border border-sand rounded-xl px-4 py-3 text-sm font-medium">
+              </div>
+              <button onclick="window.changeAdminPassword()" class="bg-forest hover:bg-forestdark text-white font-bold px-5 py-2.5 rounded-xl text-sm">Tukar Kata Laluan</button>
             </div>
             <div class="bg-white border border-sand rounded-3xl p-5 max-w-xl space-y-3 mb-5">
               <h3 class="font-display font-bold text-ink mb-1">Bayaran &amp; Penghantaran</h3>
@@ -1917,6 +1987,26 @@
               </div>
             </div>
             <button onclick="window.saveCustomerProfile()" class="mt-3 bg-forest hover:bg-forestdark text-white text-xs font-bold px-5 py-2.5 rounded-xl">Simpan Profil</button>
+          </div>
+
+          <div id="akaun-password-card" class="bg-white border border-sand rounded-3xl p-5 shadow-sm mb-6">
+            <h3 class="font-display font-bold text-ink mb-3 text-sm">Tukar Kata Laluan</h3>
+            <div class="grid sm:grid-cols-2 gap-2.5">
+              <div class="sm:col-span-2">
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">Kata Laluan Semasa</label>
+                <input id="akaun-pass-current" type="password" placeholder="Kata Laluan Semasa" class="w-full bg-cream border border-sand rounded-xl px-3 py-2.5 text-sm">
+              </div>
+              <div>
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">Kata Laluan Baharu</label>
+                <input id="akaun-pass-new" type="password" placeholder="Kata Laluan Baharu (min. 6 aksara)" class="w-full bg-cream border border-sand rounded-xl px-3 py-2.5 text-sm">
+              </div>
+              <div>
+                <label class="text-[11px] font-bold text-inksoft mb-1 block">Sahkan Kata Laluan Baharu</label>
+                <input id="akaun-pass-confirm" type="password" placeholder="Sahkan Kata Laluan Baharu" class="w-full bg-cream border border-sand rounded-xl px-3 py-2.5 text-sm">
+              </div>
+            </div>
+            <button onclick="window.changeCustomerPassword()" class="mt-3 bg-forest hover:bg-forestdark text-white text-xs font-bold px-5 py-2.5 rounded-xl">Tukar Kata Laluan</button>
+            <p id="akaun-password-google-note" class="hidden text-[11px] text-inksoft mt-2">Akaun anda log masuk melalui Google — tiada kata laluan untuk ditukar di sini.</p>
           </div>
 
           <h3 class="font-display font-bold text-ink mb-3">Sejarah Tempahan Saya</h3>
@@ -3807,6 +3897,23 @@ window.saveAgentPayout = async function(){
     showToast('Gagal simpan, cuba lagi','alert-circle');
   }
 }
+window.changeAgentPassword = async function(){
+  if(!currentAgent || !agentSessionPass){ showToast('Sila log masuk semula','alert-circle'); return; }
+  const newPass = document.getElementById('agent-pass-new').value;
+  const confirmPass = document.getElementById('agent-pass-confirm').value;
+  if(!newPass || newPass.length < 6){ showToast('Kata laluan baharu mesti sekurang-kurangnya 6 aksara','alert-circle'); return; }
+  if(newPass !== confirmPass){ showToast('Kata laluan tidak sepadan','alert-circle'); return; }
+  try{
+    await window.fbAgentChangePassword(currentAgent.code, agentSessionPass, newPass);
+    agentSessionPass = newPass;
+    try{ sessionStorage.setItem('alhaddad:agentpass', newPass); }catch(e){}
+    document.getElementById('agent-pass-new').value = '';
+    document.getElementById('agent-pass-confirm').value = '';
+    showToast('Kata laluan berjaya ditukar','check-circle-2');
+  }catch(e){
+    showToast('Gagal tukar kata laluan: ' + (e && (e.code || e.message) || 'ralat tidak diketahui'), 'alert-circle');
+  }
+}
 
 window.doLookupOrders = async function(){
   const phone = document.getElementById('semak-phone').value.trim();
@@ -3999,6 +4106,23 @@ window.saveCustomerProfile = async function(){
     showToast('Profil disimpan','check-circle-2');
   }catch(e){ showToast('Gagal simpan profil','alert-circle'); }
 }
+window.changeCustomerPassword = async function(){
+  const current = document.getElementById('akaun-pass-current').value;
+  const newPass = document.getElementById('akaun-pass-new').value;
+  const confirmPass = document.getElementById('akaun-pass-confirm').value;
+  if(!current){ showToast('Sila masukkan kata laluan semasa','alert-circle'); return; }
+  if(!newPass || newPass.length < 6){ showToast('Kata laluan baharu mesti sekurang-kurangnya 6 aksara','alert-circle'); return; }
+  if(newPass !== confirmPass){ showToast('Kata laluan tidak sepadan','alert-circle'); return; }
+  try{
+    await window.fbSelfChangePassword(current, newPass);
+    document.getElementById('akaun-pass-current').value = '';
+    document.getElementById('akaun-pass-new').value = '';
+    document.getElementById('akaun-pass-confirm').value = '';
+    showToast('Kata laluan berjaya ditukar','check-circle-2');
+  }catch(e){
+    showToast(akaunAuthErrorMsg(e),'alert-circle');
+  }
+}
 async function renderAkaunView(){
   const guestWrap = document.getElementById('akaun-guest-wrap');
   const dashWrap = document.getElementById('akaun-dashboard-wrap');
@@ -4019,6 +4143,10 @@ async function renderAkaunView(){
     document.getElementById('akaun-bandar').value = profile.city || '';
     if(profile.state) document.getElementById('akaun-state').value = profile.state;
   }catch(e){}
+
+  const hasPassword = typeof window.fbCustomerHasPasswordProvider==='function' ? window.fbCustomerHasPasswordProvider() : true;
+  document.querySelectorAll('#akaun-password-card .grid, #akaun-password-card button').forEach(el=>el.classList.toggle('hidden', !hasPassword));
+  document.getElementById('akaun-password-google-note').classList.toggle('hidden', hasPassword);
 
   const ordersEl = document.getElementById('akaun-orders');
   ordersEl.innerHTML = `<p class="text-inksoft text-sm italic text-center py-6">Memuatkan...</p>`;
@@ -4433,6 +4561,20 @@ window.saveKwPayout = async function(){
     showToast('Gagal simpan butiran','alert-circle');
   }
 }
+window.changeKawasanPassword = async function(){
+  const newPass = document.getElementById('kw-pass-new').value;
+  const confirmPass = document.getElementById('kw-pass-confirm').value;
+  if(!newPass || newPass.length < 6){ showToast('Kata laluan baharu mesti sekurang-kurangnya 6 aksara','alert-circle'); return; }
+  if(newPass !== confirmPass){ showToast('Kata laluan tidak sepadan','alert-circle'); return; }
+  try{
+    await window.fbKawasanChangePassword(newPass);
+    document.getElementById('kw-pass-new').value = '';
+    document.getElementById('kw-pass-confirm').value = '';
+    showToast('Kata laluan berjaya ditukar','check-circle-2');
+  }catch(e){
+    showToast('Gagal tukar kata laluan: ' + (e && (e.code || e.message) || 'ralat tidak diketahui'), 'alert-circle');
+  }
+}
 
 /* ================= ADMIN: LOGIN & TABS ================= */
 window.adminCurrentTab = 'produk';
@@ -4553,6 +4695,23 @@ window.saveSiteContentAdmin = async function(){
   }catch(e){
     console.error('saveSiteContentAdmin failed:', e);
     showToast('Gagal simpan tetapan: ' + (e && (e.code || e.message) || 'ralat tidak diketahui'), 'alert-circle');
+  }
+}
+window.changeAdminPassword = async function(){
+  const current = document.getElementById('admin-pass-current').value;
+  const newPass = document.getElementById('admin-pass-new').value;
+  const confirmPass = document.getElementById('admin-pass-confirm').value;
+  if(!current){ showToast('Sila masukkan kata laluan semasa','alert-circle'); return; }
+  if(!newPass || newPass.length < 6){ showToast('Kata laluan baharu mesti sekurang-kurangnya 6 aksara','alert-circle'); return; }
+  if(newPass !== confirmPass){ showToast('Kata laluan tidak sepadan','alert-circle'); return; }
+  try{
+    await window.fbSelfChangePassword(current, newPass);
+    document.getElementById('admin-pass-current').value = '';
+    document.getElementById('admin-pass-new').value = '';
+    document.getElementById('admin-pass-confirm').value = '';
+    showToast('Kata laluan berjaya ditukar','check-circle-2');
+  }catch(e){
+    showToast(akaunAuthErrorMsg(e),'alert-circle');
   }
 }
 
