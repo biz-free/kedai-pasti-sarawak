@@ -116,6 +116,7 @@
   const callKawasanOrderStats = httpsCallable(fbFns, 'kawasanOrderStats');
   const callAdminListKawasanProducts = httpsCallable(fbFns, 'adminListKawasanProducts');
   const callAdminReviewKawasanProduct = httpsCallable(fbFns, 'adminReviewKawasanProduct');
+  const callAdminSetKawasanProductActive = httpsCallable(fbFns, 'adminSetKawasanProductActive');
   const callCawanganLogin = httpsCallable(fbFns, 'cawanganLogin');
   const callCawanganSelfRegister = httpsCallable(fbFns, 'cawanganSelfRegister');
   const callListCawanganPublic = httpsCallable(fbFns, 'listCawanganPublic');
@@ -296,10 +297,16 @@
     // kawasanProducts collection is already open to public read in
     // firestore.rules, so the Cloud Function added a cold-start-prone hop
     // for no extra security (it did no filtering/auth of its own either).
+    // IMPORTANT: this is the customer-facing catalog's actual data source
+    // (loadAllData calls this, not the listKawasanProductsPublic Cloud
+    // Function) — the approval-status and active filters MUST live here or
+    // unapproved/hidden kawasan products leak straight onto the live site.
     const snap = await getDocs(kpCol('kawasanProducts'));
     const products = [];
     snap.forEach(docSnap => {
       const d = docSnap.data();
+      if ((d.approvalStatus || 'Menunggu') !== 'Diluluskan') return;
+      if (d.active === false) return;
       products.push({
         id: docSnap.id,
         name: d.name || "",
@@ -448,6 +455,11 @@
 
   window.fbAdminReviewKawasanProduct = async function(id, approvalStatus) {
     const res = await callAdminReviewKawasanProduct({ id, approvalStatus });
+    return res.data;
+  };
+
+  window.fbAdminSetKawasanProductActive = async function(id, active) {
+    const res = await callAdminSetKawasanProductActive({ id, active });
     return res.data;
   };
 
@@ -5459,19 +5471,24 @@ window.renderAdminKwReview = function(){
   tbody.innerHTML = list.map((p,idx)=>{
     const status = p.approvalStatus || 'Menunggu';
     const badgeCls = status==='Diluluskan' ? 'bg-green-100 text-green-700' : status==='Ditolak' ? 'bg-red-100 text-red-600' : 'bg-honey/20 text-honeydeep';
+    const active = p.active !== false;
     const img = (Array.isArray(p.images) && p.images[0]) ? p.images[0] : '';
     return `
-    <tr class="border-t border-sand">
+    <tr class="border-t border-sand ${active?'':'opacity-50'}">
       <td class="p-3 text-inksoft">${idx+1}</td>
       <td class="p-3">${img ? `<img src="${img}" class="w-10 h-10 rounded-lg object-cover">` : '-'}</td>
       <td class="p-3 font-bold text-ink">${escapeHtml(p.name||'')}</td>
       <td class="p-3 text-inksoft">${escapeHtml(p.ownerKawasan||'-')}</td>
       <td class="p-3">${formatRM(p.price)}</td>
-      <td class="p-3"><span class="px-2 py-1 rounded-full text-[10px] font-bold ${badgeCls}">${status}</span></td>
       <td class="p-3">
-        <div class="flex gap-1.5">
+        <span class="px-2 py-1 rounded-full text-[10px] font-bold ${badgeCls}">${status}</span>
+        <span class="block mt-1 px-2 py-1 rounded-full text-[10px] font-bold w-fit ${active?'bg-green-100 text-green-700':'bg-red-100 text-red-600'}">${active?'Aktif':'Tidak Aktif'}</span>
+      </td>
+      <td class="p-3">
+        <div class="flex gap-1.5 flex-wrap">
           <button onclick="window.reviewKwProduct('${p.id}','Diluluskan')" class="px-3 py-1.5 rounded-lg bg-green-50 text-green-700 text-[10px] font-bold">Luluskan</button>
           <button onclick="window.reviewKwProduct('${p.id}','Ditolak')" class="px-3 py-1.5 rounded-lg bg-red-50 text-red-600 text-[10px] font-bold">Tolak</button>
+          <button onclick="window.toggleKwReviewProductActive('${p.id}')" title="${active?'Nyahaktifkan (sembunyi dari laman awam)':'Aktifkan semula'}" class="w-8 h-8 rounded-lg ${active?'bg-slate-100 text-slate-600':'bg-honey/20 text-honeydeep'} flex items-center justify-center"><i data-lucide="${active?'eye-off':'eye'}" class="w-3.5 h-3.5"></i></button>
         </div>
       </td>
     </tr>`;
@@ -5485,6 +5502,19 @@ window.reviewKwProduct = async function(id, approvalStatus){
     showToast(approvalStatus==='Diluluskan' ? 'Produk diluluskan' : 'Produk ditolak','check-circle-2');
   }catch(e){
     showToast(e && e.message ? e.message : 'Gagal kemaskini status','alert-circle');
+  }
+}
+window.toggleKwReviewProductActive = async function(id){
+  const p = appKwReviewList.find(x=>x.id===id);
+  if(!p) return;
+  const nextActive = !(p.active !== false);
+  try{
+    await window.fbAdminSetKawasanProductActive(id, nextActive);
+    p.active = nextActive;
+    window.renderAdminKwReview();
+    showToast(nextActive ? 'Produk diaktifkan semula' : 'Produk disembunyikan dari laman awam', nextActive ? 'eye' : 'eye-off');
+  }catch(e){
+    showToast(e && e.message ? e.message : 'Gagal kemaskini status aktif','alert-circle');
   }
 }
 function renderAdminView(){
