@@ -5795,8 +5795,16 @@ window.deleteProduct = async function(id){
 function renderAdminProducts(){
   const tbody = document.getElementById('admin-product-body');
   if(!tbody) return;
-  document.getElementById('admin-produk-count').innerText = appProducts.length+' produk';
-  tbody.innerHTML = appProducts.map((p,idx)=>{
+  // Exclude kawasan-owned rows ("KWP-" ids) here — they live in the
+  // separate kawasanProducts collection and are managed via the "Semakan
+  // Produk Kawasan" tab instead. Rendering the aktif/nyahaktif toggle for
+  // them here used to write "active" to a stray doc in the main products
+  // collection (via fbAdminSaveProduct) that nothing ever reads, so the
+  // real kawasan product kept showing on the live catalog no matter what
+  // admin clicked.
+  const list = appProducts.filter(p=>!String(p.id).startsWith('KWP-'));
+  document.getElementById('admin-produk-count').innerText = list.length+' produk';
+  tbody.innerHTML = list.map((p,idx)=>{
     const cat = CATEGORIES[p.category]||fallbackCategory();
     const active = p.active !== false;
     return `<tr class="border-t border-sand ${active?'':'opacity-50'}">
