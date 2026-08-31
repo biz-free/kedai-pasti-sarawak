@@ -4131,7 +4131,7 @@ async function populateAgentSignupDropdowns(){
   try{
     if(typeof window.fbListKawasanPublic === 'function'){
       const kawasanList = await window.fbListKawasanPublic();
-      areaSel.innerHTML = '<option value="">Pilih PASTI Kawasan...</option>' + kawasanList.map(k=>`<option value="${k.code}">${k.namaKawasan || k.code}</option>`).join('');
+      areaSel.innerHTML = '<option value="">Pilih PASTI Kawasan...</option>' + kawasanList.map(k=>`<option value="${k.namaKawasan || k.code}">${k.namaKawasan || k.code}</option>`).join('');
     }
   }catch(e){}
   try{
