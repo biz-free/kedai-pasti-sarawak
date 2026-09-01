@@ -117,6 +117,7 @@
   const callAdminListKawasanProducts = httpsCallable(fbFns, 'adminListKawasanProducts');
   const callAdminReviewKawasanProduct = httpsCallable(fbFns, 'adminReviewKawasanProduct');
   const callAdminSetKawasanProductActive = httpsCallable(fbFns, 'adminSetKawasanProductActive');
+  const callAdminUpdateKawasanProductShipping = httpsCallable(fbFns, 'adminUpdateKawasanProductShipping');
   const callCawanganLogin = httpsCallable(fbFns, 'cawanganLogin');
   const callCawanganSelfRegister = httpsCallable(fbFns, 'cawanganSelfRegister');
   const callListCawanganPublic = httpsCallable(fbFns, 'listCawanganPublic');
@@ -455,6 +456,11 @@
 
   window.fbAdminReviewKawasanProduct = async function(id, approvalStatus) {
     const res = await callAdminReviewKawasanProduct({ id, approvalStatus });
+    return res.data;
+  };
+
+  window.fbAdminUpdateKawasanProductShipping = async function(id, shipPickup, shipKurier) {
+    const res = await callAdminUpdateKawasanProductShipping({ id, shipPickup, shipKurier });
     return res.data;
   };
 
@@ -1754,18 +1760,29 @@
 
           <!-- TAB SEMAKAN PRODUK KAWASAN -->
           <div id="admin-tab-kwreview" class="admin-tab-panel hidden">
-            <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
-              <p class="text-xs font-bold text-inksoft" id="admin-kwreview-count">0 produk</p>
-              <select id="admin-kwreview-filter" onchange="window.renderAdminKwReview()" class="bg-white border border-sand rounded-xl px-3 py-2 text-xs font-bold">
-                <option value="Menunggu">Menunggu Semakan</option>
-                <option value="Diluluskan">Diluluskan</option>
-                <option value="Ditolak">Ditolak</option>
-                <option value="">Semua</option>
-              </select>
+            <div class="flex flex-wrap items-end gap-3 mb-4">
+              <div>
+                <label class="text-[10px] font-bold text-inksoft block mb-1">PASTI Kawasan</label>
+                <select id="admin-kwreview-kawasan-filter" onchange="window.renderAdminKwReview()" class="bg-white border border-sand rounded-xl px-3 py-2.5 text-xs font-bold"><option value="">Semua Kawasan</option></select>
+              </div>
+              <div>
+                <label class="text-[10px] font-bold text-inksoft block mb-1">Cari Nama Produk</label>
+                <input id="admin-kwreview-search" type="text" placeholder="Cari nama produk..." oninput="window.renderAdminKwReview()" class="bg-white border border-sand rounded-xl px-3 py-2.5 text-xs font-medium w-52">
+              </div>
+              <div>
+                <label class="text-[10px] font-bold text-inksoft block mb-1">Status</label>
+                <select id="admin-kwreview-filter" onchange="window.renderAdminKwReview()" class="bg-white border border-sand rounded-xl px-3 py-2.5 text-xs font-bold">
+                  <option value="Menunggu">Menunggu Semakan</option>
+                  <option value="Diluluskan">Diluluskan</option>
+                  <option value="Ditolak">Ditolak</option>
+                  <option value="">Semua</option>
+                </select>
+              </div>
+              <p class="text-xs font-bold text-inksoft ml-auto" id="admin-kwreview-count">0 produk</p>
             </div>
             <div class="overflow-x-auto bg-white border border-sand rounded-2xl">
               <table class="w-full text-left text-xs whitespace-nowrap">
-                <thead><tr class="bg-cream text-inksoft uppercase text-[10px]"><th class="p-3">No.</th><th class="p-3">Gambar</th><th class="p-3">Nama Produk</th><th class="p-3">Kawasan</th><th class="p-3">Harga</th><th class="p-3">Status</th><th class="p-3">Tindakan</th></tr></thead>
+                <thead><tr class="bg-cream text-inksoft uppercase text-[10px]"><th class="p-3">No.</th><th class="p-3">Gambar</th><th class="p-3">Nama Produk</th><th class="p-3">Kawasan</th><th class="p-3">Harga</th><th class="p-3">Komisen</th><th class="p-3">Penghantaran</th><th class="p-3">Status</th><th class="p-3">Tindakan</th></tr></thead>
                 <tbody id="admin-kwreview-body"></tbody>
               </table>
             </div>
@@ -5451,11 +5468,24 @@ window.deleteCawanganAdmin = async function(code){
   }
 }
 let appKwReviewList = [];
+let kwReviewKawasanMap = {};
 async function refreshAndRenderAdminKwReview(){
   const tbody = document.getElementById('admin-kwreview-body');
-  if(tbody) tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-inksoft italic">Memuatkan senarai produk...</td></tr>`;
+  if(tbody) tbody.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-inksoft italic">Memuatkan senarai produk...</td></tr>`;
   try{
-    appKwReviewList = await window.fbAdminListKawasanProducts();
+    const [products, kawasanList] = await Promise.all([
+      window.fbAdminListKawasanProducts(),
+      window.fbListKawasanPublic(),
+    ]);
+    appKwReviewList = products;
+    kwReviewKawasanMap = {};
+    kawasanList.forEach(k=>{ kwReviewKawasanMap[k.code] = k.namaKawasan || k.code; });
+    const filterSel = document.getElementById('admin-kwreview-kawasan-filter');
+    if(filterSel){
+      const prev = filterSel.value;
+      filterSel.innerHTML = '<option value="">Semua Kawasan</option>' + kawasanList.map(k=>`<option value="${k.code}">PASTI ${escapeHtml(k.namaKawasan||k.code)}</option>`).join('');
+      filterSel.value = prev;
+    }
   }catch(e){
     appKwReviewList = [];
     showToast('Gagal muatkan senarai produk kawasan: ' + (e && (e.code || e.message) || 'ralat tidak diketahui'), 'alert-circle');
@@ -5466,20 +5496,32 @@ window.renderAdminKwReview = function(){
   const tbody = document.getElementById('admin-kwreview-body');
   if(!tbody) return;
   const filter = document.getElementById('admin-kwreview-filter').value;
-  const list = filter ? appKwReviewList.filter(p=>(p.approvalStatus||'Menunggu')===filter) : appKwReviewList;
+  const kawasanFilter = document.getElementById('admin-kwreview-kawasan-filter').value;
+  const search = (document.getElementById('admin-kwreview-search').value||'').trim().toLowerCase();
+  let list = filter ? appKwReviewList.filter(p=>(p.approvalStatus||'Menunggu')===filter) : appKwReviewList;
+  if(kawasanFilter) list = list.filter(p=>p.ownerKawasan===kawasanFilter);
+  if(search) list = list.filter(p=>(p.name||'').toLowerCase().includes(search));
   document.getElementById('admin-kwreview-count').innerText = list.length+' produk';
   tbody.innerHTML = list.map((p,idx)=>{
     const status = p.approvalStatus || 'Menunggu';
     const badgeCls = status==='Diluluskan' ? 'bg-green-100 text-green-700' : status==='Ditolak' ? 'bg-red-100 text-red-600' : 'bg-honey/20 text-honeydeep';
     const active = p.active !== false;
     const img = (Array.isArray(p.images) && p.images[0]) ? p.images[0] : '';
+    const kawasanName = kwReviewKawasanMap[p.ownerKawasan] || p.ownerKawasan || '-';
     return `
     <tr class="border-t border-sand ${active?'':'opacity-50'}">
       <td class="p-3 text-inksoft">${idx+1}</td>
       <td class="p-3">${img ? `<img src="${img}" class="w-10 h-10 rounded-lg object-cover">` : '-'}</td>
       <td class="p-3 font-bold text-ink">${escapeHtml(p.name||'')}</td>
-      <td class="p-3 text-inksoft">${escapeHtml(p.ownerKawasan||'-')}</td>
+      <td class="p-3 text-inksoft">PASTI ${escapeHtml(kawasanName)}</td>
       <td class="p-3">${formatRM(p.price)}</td>
+      <td class="p-3 text-[10px] text-inksoft leading-relaxed">
+        Ejen: ${p.commissionPct||0}%<br>Kawasan: ${p.kawasanCommissionPct||0}%<br>Cawangan: ${p.cawanganCommissionPct||0}%<br>Negeri: ${p.negeriCommissionPct||0}%
+      </td>
+      <td class="p-3">
+        <label class="flex items-center gap-1.5 text-[10px] font-medium mb-1"><input type="checkbox" ${p.shipPickup!==false?'checked':''} onchange="window.updateKwReviewShipping('${p.id}')" id="kwrev-pickup-${p.id}" class="w-3.5 h-3.5"> Ambil di Kawasan</label>
+        <label class="flex items-center gap-1.5 text-[10px] font-medium"><input type="checkbox" ${p.shipKurier!==false?'checked':''} onchange="window.updateKwReviewShipping('${p.id}')" id="kwrev-kurier-${p.id}" class="w-3.5 h-3.5"> Kurier</label>
+      </td>
       <td class="p-3">
         <span class="px-2 py-1 rounded-full text-[10px] font-bold ${badgeCls}">${status}</span>
         <span class="block mt-1 px-2 py-1 rounded-full text-[10px] font-bold w-fit ${active?'bg-green-100 text-green-700':'bg-red-100 text-red-600'}">${active?'Aktif':'Tidak Aktif'}</span>
@@ -5492,8 +5534,26 @@ window.renderAdminKwReview = function(){
         </div>
       </td>
     </tr>`;
-  }).join('') || `<tr><td colspan="7" class="p-6 text-center text-inksoft italic">Tiada produk.</td></tr>`;
+  }).join('') || `<tr><td colspan="9" class="p-6 text-center text-inksoft italic">Tiada produk.</td></tr>`;
   icons();
+}
+window.updateKwReviewShipping = async function(id){
+  const shipPickup = document.getElementById('kwrev-pickup-'+id).checked;
+  const shipKurier = document.getElementById('kwrev-kurier-'+id).checked;
+  if(!shipPickup && !shipKurier){
+    showToast('Sila pilih sekurang-kurangnya satu kaedah penghantaran','alert-circle');
+    document.getElementById('kwrev-pickup-'+id).checked = true;
+    return;
+  }
+  try{
+    await window.fbAdminUpdateKawasanProductShipping(id, shipPickup, shipKurier);
+    const p = appKwReviewList.find(x=>x.id===id);
+    if(p){ p.shipPickup = shipPickup; p.shipKurier = shipKurier; }
+    showToast('Kaedah penghantaran dikemaskini','check-circle-2');
+  }catch(e){
+    showToast(e && e.message ? e.message : 'Gagal kemaskini penghantaran','alert-circle');
+    window.renderAdminKwReview();
+  }
 }
 window.reviewKwProduct = async function(id, approvalStatus){
   try{
