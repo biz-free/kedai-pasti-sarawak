@@ -118,6 +118,7 @@
   const callAdminReviewKawasanProduct = httpsCallable(fbFns, 'adminReviewKawasanProduct');
   const callAdminSetKawasanProductActive = httpsCallable(fbFns, 'adminSetKawasanProductActive');
   const callAdminUpdateKawasanProductShipping = httpsCallable(fbFns, 'adminUpdateKawasanProductShipping');
+  const callAdminUpdateKawasanProductCommission = httpsCallable(fbFns, 'adminUpdateKawasanProductCommission');
   const callCawanganLogin = httpsCallable(fbFns, 'cawanganLogin');
   const callCawanganSelfRegister = httpsCallable(fbFns, 'cawanganSelfRegister');
   const callListCawanganPublic = httpsCallable(fbFns, 'listCawanganPublic');
@@ -461,6 +462,11 @@
 
   window.fbAdminUpdateKawasanProductShipping = async function(id, shipPickup, shipKurier) {
     const res = await callAdminUpdateKawasanProductShipping({ id, shipPickup, shipKurier });
+    return res.data;
+  };
+
+  window.fbAdminUpdateKawasanProductCommission = async function(id, commissionPct, kawasanCommissionPct, cawanganCommissionPct, negeriCommissionPct) {
+    const res = await callAdminUpdateKawasanProductCommission({ id, commissionPct, kawasanCommissionPct, cawanganCommissionPct, negeriCommissionPct });
     return res.data;
   };
 
@@ -5515,8 +5521,14 @@ window.renderAdminKwReview = function(){
       <td class="p-3 font-bold text-ink">${escapeHtml(p.name||'')}</td>
       <td class="p-3 text-inksoft">PASTI ${escapeHtml(kawasanName)}</td>
       <td class="p-3">${formatRM(p.price)}</td>
-      <td class="p-3 text-[10px] text-inksoft leading-relaxed">
-        Ejen: ${p.commissionPct||0}%<br>Kawasan: ${p.kawasanCommissionPct||0}%<br>Cawangan: ${p.cawanganCommissionPct||0}%<br>Negeri: ${p.negeriCommissionPct||0}%
+      <td class="p-3">
+        <div class="grid grid-cols-2 gap-x-2 gap-y-1.5 w-28 whitespace-normal">
+          <div><label class="text-[8px] text-inksoft font-bold block mb-0.5">Ejen%</label><input type="number" min="0" step="0.5" value="${p.commissionPct!=null?p.commissionPct:5}" id="kwrev-comm-ejen-${p.id}" class="w-11 bg-cream border border-sand rounded px-1 py-0.5 text-[10px] font-bold text-ink"></div>
+          <div><label class="text-[8px] text-inksoft font-bold block mb-0.5">Kwsn%</label><input type="number" min="0" step="0.5" value="${p.kawasanCommissionPct!=null?p.kawasanCommissionPct:2}" id="kwrev-comm-kawasan-${p.id}" class="w-11 bg-cream border border-sand rounded px-1 py-0.5 text-[10px] font-bold text-ink"></div>
+          <div><label class="text-[8px] text-inksoft font-bold block mb-0.5">Cwgn%</label><input type="number" min="0" step="0.5" value="${p.cawanganCommissionPct!=null?p.cawanganCommissionPct:2}" id="kwrev-comm-cawangan-${p.id}" class="w-11 bg-cream border border-sand rounded px-1 py-0.5 text-[10px] font-bold text-ink"></div>
+          <div><label class="text-[8px] text-inksoft font-bold block mb-0.5">Ngri%</label><input type="number" min="0" step="0.5" value="${p.negeriCommissionPct!=null?p.negeriCommissionPct:1}" id="kwrev-comm-negeri-${p.id}" class="w-11 bg-cream border border-sand rounded px-1 py-0.5 text-[10px] font-bold text-ink"></div>
+        </div>
+        <button onclick="window.updateKwReviewCommission('${p.id}')" class="mt-1.5 w-full bg-forest hover:bg-forestdark text-white text-[9px] font-bold py-1 rounded">Simpan %</button>
       </td>
       <td class="p-3">
         <label class="flex items-center gap-1.5 text-[10px] font-medium mb-1"><input type="checkbox" ${p.shipPickup!==false?'checked':''} onchange="window.updateKwReviewShipping('${p.id}')" id="kwrev-pickup-${p.id}" class="w-3.5 h-3.5"> Ambil di Kawasan</label>
@@ -5553,6 +5565,22 @@ window.updateKwReviewShipping = async function(id){
   }catch(e){
     showToast(e && e.message ? e.message : 'Gagal kemaskini penghantaran','alert-circle');
     window.renderAdminKwReview();
+  }
+}
+window.updateKwReviewCommission = async function(id){
+  const commissionPct = parseFloat(document.getElementById('kwrev-comm-ejen-'+id).value);
+  const kawasanCommissionPct = parseFloat(document.getElementById('kwrev-comm-kawasan-'+id).value);
+  const cawanganCommissionPct = parseFloat(document.getElementById('kwrev-comm-cawangan-'+id).value);
+  const negeriCommissionPct = parseFloat(document.getElementById('kwrev-comm-negeri-'+id).value);
+  const pcts = [commissionPct, kawasanCommissionPct, cawanganCommissionPct, negeriCommissionPct];
+  if(pcts.some(p=>isNaN(p) || p<0)){ showToast('Semua peratusan komisen mesti nombor 0 atau lebih','alert-circle'); return; }
+  try{
+    await window.fbAdminUpdateKawasanProductCommission(id, commissionPct, kawasanCommissionPct, cawanganCommissionPct, negeriCommissionPct);
+    const p = appKwReviewList.find(x=>x.id===id);
+    if(p){ p.commissionPct=commissionPct; p.kawasanCommissionPct=kawasanCommissionPct; p.cawanganCommissionPct=cawanganCommissionPct; p.negeriCommissionPct=negeriCommissionPct; }
+    showToast('Komisen produk dikemaskini','check-circle-2');
+  }catch(e){
+    showToast(e && e.message ? e.message : 'Gagal kemaskini komisen','alert-circle');
   }
 }
 window.reviewKwProduct = async function(id, approvalStatus){
