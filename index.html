@@ -5575,10 +5575,14 @@ window.updateKwReviewCommission = async function(id){
   const pcts = [commissionPct, kawasanCommissionPct, cawanganCommissionPct, negeriCommissionPct];
   if(pcts.some(p=>isNaN(p) || p<0)){ showToast('Semua peratusan komisen mesti nombor 0 atau lebih','alert-circle'); return; }
   try{
-    await window.fbAdminUpdateKawasanProductCommission(id, commissionPct, kawasanCommissionPct, cawanganCommissionPct, negeriCommissionPct);
+    const res = await window.fbAdminUpdateKawasanProductCommission(id, commissionPct, kawasanCommissionPct, cawanganCommissionPct, negeriCommissionPct);
     const p = appKwReviewList.find(x=>x.id===id);
-    if(p){ p.commissionPct=commissionPct; p.kawasanCommissionPct=kawasanCommissionPct; p.cawanganCommissionPct=cawanganCommissionPct; p.negeriCommissionPct=negeriCommissionPct; }
-    showToast('Komisen produk dikemaskini','check-circle-2');
+    if(p){
+      p.commissionPct=commissionPct; p.kawasanCommissionPct=kawasanCommissionPct; p.cawanganCommissionPct=cawanganCommissionPct; p.negeriCommissionPct=negeriCommissionPct;
+      if(res && res.price!=null) p.price = res.price;
+    }
+    window.renderAdminKwReview();
+    showToast('Komisen dikemaskini — harga jualan diselaraskan ke '+formatRM(res && res.price!=null ? res.price : (p&&p.price)),'check-circle-2');
   }catch(e){
     showToast(e && e.message ? e.message : 'Gagal kemaskini komisen','alert-circle');
   }
