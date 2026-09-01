@@ -80,7 +80,11 @@
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
     const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2,8)}-${safeName}`;
     const r = storageRef(fbStorage, path);
-    await uploadBytes(r, file, { contentType: file.type });
+    // cacheControl: public so link-preview crawlers (WhatsApp, Facebook,
+    // etc.) are allowed to cache and re-serve the image — Firebase Storage
+    // defaults new uploads to "private, max-age=0", which blocks exactly
+    // that kind of third-party caching and silently kills og:image previews.
+    await uploadBytes(r, file, { contentType: file.type, cacheControl: 'public, max-age=31536000' });
     return await getDownloadURL(r);
   };
 
