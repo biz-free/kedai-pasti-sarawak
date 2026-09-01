@@ -3243,6 +3243,13 @@ window.onGalleryScroll = function(el){
     dot.classList.toggle('bg-white/40', i!==idx);
   });
 }
+function buildProductShareUrl(id){
+  return 'https://us-central1-pasti-sarawak.cloudfunctions.net/shareProduct?id=' + encodeURIComponent(id) + (typeof currentAgent!=='undefined' && currentAgent ? '&ref=' + encodeURIComponent(currentAgent.code) : '');
+}
+function productShareWhatsappHref(p){
+  const waText = encodeURIComponent(`${p.name} — ${formatRM(p.price)}\n${buildProductShareUrl(p.id)}`);
+  return `https://wa.me/?text=${waText}`;
+}
 function productTileHTML(p){
   const cat = CATEGORIES[p.category] || fallbackCategory();
   const hasSizes = Array.isArray(p.sizes) && p.sizes.length > 0;
@@ -3259,9 +3266,14 @@ function productTileHTML(p){
           <p class="font-display font-bold text-forest text-sm sm:text-base">${hasSizes ? 'dari ' : ''}${formatRM(p.price)}</p>
           <p class="text-[10px] ${stockClass} font-semibold">${stockLabel}</p>
         </div>
-        <button ${p.stock<=0?'disabled':''} onclick="${hasSizes ? `window.openQuickView('${p.id}')` : `window.addToCart('${p.id}',1)`}; event.stopPropagation();" class="shrink-0 ${p.stock<=0?'bg-slate-200 text-slate-400':'bg-forest hover:bg-forestdark text-white'} rounded-full w-9 h-9 flex items-center justify-center shadow-sm transition-colors" title="${hasSizes?'Pilih Saiz':'Tambah ke Troli'}">
-          <i data-lucide="${hasSizes?'ruler':'plus'}" class="w-4 h-4"></i>
-        </button>
+        <div class="flex items-center gap-1.5 shrink-0">
+          <a href="${productShareWhatsappHref(p)}" target="_blank" onclick="event.stopPropagation();" title="Kongsi produk ke WhatsApp" class="shrink-0 bg-[#25D366] hover:bg-[#1DA851] text-white rounded-full w-9 h-9 flex items-center justify-center shadow-sm transition-colors">
+            <i data-lucide="message-circle" class="w-4 h-4"></i>
+          </a>
+          <button ${p.stock<=0?'disabled':''} onclick="${hasSizes ? `window.openQuickView('${p.id}')` : `window.addToCart('${p.id}',1)`}; event.stopPropagation();" class="shrink-0 ${p.stock<=0?'bg-slate-200 text-slate-400':'bg-forest hover:bg-forestdark text-white'} rounded-full w-9 h-9 flex items-center justify-center shadow-sm transition-colors" title="${hasSizes?'Pilih Saiz':'Tambah ke Troli'}">
+            <i data-lucide="${hasSizes?'ruler':'plus'}" class="w-4 h-4"></i>
+          </button>
+        </div>
       </div>
     </div>
   </div>`;
@@ -3354,7 +3366,7 @@ window.openQuickView = function(id){
   // per-product og:title/og:image, then redirects a human straight through
   // to the normal product view. If an agent is logged in, their ?ref= code
   // rides along so a sale through this link still gets attributed to them.
-  const shareUrl = 'https://us-central1-pasti-sarawak.cloudfunctions.net/shareProduct?id=' + encodeURIComponent(qvProduct.id) + (currentAgent ? '&ref=' + encodeURIComponent(currentAgent.code) : '');
+  const shareUrl = buildProductShareUrl(qvProduct.id);
   const waText = encodeURIComponent(`${qvProduct.name} — ${formatRM(qvProduct.price)}\n${shareUrl}`);
   const hasSizes = Array.isArray(qvProduct.sizes) && qvProduct.sizes.length > 0;
   document.getElementById('qv-content').innerHTML = `
