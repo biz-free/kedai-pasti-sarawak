@@ -4592,7 +4592,11 @@ window.doKawasanSignup = async function(){
   }
 }
 window.loginKawasan = async function(){
-  const code = document.getElementById('kw-login-code').value.trim().toUpperCase();
+  // Kawasan codes are always the name with spaces stripped (codeFromName
+  // server-side); strip spaces here too so a PIC can type the natural
+  // multi-word name (e.g. "Kota Samarahan") and still log in — otherwise
+  // this fails silently for every kawasan whose name has more than one word.
+  const code = document.getElementById('kw-login-code').value.trim().toUpperCase().replace(/\s+/g,'');
   const pass = document.getElementById('kw-login-pass').value;
   if(!code || !pass){ showToast('Sila isi kod & kata laluan','alert-circle'); return; }
   if(typeof window.fbKawasanLogin !== 'function'){ showToast('Sistem belum sedia, cuba lagi sebentar','alert-circle'); return; }
@@ -4660,7 +4664,9 @@ window.doCawanganSignup = async function(){
   }
 }
 window.loginCawangan = async function(){
-  const code = document.getElementById('cw-login-code').value.trim().toUpperCase();
+  // Same as loginKawasan — cawangan codes are the name with spaces
+  // stripped, so strip spaces from what's typed too.
+  const code = document.getElementById('cw-login-code').value.trim().toUpperCase().replace(/\s+/g,'');
   const pass = document.getElementById('cw-login-pass').value;
   if(!code || !pass){ showToast('Sila isi kod & kata laluan','alert-circle'); return; }
   if(typeof window.fbCawanganLogin !== 'function'){ showToast('Sistem belum sedia, cuba lagi sebentar','alert-circle'); return; }
@@ -5461,7 +5467,7 @@ window.openCawanganAdminModal = function(code){
   document.getElementById('acm-pic-name').value = editing ? (editing.picName||'') : '';
   document.getElementById('acm-pic-phone').value = editing ? (editing.picPhone||'') : '';
   document.getElementById('acm-pic-email').value = editing ? (editing.picEmail||'') : '';
-  document.getElementById('acm-pass').value = editing ? editing.password : 'pasti sarawak';
+  document.getElementById('acm-pass').value = editing ? editing.password : 'pasti2026';
   document.getElementById('acm-active').checked = editing ? editing.active!==false : true;
   document.getElementById('modal-admin-cawangan').classList.remove('hidden');
 }
@@ -5476,7 +5482,7 @@ window.saveCawanganAdmin = async function(){
     picName: document.getElementById('acm-pic-name').value.trim(),
     picPhone: document.getElementById('acm-pic-phone').value.trim(),
     picEmail: document.getElementById('acm-pic-email').value.trim(),
-    password: document.getElementById('acm-pass').value.trim() || 'pasti sarawak',
+    password: document.getElementById('acm-pass').value.trim() || 'pasti2026',
     active: document.getElementById('acm-active').checked,
   };
   try{
