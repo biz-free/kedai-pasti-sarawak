@@ -3248,7 +3248,7 @@ window.onGalleryScroll = function(el){
   });
 }
 function buildProductShareUrl(id){
-  return 'https://us-central1-pasti-sarawak.cloudfunctions.net/shareProduct?id=' + encodeURIComponent(id) + (typeof currentAgent!=='undefined' && currentAgent ? '&ref=' + encodeURIComponent(currentAgent.code) : '');
+  return 'https://share.pastisarawakmart.com/' + encodeURIComponent(id) + (typeof currentAgent!=='undefined' && currentAgent ? '?ref=' + encodeURIComponent(currentAgent.code) : '');
 }
 function productShareWhatsappHref(p){
   const waText = encodeURIComponent(`${p.name} — ${formatRM(p.price)}\n${buildProductShareUrl(p.id)}`);
