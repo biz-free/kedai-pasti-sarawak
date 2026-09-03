@@ -17,6 +17,23 @@
 <meta name="apple-mobile-web-app-title" content="PASTI Sarawak Mart">
 
 <link rel="stylesheet" href="tailwind-generated.css">
+<style>
+  /* App splash screen — first paint on every load (browser tab or installed
+     PWA), covers the page until the app has finished loading its data, then
+     fades out. Kept as a plain inline <style> (not a Tailwind class) so it
+     renders instantly, before tailwind-generated.css or any script runs. */
+  #app-splash{
+    position:fixed; inset:0; z-index:9999;
+    display:flex; align-items:center; justify-content:center;
+    background:radial-gradient(120% 90% at 50% 15%, #6E8B3D 0%, #1F5B3A 42%, #0B3D28 100%);
+    transition:opacity 0.5s ease, visibility 0.5s ease;
+  }
+  #app-splash.is-hidden{ opacity:0; visibility:hidden; pointer-events:none; }
+  #app-splash img{
+    width:min(78vw, 360px); height:auto; animation:splashIn 0.6s ease both;
+  }
+  @keyframes splashIn{ from{ opacity:0; transform:scale(0.94); } to{ opacity:1; transform:scale(1); } }
+</style>
 <script>
   // Simple localStorage-backed KV store matching the {get,set,delete}(key, _global) shape
   // used throughout this file for cart/session/demo-data persistence.
@@ -686,6 +703,7 @@
 </style>
 </head>
 <body class="antialiased">
+<div id="app-splash"><img src="splash-logo.png" alt="PASTI Sarawak Mart Official"></div>
 
 <!-- Corak geometri 8-penjuru (unsur tandatangan reka bentuk) -->
 <svg width="0" height="0" class="absolute">
@@ -6507,6 +6525,14 @@ window.exportReportCsv = function(){
 }
 
 /* ================= INIT ================= */
+function hideSplashScreen(){
+  const el = document.getElementById('app-splash');
+  if(el) el.classList.add('is-hidden');
+}
+// Safety net: never let a slow/failed data load leave the splash screen up
+// forever — hide it after 4s regardless of init's progress.
+setTimeout(hideSplashScreen, 4000);
+
 document.addEventListener('DOMContentLoaded', async () => {
   await loadAllData();
   await restoreKawasanSession();
@@ -6551,6 +6577,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       window.setAdminTab('tetapan');
     }
   }
+
+  hideSplashScreen();
 });
 </script>
 </body>
