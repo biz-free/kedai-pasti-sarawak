@@ -6128,11 +6128,31 @@ window.updateOrderStatus = async function(orderId, status){
     showToast('Gagal kemas kini status','alert-circle');
   }
 }
+window.deductStockForOrder = async function(order){
+  if(!order || !Array.isArray(order.items)) return;
+  const updates = [];
+  order.items.forEach(item=>{
+    const p = appProducts.find(x=>String(x.id)===String(item.productId));
+    // Kawasan-owned products (id "KWP-...") track a manual ready/habis flag,
+    // not a real countable inventory, so they're excluded from auto-deduct.
+    if(!p || String(p.id).startsWith('KWP-') || typeof p.stock !== 'number') return;
+    const qty = item.qty || 0;
+    if(qty<=0) return;
+    p.stock = Math.max(0, p.stock - qty);
+    updates.push(window.fbAdminSaveProduct({ id:p.id, stock:p.stock }).catch(e=>console.error('Gagal tolak stok produk', p.id, e)));
+  });
+  if(updates.length){
+    await Promise.allSettled(updates);
+    renderAdminProducts(); renderHome(); renderCatalog();
+  }
+}
 window.confirmOrderPayment = async function(orderId){
+  const o = appKPOrders.find(x=>x.orderId===orderId);
+  if(o && o.paymentStatus==='Disahkan') return;
   try{
     const res = await window.fbAdminConfirmPayment(orderId);
-    const o = appKPOrders.find(x=>x.orderId===orderId);
     if(o) o.paymentStatus = 'Disahkan';
+    window.deductStockForOrder(o);
     renderAdminOrders();
     if(res.kawasanContact && res.kawasanContact.picPhone){
       const kc = res.kawasanContact;
