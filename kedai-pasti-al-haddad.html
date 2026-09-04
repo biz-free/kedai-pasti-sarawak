@@ -154,6 +154,7 @@
   const callEasyParcelGetQuotations = httpsCallable(fbFns, 'easyParcelGetQuotations');
   const callBookEasyParcelShipment = httpsCallable(fbFns, 'bookEasyParcelShipment');
   const callAdminSaveFcmToken = httpsCallable(fbFns, 'adminSaveFcmToken');
+  const callAdminGenerateTelegramLinkCode = httpsCallable(fbFns, 'adminGenerateTelegramLinkCode');
   const callAdminDeleteFcmToken = httpsCallable(fbFns, 'adminDeleteFcmToken');
 
   // Admin push notifications for new orders (on top of the existing email
@@ -491,6 +492,11 @@
 
   window.fbAdminUpdateKawasanProductCommission = async function(id, commissionPct, kawasanCommissionPct, cawanganCommissionPct, negeriCommissionPct) {
     const res = await callAdminUpdateKawasanProductCommission({ id, commissionPct, kawasanCommissionPct, cawanganCommissionPct, negeriCommissionPct });
+    return res.data;
+  };
+
+  window.fbAdminGenerateTelegramLinkCode = async function() {
+    const res = await callAdminGenerateTelegramLinkCode();
     return res.data;
   };
 
@@ -1998,6 +2004,17 @@
               <p class="text-inksoft text-xs leading-relaxed -mt-2 mb-1">Terima notifikasi push di peranti/browser ini setiap kali ada tempahan baru masuk (selain emel sedia ada).</p>
               <button onclick="window.fbEnableAdminPush()" class="bg-forest hover:bg-forestdark text-white font-bold px-5 py-2.5 rounded-xl text-sm flex items-center gap-2 w-fit"><i data-lucide="bell" class="w-4 h-4"></i> Aktifkan Notifikasi Push di Peranti Ini</button>
               <p id="admin-push-status" class="text-[11px] text-inksoft"></p>
+            </div>
+            <div class="bg-white border border-sand rounded-3xl p-5 max-w-xl space-y-3 mb-5">
+              <h3 class="font-display font-bold text-ink mb-1 flex items-center gap-2"><i data-lucide="send" class="w-4 h-4 text-forest"></i> Notifikasi Telegram</h3>
+              <p class="text-inksoft text-xs leading-relaxed -mt-2 mb-1">Kaitkan akaun Telegram anda untuk terima notifikasi tempahan baru & sahkan bayaran terus dari Telegram. Kawasan/Cawangan/Ejen kaitkan akaun mereka sendiri dalam bot menggunakan kod &amp; kata laluan portal masing-masing.</p>
+              <ol class="text-xs text-inksoft space-y-1 list-decimal list-inside">
+                <li>Buka bot Telegram <a id="tg-bot-link" href="https://t.me/PASTISarawakBot" target="_blank" class="text-forest font-bold hover:underline">@PASTISarawakBot</a></li>
+                <li>Klik jana kod pautan di bawah</li>
+                <li>Dalam Telegram, taip: <span id="tg-link-cmd-preview" class="font-mono bg-cream px-2 py-0.5 rounded">/linkadmin KOD</span></li>
+              </ol>
+              <button onclick="window.generateTelegramLinkCode()" class="bg-forest hover:bg-forestdark text-white font-bold px-5 py-2.5 rounded-xl text-sm flex items-center gap-2 w-fit"><i data-lucide="key-round" class="w-4 h-4"></i> Jana Kod Pautan Telegram</button>
+              <div id="tg-link-code-box" class="hidden bg-cream border border-sand rounded-xl px-4 py-3 text-sm"></div>
             </div>
             <button onclick="window.saveSiteContentAdmin()" class="bg-forest hover:bg-forestdark text-white font-bold px-6 py-3 rounded-xl">Simpan Tetapan</button>
           </div>
@@ -5275,6 +5292,17 @@ window.refreshEasyParcelStatus = async function(){
   }
   if(window.lucide) lucide.createIcons();
   window.refreshEasyParcelBalanceBadge();
+}
+window.generateTelegramLinkCode = async function(){
+  const box = document.getElementById('tg-link-code-box');
+  try{
+    const res = await window.fbAdminGenerateTelegramLinkCode();
+    document.getElementById('tg-link-cmd-preview').innerText = '/linkadmin ' + res.code;
+    box.innerHTML = `Kod anda: <span class="font-mono font-bold text-forest text-base">${res.code}</span> <span class="text-inksoft">(sah 10 minit)</span><br>Taip dalam Telegram: <span class="font-mono bg-white px-2 py-0.5 rounded border border-sand">/linkadmin ${res.code}</span>`;
+    box.classList.remove('hidden');
+  }catch(e){
+    showToast('Gagal jana kod: ' + (e && (e.code || e.message) || 'ralat tidak diketahui'), 'alert-circle');
+  }
 }
 window.easyParcelConnect = async function(){
   try{
