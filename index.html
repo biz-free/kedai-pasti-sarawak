@@ -130,6 +130,9 @@
   const callAdminConfirmPayment = httpsCallable(fbFns, 'adminConfirmPayment');
   const callAdminDeleteOrder = httpsCallable(fbFns, 'adminDeleteOrder');
   const callAdminMarkKawasanPayout = httpsCallable(fbFns, 'adminMarkKawasanPayout');
+  const callAdminListPendingPayouts = httpsCallable(fbFns, 'adminListPendingPayouts');
+  const callAdminBatchMarkPayout = httpsCallable(fbFns, 'adminBatchMarkPayout');
+  const callAdminListPayoutHistory = httpsCallable(fbFns, 'adminListPayoutHistory');
   const callAgentOrderStats = httpsCallable(fbFns, 'agentOrderStats');
   const callAgentSavePayout = httpsCallable(fbFns, 'agentSavePayout');
   const callAgentChangePassword = httpsCallable(fbFns, 'agentChangePassword');
@@ -440,6 +443,19 @@
   window.fbAdminMarkKawasanPayout = async function(orderId) {
     const res = await callAdminMarkKawasanPayout({ orderId });
     return res.data;
+  };
+
+  window.fbAdminListPendingPayouts = async function() {
+    const res = await callAdminListPendingPayouts();
+    return res.data;
+  };
+  window.fbAdminBatchMarkPayout = async function(role, code) {
+    const res = await callAdminBatchMarkPayout({ role, code });
+    return res.data;
+  };
+  window.fbAdminListPayoutHistory = async function() {
+    const res = await callAdminListPayoutHistory();
+    return res.data.records;
   };
 
   window.fbAgentOrderStats = async function(code, password) {
@@ -1717,6 +1733,7 @@
             <button data-tab="kawasanadmin" onclick="window.setAdminTab('kawasanadmin')" class="admin-tab-btn px-4 py-2.5 rounded-t-xl text-sm font-bold shrink-0 bg-cream text-inksoft">Kawasan</button>
             <button data-tab="cawanganadmin" onclick="window.setAdminTab('cawanganadmin')" class="admin-tab-btn px-4 py-2.5 rounded-t-xl text-sm font-bold shrink-0 bg-cream text-inksoft">Cawangan</button>
             <button data-tab="kwreview" onclick="window.setAdminTab('kwreview')" class="admin-tab-btn px-4 py-2.5 rounded-t-xl text-sm font-bold shrink-0 bg-cream text-inksoft">Semakan Produk Kawasan</button>
+            <button data-tab="bayaran" onclick="window.setAdminTab('bayaran')" class="admin-tab-btn px-4 py-2.5 rounded-t-xl text-sm font-bold shrink-0 bg-cream text-inksoft">Bayaran</button>
             <button data-tab="laporan" onclick="window.setAdminTab('laporan')" class="admin-tab-btn px-4 py-2.5 rounded-t-xl text-sm font-bold shrink-0 bg-cream text-inksoft">Laporan</button>
             <button data-tab="tetapan" onclick="window.setAdminTab('tetapan')" class="admin-tab-btn px-4 py-2.5 rounded-t-xl text-sm font-bold shrink-0 bg-cream text-inksoft">Tetapan</button>
           </div>
@@ -1841,6 +1858,34 @@
               <table class="w-full text-left text-xs whitespace-nowrap">
                 <thead><tr class="bg-cream text-inksoft uppercase text-[10px]"><th class="p-3">No.</th><th class="p-3">Gambar</th><th class="p-3">Nama Produk</th><th class="p-3">Kawasan</th><th class="p-3">Harga</th><th class="p-3">Komisen</th><th class="p-3">Penghantaran</th><th class="p-3">Status</th><th class="p-3">Tindakan</th></tr></thead>
                 <tbody id="admin-kwreview-body"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- TAB BAYARAN -->
+          <div id="admin-tab-bayaran" class="admin-tab-panel hidden">
+            <p class="text-inksoft text-xs mb-5 max-w-2xl">Komisen tertunggak bagi setiap PASTI Kawasan, PASTI Cawangan &amp; Ejen — dikira daripada tempahan yang <b>Selesai</b> dan bayaran pelanggan <b>Disahkan</b>. Klik "Bayar Semua" untuk tandakan semua tempahan tertunggak akaun itu sebagai dibayar dalam satu tindakan (selepas anda buat pemindahan bank sebenar).</p>
+
+            <div class="grid lg:grid-cols-3 gap-5 mb-6">
+              <div class="bg-white border border-sand rounded-3xl p-4">
+                <h3 class="font-display font-bold text-ink text-sm mb-3 flex items-center gap-2"><i data-lucide="store" class="w-4 h-4 text-forest"></i> PASTI Kawasan</h3>
+                <div id="bayaran-kawasan-list" class="space-y-2"></div>
+              </div>
+              <div class="bg-white border border-sand rounded-3xl p-4">
+                <h3 class="font-display font-bold text-ink text-sm mb-3 flex items-center gap-2"><i data-lucide="landmark" class="w-4 h-4 text-forest"></i> PASTI Cawangan</h3>
+                <div id="bayaran-cawangan-list" class="space-y-2"></div>
+              </div>
+              <div class="bg-white border border-sand rounded-3xl p-4">
+                <h3 class="font-display font-bold text-ink text-sm mb-3 flex items-center gap-2"><i data-lucide="user" class="w-4 h-4 text-forest"></i> Ejen</h3>
+                <div id="bayaran-agent-list" class="space-y-2"></div>
+              </div>
+            </div>
+
+            <h3 class="font-display font-bold text-ink text-sm mb-3">Sejarah Bayaran</h3>
+            <div class="overflow-x-auto bg-white border border-sand rounded-2xl">
+              <table class="w-full text-left text-xs whitespace-nowrap">
+                <thead><tr class="bg-cream text-inksoft uppercase text-[10px]"><th class="p-3">No.</th><th class="p-3">Tarikh</th><th class="p-3">Peranan</th><th class="p-3">Nama</th><th class="p-3">Kod</th><th class="p-3">Bil. Tempahan</th><th class="p-3">Jumlah</th></tr></thead>
+                <tbody id="bayaran-history-body"></tbody>
               </table>
             </div>
           </div>
@@ -5279,7 +5324,7 @@ window.logoutAdmin = async function(){
 }
 window.setAdminTab = function(tab){
   adminCurrentTab = tab;
-  ['produk','kategori','tempahan','ejen','kawasanadmin','cawanganadmin','kwreview','laporan','tetapan'].forEach(t=>{
+  ['produk','kategori','tempahan','ejen','kawasanadmin','cawanganadmin','kwreview','bayaran','laporan','tetapan'].forEach(t=>{
     const panel = document.getElementById('admin-tab-'+t);
     if(panel) panel.classList.toggle('hidden', t!==tab);
   });
@@ -5295,6 +5340,7 @@ window.setAdminTab = function(tab){
   if(tab==='kawasanadmin') refreshAndRenderAdminKawasan();
   if(tab==='cawanganadmin') refreshAndRenderAdminCawangan();
   if(tab==='kwreview') refreshAndRenderAdminKwReview();
+  if(tab==='bayaran') refreshAndRenderAdminBayaran();
   if(tab==='laporan' && typeof renderReports==='function') refreshAndRenderReports();
   if(tab==='tetapan'){ loadSiteContentAdminForm(); window.refreshEasyParcelStatus(); }
 }
@@ -5607,6 +5653,82 @@ async function refreshAndRenderAdminKwReview(){
   }
   window.renderAdminKwReview();
 }
+
+async function refreshAndRenderAdminBayaran(){
+  ['bayaran-kawasan-list','bayaran-cawangan-list','bayaran-agent-list'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.innerHTML = `<p class="text-inksoft text-xs italic py-3">Memuatkan...</p>`;
+  });
+  try{
+    const [pending, history] = await Promise.all([
+      window.fbAdminListPendingPayouts(),
+      window.fbAdminListPayoutHistory(),
+    ]);
+    renderBayaranList('kawasan', pending.kawasan);
+    renderBayaranList('cawangan', pending.cawangan);
+    renderBayaranList('agent', pending.agent);
+    renderBayaranHistory(history);
+  }catch(e){
+    console.error('refreshAndRenderAdminBayaran failed:', e);
+    showToast('Gagal muatkan senarai bayaran: ' + (e && (e.code || e.message) || 'ralat tidak diketahui'), 'alert-circle');
+  }
+  if(window.lucide) lucide.createIcons();
+}
+
+function renderBayaranList(role, list){
+  const el = document.getElementById('bayaran-'+role+'-list');
+  if(!el) return;
+  if(!list || !list.length){
+    el.innerHTML = `<p class="text-inksoft text-xs italic py-3">Tiada bayaran tertunggak.</p>`;
+    return;
+  }
+  el.innerHTML = list.map(g=>`
+    <div class="flex items-center justify-between gap-2 bg-cream rounded-xl px-3 py-2.5">
+      <div class="min-w-0">
+        <p class="font-bold text-ink text-xs truncate">${escapeHtml(g.name)}</p>
+        <p class="text-inksoft text-[10px]">${escapeHtml(g.code)} &middot; ${g.orderIds.length} tempahan</p>
+      </div>
+      <div class="text-right shrink-0">
+        <p class="font-display font-bold text-forest text-sm mb-1">${formatRM(g.total)}</p>
+        <button onclick="window.settleBayaran('${role}','${escapeHtml(g.code).replace(/'/g,"\\'")}','${escapeHtml(g.name).replace(/'/g,"\\'")}',${g.total})" class="bg-forest hover:bg-forestdark text-white text-[10px] font-bold px-3 py-1.5 rounded-lg">Bayar Semua</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderBayaranHistory(records){
+  const tbody = document.getElementById('bayaran-history-body');
+  if(!tbody) return;
+  if(!records || !records.length){
+    tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-inksoft italic">Tiada sejarah bayaran lagi.</td></tr>`;
+    return;
+  }
+  const roleLabelMap = { kawasan:'PASTI Kawasan', cawangan:'PASTI Cawangan', agent:'Ejen' };
+  tbody.innerHTML = records.map((r,idx)=>`
+    <tr class="border-t border-sand">
+      <td class="p-3">${idx+1}</td>
+      <td class="p-3">${r.paidAt ? new Date(r.paidAt).toLocaleDateString('ms-MY',{day:'2-digit',month:'short',year:'numeric'}) : '-'}</td>
+      <td class="p-3">${roleLabelMap[r.role]||r.role}</td>
+      <td class="p-3">${escapeHtml(r.name||'-')}</td>
+      <td class="p-3">${escapeHtml(r.code||'-')}</td>
+      <td class="p-3">${r.orderCount}</td>
+      <td class="p-3 font-bold text-forest">${formatRM(r.totalAmount)}</td>
+    </tr>
+  `).join('');
+}
+
+window.settleBayaran = async function(role, code, name, total){
+  if(!confirm(`Sahkan bayaran RM${Number(total).toFixed(2)} kepada ${name} (${code}) telah dibuat secara manual (bank transfer), dan tandakan SEMUA tempahan tertunggak akaun ini sebagai dibayar?`)) return;
+  try{
+    const res = await window.fbAdminBatchMarkPayout(role, code);
+    showToast(`Bayaran RM${res.total.toFixed(2)} (${res.orderCount} tempahan) berjaya ditandakan`, 'check-circle-2');
+    refreshAndRenderAdminBayaran();
+  }catch(e){
+    console.error('settleBayaran failed:', e);
+    showToast('Gagal proses bayaran: ' + (e && (e.code || e.message) || 'ralat tidak diketahui'), 'alert-circle');
+  }
+}
+
 window.renderAdminKwReview = function(){
   const tbody = document.getElementById('admin-kwreview-body');
   if(!tbody) return;
