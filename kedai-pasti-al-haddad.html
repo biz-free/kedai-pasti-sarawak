@@ -1239,6 +1239,13 @@
           </div>
 
           <div class="bg-white border border-sand rounded-2xl p-4 mb-6">
+            <p class="font-display font-bold text-ink text-sm mb-3 flex items-center gap-2"><i data-lucide="send" class="w-4 h-4 text-forest"></i> Notifikasi Telegram</p>
+            <p class="text-inksoft text-xs leading-relaxed mb-3">Kaitkan Telegram untuk terima notifikasi bayaran &amp; jana link kongsi produk terus dari bot.</p>
+            <a id="agent-tg-bot-link" href="https://t.me/PASTISarawakBot" target="_blank" class="flex items-center justify-center gap-2 bg-forest hover:bg-forestdark text-white text-xs font-bold px-5 py-2.5 rounded-xl w-full sm:w-auto"><i data-lucide="send" class="w-3.5 h-3.5"></i> Buka Bot &amp; Mula</a>
+            <p class="text-inksoft text-xs mt-2">Selepas tekan <b>Start</b>, bot akan bagi arahan tepat untuk kaitkan akaun anda (kod ejen sudah diisi, tinggal masukkan kata laluan).</p>
+          </div>
+
+          <div class="bg-white border border-sand rounded-2xl p-4 mb-6">
             <p class="font-display font-bold text-ink text-sm mb-3">Tukar Kata Laluan</p>
             <div class="grid sm:grid-cols-2 gap-2.5 mb-3">
               <div>
@@ -1448,6 +1455,12 @@
               <button onclick="window.saveKwPayout()" class="w-full bg-forest hover:bg-forestdark text-white font-bold py-3 rounded-xl">Simpan Alamat Pengambilan</button>
             </div>
             <div class="bg-white border border-sand rounded-3xl p-5 max-w-lg space-y-3 mt-5">
+              <h3 class="font-display font-bold text-ink mb-1 flex items-center gap-2"><i data-lucide="send" class="w-4 h-4 text-forest"></i> Notifikasi Telegram</h3>
+              <p class="text-inksoft text-xs leading-relaxed -mt-2 mb-1">Kaitkan Telegram untuk terima notifikasi tempahan &amp; urus produk terus dari bot.</p>
+              <a id="kw-tg-bot-link" href="https://t.me/PASTISarawakBot" target="_blank" class="flex items-center justify-center gap-2 bg-forest hover:bg-forestdark text-white font-bold py-3 rounded-xl"><i data-lucide="send" class="w-4 h-4"></i> Buka Bot &amp; Mula</a>
+              <p class="text-inksoft text-xs">Selepas tekan <b>Start</b>, bot akan bagi arahan tepat untuk kaitkan akaun anda (kod kawasan sudah diisi, tinggal masukkan kata laluan).</p>
+            </div>
+            <div class="bg-white border border-sand rounded-3xl p-5 max-w-lg space-y-3 mt-5">
               <h3 class="font-display font-bold text-ink mb-1">Tukar Kata Laluan</h3>
               <div>
                 <label class="text-[11px] font-bold text-inksoft mb-1 block">Kata Laluan Baharu</label>
@@ -1575,6 +1588,12 @@
                 <input id="cw-pic-email" type="email" disabled class="w-full bg-sand/40 border border-sand rounded-xl px-4 py-3 text-sm font-medium text-inksoft">
               </div>
               <p class="text-[11px] text-inksoft italic">Hubungi admin untuk kemaskini butiran PIC.</p>
+            </div>
+            <div class="bg-white border border-sand rounded-3xl p-5 max-w-lg space-y-3 mt-5">
+              <h3 class="font-display font-bold text-ink mb-1 flex items-center gap-2"><i data-lucide="send" class="w-4 h-4 text-forest"></i> Notifikasi Telegram</h3>
+              <p class="text-inksoft text-xs leading-relaxed -mt-2 mb-1">Kaitkan Telegram untuk terima notifikasi komisen &amp; jualan terus dari bot.</p>
+              <a id="cw-tg-bot-link" href="https://t.me/PASTISarawakBot" target="_blank" class="flex items-center justify-center gap-2 bg-forest hover:bg-forestdark text-white font-bold py-3 rounded-xl"><i data-lucide="send" class="w-4 h-4"></i> Buka Bot &amp; Mula</a>
+              <p class="text-inksoft text-xs">Selepas tekan <b>Start</b>, bot akan bagi arahan tepat untuk kaitkan akaun anda (kod cawangan sudah diisi, tinggal masukkan kata laluan).</p>
             </div>
             <div class="bg-white border border-sand rounded-3xl p-5 max-w-lg space-y-3 mt-5">
               <h3 class="font-display font-bold text-ink mb-1">Tukar Kata Laluan</h3>
@@ -4384,6 +4403,8 @@ async function renderAgentView(){
   document.getElementById('agent-dash-name').innerText = currentAgent.name;
   document.getElementById('agent-dash-area').innerHTML = `<i data-lucide="map-pin" class="w-3.5 h-3.5"></i> PASTI ${escapeHtml(currentAgent.area)}${currentAgent.branch ? ' · '+escapeHtml(currentAgent.branch) : ''}`;
   document.getElementById('agent-ref-link').value = window.location.href.split('?')[0] + '?ref=' + currentAgent.code;
+  const agentTgLink = document.getElementById('agent-tg-bot-link');
+  if(agentTgLink) agentTgLink.href = 'https://t.me/PASTISarawakBot?start=ag_' + encodeURIComponent(currentAgent.code);
   document.getElementById('agent-po-bankname').value = currentAgent.bankName || '';
   document.getElementById('agent-po-bankacc').value = currentAgent.bankAccountNo || '';
   document.getElementById('agent-po-bankaccname').value = currentAgent.bankAccountName || '';
@@ -4748,6 +4769,8 @@ function renderCawanganPortalView(){
   if(!currentCawangan){ loginWrap.classList.remove('hidden'); dashWrap.classList.add('hidden'); return; }
   loginWrap.classList.add('hidden'); dashWrap.classList.remove('hidden');
   document.getElementById('cw-dash-name').innerText = 'PASTI ' + currentCawangan.namaCawangan;
+  const cwTgLink = document.getElementById('cw-tg-bot-link');
+  if(cwTgLink) cwTgLink.href = 'https://t.me/PASTISarawakBot?start=cw_' + encodeURIComponent(currentCawangan.code);
   document.getElementById('cw-pic-name').value = currentCawangan.picName || '';
   document.getElementById('cw-pic-phone').value = currentCawangan.picPhone || '';
   document.getElementById('cw-pic-email').value = currentCawangan.picEmail || '';
@@ -4837,6 +4860,8 @@ function renderKawasanPortalView(){
   if(!currentKawasan){ loginWrap.classList.remove('hidden'); dashWrap.classList.add('hidden'); return; }
   loginWrap.classList.add('hidden'); dashWrap.classList.remove('hidden');
   document.getElementById('kw-dash-name').innerText = 'PASTI ' + currentKawasan.namaKawasan;
+  const kwTgLink = document.getElementById('kw-tg-bot-link');
+  if(kwTgLink) kwTgLink.href = 'https://t.me/PASTISarawakBot?start=kw_' + encodeURIComponent(currentKawasan.code);
   document.getElementById('kw-pic-name').value = currentKawasan.picName || '';
   document.getElementById('kw-pic-phone').value = currentKawasan.picPhone || '';
   document.getElementById('kw-pic-email').value = currentKawasan.picEmail || '';
